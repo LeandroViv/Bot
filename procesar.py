@@ -1,10 +1,14 @@
 import os
 import json
+import time
 import requests
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 HISTORIAL_FILE = "historial.json"
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 
 def cargar_historial():
@@ -17,12 +21,9 @@ def cargar_historial():
     return []
 
 
-def guardar_mensaje(rol, contenido):
-    historial = cargar_historial()
-    historial.append({"role": rol, "content": contenido})
-    historial = historial[-20:]  # Mantener los últimos 20 mensajes
+def guardar_historial(historial):
     with open(HISTORIAL_FILE, "w", encoding="utf-8") as f:
-        json.dump(historial, f, ensure_ascii=False, indent=2)
+        json.dump(historial[-20:], f, ensure_ascii=False, indent=2)
 
 
 def llamar_ollama(messages):
@@ -38,30 +39,29 @@ def llamar_ollama(messages):
 
 
 def generar_query_semantica(orden_usuario, historial):
-    """Analiza la consulta actual JUNTO al historial para resolver referencias implícitas (ej: 'de eso', 'lo último')."""
-    
-    # Extraer contexto reciente (últimos 3 mensajes)
-    contexto_reciente = ""
-    for msg in historial[-3:]:
+    contexto = ""
+    for msg in historial[-4:]:
         rol = "Usuario" if msg["role"] == "user" else "Asistente"
-        contexto_reciente += f"{rol}: {msg['content']}\n"
+        texto = msg['content'][:250].replace('\n', ' ')
+        contexto += f"{rol}: {texto}\n"
 
     prompt = [
         {
             "role": "system",
             "content": (
-                "Tu función es generar entre 2 y 4 palabras clave para buscar en la web.\n"
-                "IMPORTANTE: Tené en cuenta el hilo de la conversación previa para resolver pronombres como 'eso', 'aquello', 'de nuevo', etc.\n"
-                "REGLAS:\n"
-                "- NO incluyas palabras como 'buscame', 'dame', 'links', 'noticias'.\n"
-                "- Devolvé ÚNICAMENTE las palabras clave para buscar, sin comillas ni aclaraciones."
+                "Sos un extractor de búsquedas semánticas. Tu único trabajo es responder con 2 a 5 palabras clave "
+                "para buscar en Google/DuckDuckGo.\n"
+                "REGLAS STRICTAS:\n"
+                "1. Mirá el historial para entender a qué se refiere el usuario con palabras como 'eso', 'aquello', 'de nuevo', 'gratis', etc.\n"
+                "2. NO incluyas comandos como 'buscame', 'dame', 'links'.\n"
+                "3. Devolvé SOLAMENTE los términos de búsqueda en texto plano."
             ),
         },
-        {"role": "user", "content": f"Historial reciente:\n{contexto_reciente}\nConsulta actual: {orden_usuario}"},
+        {"role": "user", "content": f"HISTORIAL:\n{contexto}\nCONSULTA ACTUAL: {orden_usuario}"},
     ]
     query = llamar_ollama(prompt)
     query_limpia = query.replace('"', "").replace("'", "").strip() if query else orden_usuario
-    print(f"🧠 Semántica interpretada -> Query para web: '{query_limpia}'")
+    print(f"🧠 Búsqueda semántica generada -> '{query_limpia}'")
     return query_limpia
 
 
@@ -69,7 +69,7 @@ def buscar_web(orden_usuario, historial):
     query = generar_query_semantica(orden_usuario, historial)
     texto_resultados = ""
 
-    # Intento 1: API DuckDuckGo HTML
+    # Intento 1: DDGS HTML
     try:
         with DDGS() as ddgs:
             res = list(ddgs.text(query, max_results=4, backend="html"))
@@ -78,9 +78,9 @@ def buscar_web(orden_usuario, historial):
             if texto_resultados:
                 return texto_resultados
     except Exception as e:
-        print(f"⚠️ DDGS falló: {e}. Probando respaldo Lite...")
+        print(f"⚠️ DDGS falló: {e}")
 
-    # Intento 2: Fallback BeautifulSoup (DDG Lite)
+    # Intento 2: Fallback DDG Lite
     try:
         url = "https://lite.duckduckgo.com/lite/"
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -100,80 +100,71 @@ def buscar_web(orden_usuario, historial):
 
 def responder_usuario(orden):
     historial = cargar_historial()
-    
-    # 1. Buscar web usando la orden actual + el contexto previo
     info_web = buscar_web(orden, historial)
 
-    # 2. Guardar el mensaje actual del usuario en la memoria
-    guardar_mensaje("user", orden)
+    system_prompt = {
+        "role": "system",
+        "content": (
+            "Sos Leandro Bot, el asistente personal de Leandro.\n"
+            "REGLAS FUNDAMENTALES:\n"
+            "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
+            "- CONTINUIDAD: Tenés pleno acceso a los mensajes anteriores en la conversación. Si el usuario pregunta por 'eso', 'aquello' o 'gratis', respondé basándote en lo que hablaron recién.\n"
+            "- NUNCA digas '¿sobre qué tema buscas?' o 'dame contexto' si el tema ya fue mencionado previamente en el historial.\n"
+            "- Sé directo, conciso y técnico."
+        )
+    }
 
+    mensajes_chat = [system_prompt]
+    for msg in historial:
+        mensajes_chat.append(msg)
+
+    contenido_actual = orden
     if info_web:
-        reporte_contexto = f"[DATOS COMPLEMENTARIOS RECUPERADOS DE LA WEB EN TIEMPO REAL]:\n{info_web}"
-    else:
-        reporte_contexto = "[SISTEMA]: No se requirieron o no se obtuvieron resultados externos adicionales. Usá la información del historial y tu base técnica."
-
-    system_prompt = (
-        "Sos Leandro Bot, el asistente personal de Leandro.\n"
-        "REGLAS OBLIGATORIAS:\n"
-        "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
-        "- MANTENÉ LA CONTINUIDAD: Tenés pleno acceso al historial de la charla. Cuando el usuario hable de 'eso' o de un tema anterior, referite al contexto previo.\n"
-        "- PROHIBIDO DECIR: 'no tengo acceso a internet', 'como modelo de IA' o 'dame más contexto' si la referencia está en el historial.\n"
-        "- Sé directo, directo al grano y técnicamente preciso."
-    )
-
-    # 3. Armar la estructura del chat respetando la alternancia natural del historial
-    mensajes_chat = [{"role": "system", "content": system_prompt}]
+        contenido_actual += f"\n\n[DATOS RECUPERADOS EN TIEMPO REAL PARA ESTA CONSULTA]:\n{info_web}"
     
-    # Cargar todo el historial acumulado
-    for m in historial:
-        mensajes_chat.append(m)
-
-    # Inyectar el bloque de datos de la web directamente en la última instrucción
-    mensaje_final = (
-        f"{orden}\n\n"
-        f"{reporte_contexto}\n\n"
-        f"Instrucción: Respondé considerando todo nuestro historial previo y los datos web si aplican."
-    )
-    
-    # Reemplazar el contenido del último mensaje del usuario para incluir los datos web sin romper el rol
-    mensajes_chat[-1]["content"] = mensaje_final
+    mensajes_chat.append({"role": "user", "content": contenido_actual})
 
     respuesta = llamar_ollama(mensajes_chat)
 
     if respuesta:
-        guardar_mensaje("assistant", respuesta)
+        historial.append({"role": "user", "content": orden})
+        historial.append({"role": "assistant", "content": respuesta})
+        guardar_historial(historial)
+
     return respuesta
 
 
-def evaluar_iniciativa_propia():
-    historial = cargar_historial()
-    if not historial:
-        return None
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Buenas che! Acá Leandro Bot activo y listo. Decime en qué andamos.")
 
-    prompt_analisis = [
-        {"role": "system", "content": "Extraé de forma concisa los temas técnicos o proyectos de interés de Leandro según el historial."},
-        {"role": "user", "content": f"Historial:\n{json.dumps(historial)}"}
-    ]
-    temas = llamar_ollama(prompt_analisis)
-    if not temas:
-        return None
 
-    novedades = buscar_web(f"novedades {temas}", historial)
-    if not novedades:
-        return None
+async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    texto_usuario = update.message.text
+    print(f"📩 Mensaje recibido: {texto_usuario}")
+    
+    # Indicar que está procesando
+    await update.message.chat.send_action(action="typing")
+    
+    respuesta = responder_usuario(texto_usuario)
+    if not respuesta:
+        respuesta = "Che, se me complicó la respuesta con Ollama, pero acá sigo activo."
 
-    prompt_evaluacion = [
-        {"role": "system", "content": (
-            "Sos el filtro de relevancia de Leandro Bot.\n"
-            "Analizá la información encontrada. Si hay alguna novedad técnica de ALTO VALOR para Leandro, "
-            "redactale un mensaje breve y directo en español rioplatense.\n"
-            "Si la información es común o vacía, tu única respuesta debe ser la palabra: NO"
-        )},
-        {"role": "user", "content": f"Temas de Leandro: {temas}\nResultados web:\n{novedades}"}
-    ]
+    await update.message.reply_text(respuesta)
 
-    criterio = llamar_ollama(prompt_evaluacion)
-    if criterio and not criterio.strip().startswith("NO") and len(criterio) > 10:
-        guardar_mensaje("assistant", criterio)
-        return criterio
-    return None
+
+def main():
+    if not TOKEN:
+        print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN en las variables de entorno.")
+        return
+
+    print("🚀 Iniciando Leandro Bot en Telegram...")
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+
+    app.run_polling()
+
+
+if __name__ == "__main__":
+    main()
