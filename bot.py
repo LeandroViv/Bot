@@ -10,7 +10,7 @@ GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")
 
 # Cerca del límite de 5 horas de GitHub Actions (4h 58m = 17880 seg)
 TIEMPO_MAXIMO_SEGUNDOS = 17880
-INTERVALO_INICIATIVA = 30 * 60  # Chequeo de relevancia cada 30 min
+INTERVALO_INICIATIVA = 30 * 60  # Evaluacion de proactividad cada 30 min
 
 
 def enviar_telegram(chat_id, texto):
@@ -55,7 +55,7 @@ def gatillar_reenganche():
         else:
             print(f"⚠️ Error en reenganche HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print(f"⚠️ Excepción al solicitar reenganche: {e}")
+        print(f"⚠️️ Excepción al solicitar reenganche: {e}")
 
 
 def main():
