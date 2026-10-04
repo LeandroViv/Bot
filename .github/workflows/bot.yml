@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# Cancela automáticamente ejecuciones anteriores si hacés un nuevo commit
+# Cancela ejecuciones viejas para que no se encimen los procesos del bot
 concurrency:
   group: bot-telegram-session
   cancel-in-progress: true
@@ -50,7 +50,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Bucle persistente que reinicia el proceso cada 5 horas (18000s) para renovar el runner
+          # Bucle que reinicia el proceso cada 5 horas (18000s) para evitar el timeout del runner
           while true; do
             echo "🚀 Lanzando Leandro Bot (Ciclo de 5 horas)..."
             timeout 18000 python procesar.py
