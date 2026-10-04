@@ -2,15 +2,24 @@ name: Leandro Bot 24/7
 
 on:
   schedule:
-    # Reinicia el runner cada 5 horas para mantener el bucle activo de forma indefinida
-    - cron: '0 */5 * * *'
-  workflow_dispatch: # Permite iniciarlo manualmente desde GitHub cuando quieras
+    # Se ejecuta automáticamente cada 4 horas para mantenerlo vivo
+    - cron: '0 */4 * * *'
+  push:
+    # Cada vez que subas código nuevo, se dispara solo
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Para lanzarlo a mano cuando quieras
+
+# 🔑 ESTO ES LO QUE HACE LA MAGIA: Cancela los workflows anteriores en curso
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
 
-    # 🔑 Permisos de escritura obligatorios para el git push del conversaciones.txt
     permissions:
       contents: write
 
@@ -23,18 +32,18 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar dependencias del sistema (FFmpeg para procesar y convertir audios)
+      - name: Instalar dependencias del sistema (FFmpeg)
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Instalar Ollama y dependencias del sistema
+      - name: Instalar Ollama y descargar modelo
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           nohup ollama serve > ollama.log 2>&1 &
           sleep 5
           ollama pull llama3.2
 
-      - name: Instalar librerías de Python (Whisper, gTTS, Telegram, etc.)
+      - name: Instalar librerías de Python
         run: |
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts
