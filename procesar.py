@@ -13,9 +13,14 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+import whisper
 
 TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+
+# Cargamos el modelo de Whisper ('base' corre rápido en el runner y reconoce muy bien)
+print("🎙️ Cargando modelo Whisper...")
+modelo_whisper = whisper.load_model("base")
 
 
 def sincronizar_txt_con_github():
@@ -198,7 +203,7 @@ def buscar_web(orden_usuario):
             if texto_resultados:
                 return texto_resultados
     except Exception as e:
-        print(f"⚠️️ DDGS falló: {e}")
+        print(f"⚠ DDGS falló: {e}")
 
     try:
         url = "https://lite.duckduckgo.com/lite/"
@@ -252,12 +257,12 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo y listo.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo, con voz y memoria en GitHub.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
-    print(f"📩 Mensaje recibido: {texto_usuario}")
+    print(f"📩 Mensaje de texto recibido: {texto_usuario}")
     await update.message.chat.send_action(action="typing")
 
     respuesta = responder_usuario(texto_usuario)
@@ -265,6 +270,41 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         respuesta = "Che, la consulta demoró en responder, pero ya quedé listo para la siguiente."
 
     await update.message.reply_text(respuesta)
+
+
+async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Descarga nota de voz de Telegram, la pasa a texto con Whisper y la responde."""
+    print("🎤 Audio recibido, procesando voz con Whisper...")
+    await update.message.chat.send_action(action="typing")
+
+    ruta_ogg = "temp_audio.ogg"
+    try:
+        archivo_telegram = await update.message.voice.get_file()
+        await archivo_telegram.download_to_drive(ruta_ogg)
+
+        resultado_transcripcion = modelo_whisper.transcribe(ruta_ogg, language="es")
+        texto_reconocido = resultado_transcripcion.get("text", "").strip()
+        
+        print(f"🗣️ Texto reconocido de la voz: '{texto_reconocido}'")
+
+        if os.path.exists(ruta_ogg):
+            os.remove(ruta_ogg)
+
+        if not texto_reconocido:
+            await update.message.reply_text("Che, no te pude captar bien el audio, ¿me lo repetís?")
+            return
+
+        respuesta = responder_usuario(texto_reconocido)
+        if not respuesta:
+            respuesta = "Che, la consulta de voz demoró en responder, pero ya quedé listo."
+
+        await update.message.reply_text(f"*(Audio entendido: \"{texto_reconocido}\")*\n\n{respuesta}")
+
+    except Exception as e:
+        print(f"⚠️ Error procesando el audio: {e}")
+        if os.path.exists(ruta_ogg):
+            os.remove(ruta_ogg)
+        await update.message.reply_text("Che, se me armó un lío procesando el audio.")
 
 
 def main():
@@ -278,10 +318,13 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo eliminar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot en Telegram...")
+    print("🚀 Iniciando Leandro Bot en Telegram con soporte de voz...")
     app = Application.builder().token(TOKEN).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+    app.add_handler(MessageHandler(filters.VOICE, manejar_voz)) # Manejador de notas de voz
+    
     app.run_polling()
 
 
