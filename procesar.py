@@ -14,13 +14,10 @@ from telegram.ext import (
     filters,
 )
 import whisper
+from gtts import gTTS
 
 TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-
-# Cargamos el modelo de Whisper ('base' corre rápido en el runner y reconoce muy bien)
-print("🎙️ Cargando modelo Whisper...")
-modelo_whisper = whisper.load_model("base")
 
 
 def sincronizar_txt_con_github():
@@ -257,7 +254,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo, con voz y memoria en GitHub.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo, escuchando audios y respondiendo en voz alta.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -273,12 +270,18 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Descarga nota de voz de Telegram, la pasa a texto con Whisper y la responde."""
+    """Descarga nota de voz, la transcribe con Whisper, genera respuesta y la devuelve en audio."""
     print("🎤 Audio recibido, procesando voz con Whisper...")
-    await update.message.chat.send_action(action="typing")
+    await update.message.chat.send_action(action="record_voice")
 
     ruta_ogg = "temp_audio.ogg"
+    ruta_respuesta_mp3 = "respuesta.mp3"
+    ruta_respuesta_ogg = "respuesta.ogg"
+
     try:
+        # Carga Whisper bajo demanda para que el bot inicie rápido
+        modelo_whisper = whisper.load_model("base")
+
         archivo_telegram = await update.message.voice.get_file()
         await archivo_telegram.download_to_drive(ruta_ogg)
 
@@ -298,12 +301,27 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not respuesta:
             respuesta = "Che, la consulta de voz demoró en responder, pero ya quedé listo."
 
-        await update.message.reply_text(f"*(Audio entendido: \"{texto_reconocido}\")*\n\n{respuesta}")
+        # Convertimos la respuesta de texto a voz con gTTS (español)
+        tts = gTTS(text=respuesta, lang="es", tld="com.ar") # tld com.ar le da tonada más rioplatense
+        tts.save(ruta_respuesta_mp3)
+
+        # Convertimos mp3 a ogg (formato nota de voz de Telegram) usando ffmpeg
+        subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, "-c:a", "libopus", ruta_respuesta_ogg], check=True)
+
+        # Enviamos la nota de voz al usuario
+        with open(ruta_respuesta_ogg, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=f"*(Entendido: \"{texto_reconocido}\")*")
+
+        # Limpieza de archivos temporales de audio
+        for archivo in [ruta_respuesta_mp3, ruta_respuesta_ogg]:
+            if os.path.exists(archivo):
+                os.remove(archivo)
 
     except Exception as e:
         print(f"⚠️ Error procesando el audio: {e}")
-        if os.path.exists(ruta_ogg):
-            os.remove(ruta_ogg)
+        for archivo in [ruta_ogg, ruta_respuesta_mp3, ruta_respuesta_ogg]:
+            if os.path.exists(archivo):
+                os.remove(archivo)
         await update.message.reply_text("Che, se me armó un lío procesando el audio.")
 
 
@@ -318,12 +336,12 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo eliminar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot en Telegram con soporte de voz...")
+    print("🚀 Iniciando Leandro Bot en Telegram con soporte de voz bidireccional...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-    app.add_handler(MessageHandler(filters.VOICE, manejar_voz)) # Manejador de notas de voz
+    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
     
     app.run_polling()
 
