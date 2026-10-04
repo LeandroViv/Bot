@@ -1,2 +1,4 @@
 [USUARIO]: Estas ahí che
 ---
+[LEANDRO_BOT]: Che, ¿qué onda? ¿Necesita ayuda con algo? ¿Podría decirme un poco más qué le pasa?
+---
