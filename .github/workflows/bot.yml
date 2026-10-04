@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# Cancela automáticamente ejecuciones viejas si hacés un commit nuevo
+# Cancela automáticamente ejecuciones anteriores si hacés un nuevo commit
 concurrency:
   group: bot-telegram-session
   cancel-in-progress: true
@@ -29,12 +29,14 @@ jobs:
           sudo apt-get install -y curl build-essential
           curl -fsSL https://ollama.com/install.sh | sh
 
-      - name: Iniciar servidor Ollama y descargar Llama 3.2
+      - name: Iniciar servidor Ollama, descargar y precalentar Llama 3.2
         run: |
           ollama serve &
           echo "Esperando que Ollama inicie..."
           sleep 8
           ollama pull llama3.2
+          echo "🔥 Precalentando modelo en memoria..."
+          curl http://127.0.0.1:11434/api/generate -d '{"model": "llama3.2", "prompt": "hola", "stream": false}'
 
       - name: Instalar requerimientos de Python
         run: |
@@ -48,7 +50,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Levanta el bot con un timeout de 5 horas (18000s) para reiniciar limpiamente antes del límite de GitHub
+          # Bucle persistente que reinicia el proceso cada 5 horas (18000s) para renovar el runner
           while true; do
             echo "🚀 Lanzando Leandro Bot (Ciclo de 5 horas)..."
             timeout 18000 python procesar.py
