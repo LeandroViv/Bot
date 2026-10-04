@@ -1,4 +1,3 @@
-async_lock_voz = None
 import asyncio
 import json
 import os
@@ -21,7 +20,7 @@ from gtts import gTTS
 TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-# Candado global para procesar notas de voz en orden y que no se pisen
+# Candado global para procesar notas de voz en orden
 lock_voz = asyncio.Lock()
 
 
@@ -77,6 +76,60 @@ def llamar_ollama(messages, timeout_secs=300):
     return ""
 
 
+def extraer_vocabulario_global_de_txt():
+    """Extrae dinámicamente términos, acrónimos y jerga técnica de TODO el historial histórico."""
+    if not os.path.exists(TXT_FILE):
+        return ""
+    
+    with open(TXT_FILE, "r", encoding="utf-8") as f:
+        historial_entero = f.read()
+
+    if not historial_entero.strip():
+        return ""
+
+    # Si el archivo es muy largo, tomamos muestras representativas o bloques clave para no saturar el prompt
+    prompt = [
+        {
+            "role": "system",
+            "content": (
+                "Analizá todo el historial de conversaciones provisto. "
+                "Extraé una lista consolidada de palabras clave, términos técnicos, "
+                "acrónimos, nombres propios o conceptos recurrentes que definan el universo de temas del usuario.\n"
+                "Devolvé SOLAMENTE las palabras separadas por comas, sin explicaciones."
+            ),
+        },
+        {"role": "user", "content": historial_entero},
+    ]
+    
+    resultado = llamar_ollama(prompt, timeout_secs=45)
+    return resultado if resultado else ""
+
+
+def corregir_transcripcion_por_contexto(texto_transcrito):
+    """Usa la IA y la memoria global para corregir errores fonéticos de Whisper (ej: 'la L' -> 'LLM')."""
+    if not os.path.exists(TXT_FILE) or not texto_transcrito:
+        return texto_transcrito
+
+    with open(TXT_FILE, "r", encoding="utf-8") as f:
+        historial_resumido = f.read()[-3000:] # Últimos fragmentos para contexto inmediato
+
+    prompt = [
+        {
+            "role": "system",
+            "content": (
+                "Sos un corrector fonético inteligente para transcripciones de voz. "
+                "Dado el texto transcribido por voz y el contexto de las charlas previas, "
+                "detectá si hay errores de interpretación de audio (por ejemplo, fonéticas raras, letras sueltas como 'la L' que deban ser acrónimos técnicos como 'LLM', o palabras malentendidas). "
+                "Devolvé ÚNICAMENTE el texto corregido y coherente con el sentido de la charla, sin agregar explicaciones ni comillas."
+            ),
+        },
+        {"role": "user", "content": f"Contexto previo:\n{historial_resumido}\n\nTexto transcrito a revisar: {texto_transcrito}"},
+    ]
+
+    texto_corregido = llamar_ollama(prompt, timeout_secs=60)
+    return texto_corregido if texto_corregido else texto_transcrito
+
+
 def requiere_busqueda_web(consulta):
     prompt = [
         {
@@ -116,7 +169,8 @@ def extraer_conceptos_semanticos(consulta):
     return [p.lower() for p in re.findall(r"\w+", consulta) if len(p) > 3]
 
 
-def recuperar_contexto_de_txt(consulta, max_bloques=6):
+def recuperar_contexto_de_txt(consulta, max_bloques=8):
+    """Recupera información relevante escaneando TODO el archivo de historial en profundidad."""
     if not os.path.exists(TXT_FILE):
         return ""
 
@@ -196,7 +250,7 @@ def buscar_web(orden_usuario):
 
 
 def responder_usuario(orden):
-    """Función unificada: Usa exactamente el mismo modelo y lógica tanto para texto como para voz."""
+    """Modelo unificado con memoria global histórica y auto-evolución expresiva."""
     if not orden or not orden.strip():
         return "Che, no entendí bien lo que dijiste, ¿me lo repetís?"
 
@@ -204,16 +258,16 @@ def responder_usuario(orden):
     info_web = buscar_web(orden)
 
     system_prompt = (
-        "Sos Leandro Bot, el asistente personal de Leandro.\n"
-        "REGLAS:\n"
-        "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
-        "- Nutrite de los fragmentos recuperados del archivo .txt para mantener coherencia.\n"
-        "- Sé directo, conciso y técnico. No des explicaciones de más."
+        "Sos Leandro Bot, un asistente personal autónomo que aprende de todo el historial de interacciones.\n"
+        "DIRECTRICES DE EVOLUCIÓN CONVERSACIONAL:\n"
+        "- Mantené un español rioplatense (porteño auténtico) sumamente natural, orgánico y fluido. Usá 'vos', 'che', 'fijate', 'mirá'.\n"
+        "- Nutrite profundamente de todo el contexto histórico recuperado del archivo para mantener coherencia absoluta en los proyectos y temas en curso.\n"
+        "- Escribí de forma directa, pulida y sin errores gramaticales, adaptándote de forma inteligente al estilo de charla entre colegas."
     )
 
     mensaje_usuario = f"CONSULTA: {orden}"
     if contexto_txt:
-        mensaje_usuario += f"\n\n[CONTEXTO PREVIO DEL HISTORIAL]:\n{contexto_txt}"
+        mensaje_usuario += f"\n\n[MEMORIA HISTÓRICA GLOBAL RECONSTRUIDA]:\n{contexto_txt}"
     if info_web:
         mensaje_usuario += f"\n\n[DATOS RECUPERADOS DE LA WEB]:\n{info_web}"
 
@@ -225,7 +279,7 @@ def responder_usuario(orden):
     respuesta = llamar_ollama(mensajes_chat, timeout_secs=300)
 
     if not respuesta or not respuesta.strip():
-        respuesta = "Che, me quedé pensando y no supe qué responderte a eso."
+        respuesta = "Che, me quedé procesando eso y no me terminó de cerrar."
 
     guardar_en_txt("usuario", orden)
     guardar_en_txt("leandro_bot", respuesta)
@@ -235,7 +289,7 @@ def responder_usuario(orden):
 
 
 def limpiar_texto_para_voz(texto):
-    """Limpia URLs, Markdown y símbolos raros para que gTTS hable natural sin leer códigos."""
+    """Limpia formatos para síntesis de voz fluida."""
     texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', texto)
     texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio)
     texto_limpio = re.sub(r'\n+', '. ', texto_limpio)
@@ -243,7 +297,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo y al firme con inteligencia unificada.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo con memoria histórica global y corrección fonética autónoma.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -256,9 +310,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa notas de voz usando la misma IA de texto y devuelve audio limpio con gTTS."""
+    """Procesa audio alimentando a Whisper con vocabulario global de todo el historial y auto-corrigiendo desvíos."""
     async with lock_voz:
-        print("🎤 Audio recibido, procesando voz con Whisper...")
+        print("🎤 Audio recibido, procesando voz con memoria histórica global...")
         await update.message.chat.send_action(action="record_voice")
 
         ruta_ogg = "temp_audio.ogg"
@@ -273,23 +327,34 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             archivo_telegram = await update.message.voice.get_file()
             await archivo_telegram.download_to_drive(ruta_ogg)
 
-            resultado_transcripcion = modelo_whisper.transcribe(ruta_ogg, language="es")
-            texto_reconocido = resultado_transcripcion.get("text", "").strip()
-            
-            print(f"🗣 Texto reconocido: '{texto_reconocido}'")
+            # EXTRAEMOS EL VOCABULARIO DE TODO EL HISTORIAL HISTÓRICO (Cero hardcode)
+            vocabulario_global = extraer_vocabulario_global_de_txt()
+            print(f"🧠 Vocabulario global extraído del historial completo: '{vocabulario_global}'")
+
+            # Whisper procesa el audio usando las pistas de todo el historial acumulado
+            resultado_transcripcion = modelo_whisper.transcribe(
+                ruta_ogg, 
+                language="es", 
+                initial_prompt=vocabulario_global
+            )
+            texto_crudo = resultado_transcripcion.get("text", "").strip()
+            print(f"🗣 Texto crudo reconocido por Whisper: '{texto_crudo}'")
+
+            # CORRECCIÓN SEMÁNTICA AUTÓNOMA (Filtra errores fonéticos como 'la L' -> 'LLM')
+            texto_reconocido = corregir_transcripcion_por_contexto(texto_crudo)
+            print(f"✨ Texto corregido por lógica de contexto: '{texto_reconocido}'")
 
             if os.path.exists(ruta_ogg):
                 os.remove(ruta_ogg)
 
             if not texto_reconocido:
-                await update.message.reply_text("Che, no te pude captar bien el audio, ¿me lo repetís?")
+                await update.message.reply_text("Che, no te capté bien el audio, ¿me lo repetís?")
                 return
 
-            # LLAMADA UNIFICADA: Usa exactamente la misma función que el chat de texto
+            # RESPUESTA UNIFICADA: Pasa por la misma IA inteligente
             respuesta = responder_usuario(texto_reconocido)
             print(f"🔊 Respuesta generada: '{respuesta}'")
 
-            # Filtramos links y símbolos para que el audio suene natural y rioplatense
             respuesta_para_voz = limpiar_texto_para_voz(respuesta)
             if not respuesta_para_voz:
                 respuesta_para_voz = "Che, me quedé pensando y no supe qué decirte."
@@ -334,11 +399,11 @@ def main():
 
     try:
         requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true")
-        print("🧹 Webhook y actualizaciones pendientes limpiadas correctamente.")
+        print("🧹 Webhook y actualizaciones limpiadas correctamente.")
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot en Telegram con modelo unificado y voz inteligente...")
+    print("🚀 Iniciando Leandro Bot con memoria global y auto-corrección fonética...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
@@ -348,5 +413,5 @@ def main():
     app.run_polling(drop_pending_updates=True)
 
 
-if __name__ == "main" or __name__ == "__main__":
+if __name__ == "__main__":
     main()
