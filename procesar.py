@@ -1,90 +1,103 @@
 import os
+import json
 import requests
 from duckduckgo_search import DDGS
 
+HISTORIAL_FILE = "historial.json"
 
-# ---------------------------------------------------------
-# 1. BÚSQUEDA WEB CONDICIONAL
-# ---------------------------------------------------------
-def evaluar_y_buscar_web(orden):
-    """Busca en DuckDuckGo si detecta intención explícita en la orden."""
-    keywords = ["busc", "web", "internet", "google", "link", "repo", "url", "noticia"]
-    if not any(k in orden.lower() for k in keywords):
-        return ""
+def cargar_historial():
+    if os.path.exists(HISTORIAL_FILE):
+        try:
+            with open(HISTORIAL_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
 
-    print("🔍 Ejecutando búsqueda web en DuckDuckGo...")
-    resultados = ""
+def guardar_mensaje(rol, contenido):
+    historial = cargar_historial()
+    historial.append({"role": rol, "content": contenido})
+    # Mantener últimos 20 mensajes para no saturar el contexto
+    historial = historial[-20:]
+    with open(HISTORIAL_FILE, "w", encoding="utf-8") as f:
+        json.dump(historial, f, ensure_ascii=False, indent=2)
+
+def buscar_web(query):
     try:
         with DDGS() as ddgs:
-            res = list(ddgs.text(orden, max_results=3))
-            for r in res:
-                resultados += f"- [{r.get('title', '')}]({r.get('href', '')}): {r.get('body', '')}\n"
-    except Exception as e:
-        print(f"⚠️ Error en DuckDuckGo: {e}")
+            res = list(ddgs.text(query, max_results=3))
+            return "\n".join([f"- {r.get('title')}: {r.get('body')}" for r in res])
+    except Exception:
+        return ""
 
-    return f"\n\nINFORMACIÓN EXTRAÍDA DE LA WEB:\n{resultados}" if resultados else ""
-
-
-# ---------------------------------------------------------
-# 2. LLAMADA A OLLAMA LOCAL EN EL RUNNER
-# ---------------------------------------------------------
-def llamar_ollama_local(messages, retries=3):
-    """
-    Se conecta al servidor de Ollama corriendo en el mismo runner de GitHub Actions.
-    """
+def llamar_ollama(messages):
     url = "http://127.0.0.1:11434/api/chat"
-    headers = {"Content-Type": "application/json"}
-
-    payload = {
-        "model": "llama3.2",
-        "messages": messages,
-        "stream": False
-    }
-
-    for intento in range(retries):
-        try:
-            print(f"📡 Consultando Ollama local ({url}, intento {intento + 1}/{retries})...")
-            res = requests.post(url, json=payload, headers=headers, timeout=120)
-
-            if res.status_code == 200:
-                data = res.json()
-                if "message" in data and "content" in data["message"]:
-                    return data["message"]["content"].strip()
-
-            print(f"⚠️ Ollama devolvió status HTTP {res.status_code}: {res.text}")
-
-        except Exception as e:
-            print(f"⚠️ Excepción al conectar con Ollama: {e}")
-
+    payload = {"model": "llama3.2", "messages": messages, "stream": False}
+    try:
+        res = requests.post(url, json=payload, timeout=90)
+        if res.status_code == 200:
+            return res.json().get("message", {}).get("content", "").strip()
+    except Exception as e:
+        print(f"⚠️ Error Ollama: {e}")
     return ""
 
+def responder_usuario(orden):
+    guardar_mensaje("user", orden)
+    historial = cargar_historial()
+    
+    # Búsqueda condicional
+    info_web = ""
+    keywords = ["busc", "web", "internet", "link", "noticia", "repo"]
+    if any(k in orden.lower() for k in keywords):
+        info_web = buscar_web(orden)
 
-# ---------------------------------------------------------
-# 3. FUNCIÓN PRINCIPAL DE GENERACIÓN
-# ---------------------------------------------------------
-def generar_respuesta_llm(orden, contexto_base=""):
-    info_web = evaluar_y_buscar_web(orden)
-
-    prompt_sistema = (
+    system_prompt = (
         "Sos Leandro Bot, el asistente personal de Leandro.\n"
-        "Respondé siempre en español rioplatense natural, directo y técnicamente riguroso."
+        "Respondé siempre en español rioplatense natural, directo y técnicamente riguroso.\n"
+        "Aprendé de sus preferencias e intereses a lo largo de la conversación."
     )
-
-    if contexto_base:
-        prompt_sistema += f"\n\nCONTEXTO DE ENTRADA:\n{contexto_base}"
-
     if info_web:
-        prompt_sistema += f"\n\n{info_web}"
+        system_prompt += f"\n\nDATOS DE LA WEB:\n{info_web}"
 
-    messages = [
-        {"role": "system", "content": prompt_sistema},
-        {"role": "user", "content": orden},
-    ]
-
-    print("🧠 Generando respuesta con la IA...")
-    respuesta = llamar_ollama_local(messages)
-
-    if not respuesta:
-        print("❌ Ollama no devolvió una respuesta válida.")
-
+    messages = [{"role": "system", "content": system_prompt}] + historial
+    respuesta = llamar_ollama(messages)
+    
+    if respuesta:
+        guardar_mensaje("assistant", respuesta)
     return respuesta
+
+def evaluar_iniciativa_propia():
+    historial = cargar_historial()
+    if not historial:
+        return None
+
+    # Extraer temas de interés aprendidos de la conversación
+    prompt_analisis = [
+        {"role": "system", "content": "Extraé en 3 palabras clave los temas técnicos de interés de Leandro según el historial."},
+        {"role": "user", "content": f"Historial reciente:\n{json.dumps(historial)}"}
+    ]
+    temas = llamar_ollama(prompt_analisis)
+    if not temas:
+        return None
+
+    # Buscar novedades sobre esos temas
+    novedades = buscar_web(temas)
+    if not novedades:
+        return None
+
+    # Evaluar si realmente vale la pena molestar
+    prompt_evaluacion = [
+        {"role": "system", "content": (
+            "Sos el filtro de criterio de Leandro Bot.\n"
+            "Analizá la información encontrada. Si es de verdadero interés técnico o práctico para Leandro "
+            "según lo que viene hablando con vos, redactale un mensaje breve en español rioplatense.\n"
+            "Si la información es genérica, aburrida o no suma nada relevante, respondé estrictamente la palabra 'NO'."
+        )},
+        {"role": "user", "content": f"Intereses: {temas}\nNovedades encontradas:\n{novedades}"}
+    ]
+    
+    criterio = llamar_ollama(prompt_evaluacion)
+    if criterio and criterio.strip().upper() != "NO" and not criterio.startswith("NO"):
+        guardar_mensaje("assistant", criterio)
+        return criterio
+    return None
