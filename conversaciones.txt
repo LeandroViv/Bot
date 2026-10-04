@@ -14,3 +14,5 @@ Mirá, el mensaje de voz es el siguiente: "Hola, es Leandro. Che, necesito ayuda
 
 ¿Querés contestar por voz?
 ---
+[USUARIO]: ¿Qué? Perdón.
+---
