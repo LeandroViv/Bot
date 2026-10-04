@@ -41,3 +41,5 @@ Mirá, el mensaje de voz es el siguiente: "Hola, es Leandro. Che, necesito ayuda
 
 Fijate, estas son solo algunas de las opciones que podrías considerar. Es importante investigar y comparar las características y precios de cada herramienta para encontrar la que mejor se adapte a tus necesidades.
 ---
+[USUARIO]: Monetizar de alguna manera.
+---
