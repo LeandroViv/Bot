@@ -38,7 +38,7 @@ def llamar_ollama(messages):
 
 
 def generar_query_semantica(orden_usuario):
-    """Pide a Llama 3.2 que interprete el sentido humano de la orden y abstraiga los conceptos clave de búsqueda."""
+    """Pide a Llama 3.2 que interprete la intención real y abstraiga las palabras clave óptimas para buscar."""
     prompt = [
         {
             "role": "system",
