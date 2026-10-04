@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import re
@@ -18,6 +19,9 @@ from gtts import gTTS
 
 TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+
+# Candado global para procesar notas de voz en orden y que no se pisen
+lock_voz = asyncio.Lock()
 
 
 def sincronizar_txt_con_github():
@@ -95,7 +99,7 @@ def extraer_conceptos_semanticos(consulta):
             "role": "system",
             "content": (
                 "Sos un extractor de conceptos semánticos. Dado el mensaje de un "
-                "usuario, generá una lista de palabras clave separados por comas.\n"
+                "usuario, generá una lista de palabras clave separadas por comas.\n"
                 "Devolvé SOLAMENTE los términos, sin explicaciones."
             ),
         },
@@ -181,7 +185,7 @@ def buscar_web(orden_usuario):
             for r in res:
                 texto_resultados += (
                     f"• Título: {r.get('title')}\n  Detalle: {r.get('body')}\n  URL: {r.get('href')}\n\n"
-            )
+                )
             if texto_resultados:
                 return texto_resultados
     except Exception as e:
@@ -191,6 +195,9 @@ def buscar_web(orden_usuario):
 
 
 def responder_usuario(orden):
+    if not orden or not orden.strip():
+        return "Che, no entendí bien lo que dijiste, ¿me lo repetís?"
+
     contexto_txt = recuperar_contexto_de_txt(orden)
     info_web = buscar_web(orden)
 
@@ -199,7 +206,7 @@ def responder_usuario(orden):
         "REGLAS:\n"
         "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
         "- Nutrite de los fragmentos recuperados del archivo .txt para mantener coherencia.\n"
-        "- Sé directo, conciso y técnico."
+        "- Sé directo, conciso y técnico. No des explicaciones de más."
     )
 
     mensaje_usuario = f"CONSULTA: {orden}"
@@ -215,16 +222,18 @@ def responder_usuario(orden):
 
     respuesta = llamar_ollama(mensajes_chat, timeout_secs=300)
 
-    if respuesta:
-        guardar_en_txt("usuario", orden)
-        guardar_en_txt("leandro_bot", respuesta)
-        exportar_dataset_actualizado()
+    if not respuesta or not respuesta.strip():
+        respuesta = "Che, me quedé pensando y no supe qué responderte a eso."
+
+    guardar_en_txt("usuario", orden)
+    guardar_en_txt("leandro_bot", respuesta)
+    exportar_dataset_actualizado()
 
     return respuesta
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo y al firme.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo y al firme con voz bidireccional.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -240,58 +249,69 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Descarga nota de voz, la transcribe con Whisper, genera respuesta y la devuelve grabada en audio."""
-    print("🎤 Audio recibido, procesando voz con Whisper...")
-    await update.message.chat.send_action(action="record_voice")
+    """Procesa notas de voz en orden secuencial (lock), las transcribe, genera IA y devuelve audio."""
+    async with lock_voz:
+        print("🎤 Audio recibido, procesando voz con Whisper...")
+        await update.message.chat.send_action(action="record_voice")
 
-    ruta_ogg = "temp_audio.ogg"
-    ruta_respuesta_mp3 = "respuesta.mp3"
-    ruta_respuesta_ogg = "respuesta.ogg"
+        ruta_ogg = "temp_audio.ogg"
+        ruta_respuesta_mp3 = "respuesta.mp3"
+        ruta_respuesta_ogg = "respuesta.ogg"
+        texto_reconocido = ""
+        respuesta = ""
 
-    try:
-        # Cargamos Whisper bajo demanda para evitar bloqueos pesados al iniciar
-        modelo_whisper = whisper.load_model("base")
+        try:
+            modelo_whisper = whisper.load_model("base")
 
-        archivo_telegram = await update.message.voice.get_file()
-        await archivo_telegram.download_to_drive(ruta_ogg)
+            archivo_telegram = await update.message.voice.get_file()
+            await archivo_telegram.download_to_drive(ruta_ogg)
 
-        resultado_transcripcion = modelo_whisper.transcribe(ruta_ogg, language="es")
-        texto_reconocido = resultado_transcripcion.get("text", "").strip()
-        
-        print(f"🗣️️ Texto reconocido de la voz: '{texto_reconocido}'")
+            resultado_transcripcion = modelo_whisper.transcribe(ruta_ogg, language="es")
+            texto_reconocido = resultado_transcripcion.get("text", "").strip()
+            
+            print(f"🗣 Texto reconocido: '{texto_reconocido}'")
 
-        if os.path.exists(ruta_ogg):
-            os.remove(ruta_ogg)
+            if os.path.exists(ruta_ogg):
+                os.remove(ruta_ogg)
 
-        if not texto_reconocido:
-            await update.message.reply_text("Che, no te pude captar bien el audio, ¿me lo repetís?")
-            return
+            if not texto_reconocido:
+                await update.message.reply_text("Che, no te pude captar bien el audio, ¿me lo repetís?")
+                return
 
-        respuesta = responder_usuario(texto_reconocido)
-        if not respuesta:
-            respuesta = "Che, la consulta de voz demoró en responder."
+            respuesta = responder_usuario(texto_reconocido)
+            print(f"🔊 Respuesta generada: '{respuesta}'")
 
-        # Convertimos la respuesta de texto a voz con gTTS (español rioplatense)
-        tts = gTTS(text=respuesta, lang="es", tld="com.ar")
-        tts.save(ruta_respuesta_mp3)
+            tts = gTTS(text=respuesta, lang="es", tld="com.ar")
+            tts.save(ruta_respuesta_mp3)
 
-        # Convertimos mp3 a ogg (formato nota de voz de Telegram) usando ffmpeg
-        subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, "-c:a", "libopus", ruta_respuesta_ogg], check=True)
+            subprocess.run([
+                "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
+                "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+                ruta_respuesta_ogg
+            ], check=True)
 
-        # Enviamos la nota de voz de respuesta al usuario
-        with open(ruta_respuesta_ogg, "rb") as voice_file:
-            await update.message.reply_voice(voice=voice_file, caption=f"*(Entendido: \"{texto_reconocido}\")*")
+            with open(ruta_respuesta_ogg, "rb") as voice_file:
+                await update.message.reply_voice(
+                    voice=voice_file, 
+                    caption=f"*(Entendido: \"{texto_reconocido}\")*"
+                )
 
-        for archivo in [ruta_respuesta_mp3, ruta_respuesta_ogg]:
-            if os.path.exists(archivo):
-                os.remove(archivo)
+            print("✅ Nota de voz de respuesta enviada con éxito.")
 
-    except Exception as e:
-        print(f"⚠️ Error procesando el audio: {e}")
-        for archivo in [ruta_ogg, ruta_respuesta_mp3, ruta_respuesta_ogg]:
-            if os.path.exists(archivo):
-                os.remove(archivo)
-        await update.message.reply_text("Che, se me armó un lío procesando el audio.")
+        except Exception as e:
+            print(f"⚠️ Error procesando el audio: {e}")
+            try:
+                await update.message.reply_text(f"*(Entendido: \"{texto_reconocido}\")*\n\n{respuesta}")
+            except:
+                await update.message.reply_text("Che, se me armó un lío procesando el audio.")
+
+        finally:
+            for archivo in [ruta_ogg, ruta_respuesta_mp3, ruta_respuesta_ogg]:
+                if os.path.exists(archivo):
+                    try:
+                        os.remove(archivo)
+                    except:
+                        pass
 
 
 def main():
@@ -299,14 +319,13 @@ def main():
         print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN.")
         return
 
-    # Limpieza estricta de webhooks previos para evitar el error de conflicto
     try:
         requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true")
         print("🧹 Webhook y actualizaciones pendientes limpiadas correctamente.")
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot en Telegram (modo voz bidireccional)...")
+    print("🚀 Iniciando Leandro Bot en Telegram con soporte de voz completo...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
