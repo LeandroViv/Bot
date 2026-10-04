@@ -9,7 +9,8 @@ GH_PAT = os.environ.get("GH_PAT")
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")
 
 TIEMPO_MAXIMO_SEGUNDOS = 5 * 3600  # 5 horas
-INTERVALO_INICIATIVA = 30 * 60     # Evalúa iniciativa propia cada 30 min
+INTERVALO_INICIATIVA = 30 * 60     # Evalúa cada 30 minutos
+
 
 def enviar_telegram(chat_id, texto):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -22,6 +23,7 @@ def enviar_telegram(chat_id, texto):
     except Exception as e:
         print(f"⚠️ Error Telegram: {e}")
 
+
 def obtener_updates(offset):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
     params = {"offset": offset, "timeout": 20}
@@ -33,16 +35,23 @@ def obtener_updates(offset):
         pass
     return []
 
+
 def gatillar_reenganche():
     if not GH_PAT or not GITHUB_REPOSITORY:
+        print("❌ No se puede reenganchar: faltan GH_PAT o GITHUB_REPOSITORY.")
         return
     url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/dispatches"
     headers = {"Authorization": f"Bearer {GH_PAT}", "Accept": "application/vnd.github.v3+json"}
     payload = {"event_type": "reenganche-bot"}
     try:
-        requests.post(url, json=payload, headers=headers, timeout=15)
+        res = requests.post(url, json=payload, headers=headers, timeout=15)
+        if res.status_code == 204:
+            print("🔄 Reenganche solicitado exitosamente a la API de GitHub.")
+        else:
+            print(f"⚠️ Error al reenganchar HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print(f"⚠️ Error reenganche: {e}")
+        print(f"⚠️ Excepción al solicitar reenganche: {e}")
+
 
 def main():
     inicio = time.time()
@@ -65,7 +74,6 @@ def main():
                 if respuesta:
                     enviar_telegram(CHAT_ID, respuesta)
 
-        # Chequeo con criterio humano en segundo plano
         if (time.time() - ultimo_chequeo_iniciativa) > INTERVALO_INICIATIVA:
             print("🧠 Analizando si hay alguna novedad relevante para Leandro...")
             mensaje_propio = evaluar_iniciativa_propia()
@@ -79,6 +87,7 @@ def main():
         time.sleep(2)
 
     gatillar_reenganche()
+
 
 if __name__ == "__main__":
     main()
