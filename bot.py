@@ -1,93 +1,59 @@
 import os
 import time
 import requests
-from procesar import responder_usuario, evaluar_iniciativa_propia
+from procesar import responder_usuario
 
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-CHAT_ID = str(os.environ.get("CHAT_ID"))
-GH_PAT = os.environ.get("GH_PAT")
-GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")
-
-TIEMPO_MAXIMO_SEGUNDOS = 5 * 3600  # 5 horas
-INTERVALO_INICIATIVA = 30 * 60     # Evalúa cada 30 minutos
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID_AUTORIZADO = str(os.getenv("CHAT_ID", ""))
 
 
-def enviar_telegram(chat_id, texto):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": texto, "parse_mode": "Markdown"}
+def obtener_mensajes(offset=None):
+    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+    params = {"timeout": 30, "offset": offset}
     try:
-        res = requests.post(url, json=payload, timeout=15)
-        if res.status_code != 200:
-            payload.pop("parse_mode")
-            requests.post(url, json=payload, timeout=15)
-    except Exception as e:
-        print(f"⚠️ Error Telegram: {e}")
-
-
-def obtener_updates(offset):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
-    params = {"offset": offset, "timeout": 20}
-    try:
-        res = requests.get(url, params=params, timeout=25)
+        res = requests.get(url, params=params, timeout=35)
         if res.status_code == 200:
             return res.json().get("result", [])
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error de conexión con Telegram: {e}")
     return []
 
 
-def gatillar_reenganche():
-    if not GH_PAT or not GITHUB_REPOSITORY:
-        print("❌ No se puede reenganchar: faltan GH_PAT o GITHUB_REPOSITORY.")
-        return
-    url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/dispatches"
-    headers = {"Authorization": f"Bearer {GH_PAT}", "Accept": "application/vnd.github.v3+json"}
-    payload = {"event_type": "reenganche-bot"}
+def enviar_mensaje(chat_id, texto):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {"chat_id": chat_id, "text": texto}
     try:
-        res = requests.post(url, json=payload, headers=headers, timeout=15)
-        if res.status_code == 204:
-            print("🔄 Reenganche solicitado exitosamente a la API de GitHub.")
-        else:
-            print(f"⚠️ Error al reenganchar HTTP {res.status_code}: {res.text}")
+        requests.post(url, json=payload, timeout=10)
     except Exception as e:
-        print(f"⚠️ Excepción al solicitar reenganche: {e}")
+        print(f"Error al enviar mensaje: {e}")
 
 
-def main():
-    inicio = time.time()
-    ultimo_chequeo_iniciativa = time.time()
-    offset = 0
-    print("🚀 Bot iniciado con criterio de iniciativa por relevancia...")
+def iniciar_bot():
+    print("🤖 Bot iniciado y escuchando en bucle...")
+    offset = None
 
-    while (time.time() - inicio) < TIEMPO_MAXIMO_SEGUNDOS:
-        updates = obtener_updates(offset)
+    while True:
+        actualizaciones = obtener_mensajes(offset)
+        for act in actualizaciones:
+            offset = act["update_id"] + 1
+            mensaje = act.get("message", {})
+            text = mensaje.get("text", "")
+            chat_id = str(mensaje.get("chat", {}).get("id", ""))
 
-        for u in updates:
-            offset = u["update_id"] + 1
-            mensaje = u.get("message", {})
-            texto = mensaje.get("text", "")
-            id_chat = str(mensaje.get("chat", {}).get("id", ""))
+            # Filtro por CHAT_ID si está configurado
+            if CHAT_ID_AUTORIZADO and chat_id != CHAT_ID_AUTORIZADO:
+                continue
 
-            if texto and id_chat == CHAT_ID:
-                print(f"📩 Mensaje recibido: {texto}")
-                respuesta = responder_usuario(texto)
+            if text:
+                print(f"📩 Procesando orden: {text}")
+                print("🧠 Generando respuesta con la IA...")
+                respuesta = responder_usuario(text)
                 if respuesta:
-                    enviar_telegram(CHAT_ID, respuesta)
+                    print("📤 Enviando respuesta a Telegram...")
+                    enviar_mensaje(chat_id, respuesta)
 
-        if (time.time() - ultimo_chequeo_iniciativa) > INTERVALO_INICIATIVA:
-            print("🧠 Analizando si hay alguna novedad relevante para Leandro...")
-            mensaje_propio = evaluar_iniciativa_propia()
-            if mensaje_propio:
-                print("💡 Criterio positivo: enviando aporte de iniciativa propia.")
-                enviar_telegram(CHAT_ID, mensaje_propio)
-            else:
-                print("💤 Nada verdaderamente relevante por ahora. Silencio.")
-            ultimo_chequeo_iniciativa = time.time()
-
-        time.sleep(2)
-
-    gatillar_reenganche()
+        time.sleep(1)
 
 
 if __name__ == "__main__":
-    main()
+    iniciar_bot()
