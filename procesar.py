@@ -20,17 +20,16 @@ def cargar_historial():
 def guardar_mensaje(rol, contenido):
     historial = cargar_historial()
     historial.append({"role": rol, "content": contenido})
-    historial = historial[-20:]  # Mantener últimos 20 mensajes
+    historial = historial[-20:]
     with open(HISTORIAL_FILE, "w", encoding="utf-8") as f:
         json.dump(historial, f, ensure_ascii=False, indent=2)
 
 
 def buscar_web(query):
-    """Busca con DDGS y si es bloqueado por rate-limit usa un fallback a DDG Lite."""
     print(f"🔍 Ejecutando búsqueda web para: '{query}'...")
     texto_resultados = ""
 
-    # Intento 1: Librería principal
+    # Intento 1: DuckDuckGo Search API
     try:
         with DDGS() as ddgs:
             res = list(ddgs.text(query, max_results=4))
@@ -39,9 +38,9 @@ def buscar_web(query):
             if texto_resultados:
                 return texto_resultados
     except Exception as e:
-        print(f"⚠️ DDGS falló o fue bloqueado: {e}. Probando respaldo Lite...")
+        print(f"⚠️ DDGS falló o sufrió rate-limit: {e}. Probando respaldo Lite...")
 
-    # Intento 2: Fallback HTML Lite (Inmune a la mayoría de rate-limits de IPs públicas)
+    # Intento 2: Fallback BeautifulSoup (DDG Lite)
     try:
         url = "https://lite.duckduckgo.com/lite/"
         headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
@@ -73,17 +72,14 @@ def responder_usuario(orden):
     guardar_mensaje("user", orden)
     historial = cargar_historial()
 
-    # 1. Obtener datos web
     info_web = buscar_web(orden)
 
-    # 2. System prompt estricto
     system_prompt = (
         "Sos Leandro Bot, el asistente personal de Leandro.\n"
         "Hablá siempre en español rioplatense, de forma directa, natural y técnicamente rigurosa.\n"
         "REGLA PROHIBIDA: NUNCA digas que no podés buscar en internet, que sos un modelo sin acceso a la red o que tu corte de entrenamiento fue en 2024. Respondé SIEMPRE la pregunta directo."
     )
 
-    # 3. Formatear mensaje del usuario con la info pegada directo
     if info_web:
         mensaje_usuario_con_contexto = (
             f"{orden}\n\n"
@@ -95,7 +91,6 @@ def responder_usuario(orden):
     else:
         mensaje_usuario_con_contexto = orden
 
-    # Armar historial excluyendo el último mensaje para poner la versión inyectada
     mensajes_chat = [{"role": "system", "content": system_prompt}]
     for m in historial[:-1]:
         mensajes_chat.append(m)
