@@ -10,7 +10,7 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
 
-    # 🔑 PERMISOS DE ESCRITURA OBLIGATORIOS PARA EL GIT PUSH DEL .TXT
+    # 🔑 Permisos de escritura obligatorios para el git push del .txt
     permissions:
       contents: write
 
@@ -23,6 +23,10 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Instalar dependencias del sistema (FFmpeg para procesar audios)
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Instalar Ollama y dependencias del sistema
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
@@ -30,10 +34,10 @@ jobs:
           sleep 5
           ollama pull llama3.2
 
-      - name: Instalar librerías de Python
+      - name: Instalar librerías de Python (incluyendo Whisper y sonido)
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub
+          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile
 
       - name: Ejecutar el Bot
         env:
