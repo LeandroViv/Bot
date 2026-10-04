@@ -2,16 +2,14 @@ name: Leandro Bot 24/7
 
 on:
   schedule:
-    # Se ejecuta automáticamente cada 4 horas para mantenerlo vivo
     - cron: '0 */4 * * *'
   push:
-    # Cada vez que subas código nuevo, se dispara solo
     branches:
       - main
       - master
-  workflow_dispatch: # Para lanzarlo a mano cuando quieras
+  workflow_dispatch:
 
-# 🔑 ESTO ES LO QUE HACE LA MAGIA: Cancela los workflows anteriores en curso
+# Cancela ejecuciones viejas automáticamente al hacer git push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
