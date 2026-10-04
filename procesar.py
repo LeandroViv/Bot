@@ -12,7 +12,7 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 
 def guardar_en_txt(rol, texto):
-    """Guarda todo el historial en un archivo .txt plano de forma indefinida."""
+    """Guarda el historial en un archivo .txt plano sin límites de retención."""
     with open(TXT_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{rol.upper()}]: {texto}\n---\n")
 
@@ -23,7 +23,8 @@ def llamar_ollama(messages, timeout_secs=300):
         "model": "llama3.2",
         "messages": messages,
         "options": {
-            "num_ctx": 32768  # Ventana de contexto completa
+            "num_ctx": 16384,
+            "temperature": 0.7
         },
         "stream": False,
     }
@@ -36,7 +37,7 @@ def llamar_ollama(messages, timeout_secs=300):
     except Exception as e:
         print(f"⚠️ Error conectando con Ollama: {e}")
 
-    # Reintento directo en caso de microcorte
+    # Reintento directo en caso de fallo momentáneo
     try:
         print("🔄 Reintentando llamada a Ollama...")
         res = requests.post(url, json=payload, timeout=timeout_secs)
@@ -51,7 +52,7 @@ def llamar_ollama(messages, timeout_secs=300):
 def extraer_conceptos_semanticos(consulta):
     """
     Expande la consulta del usuario a términos conceptuales y sinónimos 
-    para buscar por sentido en TODO el .txt.
+    para buscar por sentido en todo el .txt.
     """
     prompt = [
         {
@@ -74,10 +75,10 @@ def extraer_conceptos_semanticos(consulta):
     return [p.lower() for p in re.findall(r'\w+', consulta) if len(p) > 3]
 
 
-def recuperar_contexto_de_txt(consulta, max_bloques=8):
+def recuperar_contexto_de_txt(consulta, max_bloques=6):
     """
-    Escanea TODO el archivo conversaciones.txt sin importar cuán viejo sea
-    y extrae los bloques con mayor relevancia por sentido.
+    Escanea TODO el archivo conversaciones.txt sin importar su antigüedad,
+    evitando duplicados y recuperando bloques con alta relevancia semántica.
     """
     if not os.path.exists(TXT_FILE):
         return ""
@@ -103,14 +104,23 @@ def recuperar_contexto_de_txt(consulta, max_bloques=8):
 
     # Ordenar por máxima coincidencia conceptual
     bloques_puntuados.sort(key=lambda x: x[0], reverse=True)
-    top_bloques = [b[1] for b in bloques_puntuados[:max_bloques]]
+
+    # Filtrar duplicados
+    top_bloques = []
+    vistos = set()
+    for _, b in bloques_puntuados:
+        if b not in vistos:
+            top_bloques.append(b)
+            vistos.add(b)
+        if len(top_bloques) >= max_bloques:
+            break
 
     return "\n\n".join(top_bloques)
 
 
 def generar_query_semantica(orden_usuario):
     """
-    Lee el archivo .txt COMPLETO para resolver 'eso', 'aquello' o referencias históricas.
+    Lee el historial COMPLETO para resolver 'eso', 'aquello' o referencias pasadas.
     """
     historial_completo = ""
     if os.path.exists(TXT_FILE):
@@ -182,7 +192,7 @@ def responder_usuario(orden):
         "REGLAS:\n"
         "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
         "- Nutrite de los fragmentos de conversaciones pasadas recuperados semánticamente por sentido del archivo .txt para responder.\n"
-        "- Sé directo, conciso y técnico."
+        "- Sé directo, conciso y técnico. Evitá repetir introducciones o volver a decir exactamente lo mismo que en mensajes anteriores."
     )
 
     mensaje_usuario = f"CONSULTA: {orden}"
@@ -225,6 +235,13 @@ def main():
     if not TOKEN:
         print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN.")
         return
+
+    # Limpieza previa del webhook de Telegram
+    try:
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook")
+        print("🧹 Webhook previo eliminado correctamente.")
+    except Exception as e:
+        print(f"⚠️ No se pudo eliminar el webhook: {e}")
 
     print("🚀 Iniciando Leandro Bot en Telegram...")
     app = Application.builder().token(TOKEN).build()
