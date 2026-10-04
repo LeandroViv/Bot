@@ -17,18 +17,18 @@ def guardar_en_txt(rol, texto):
         f.write(f"[{rol.upper()}]: {texto}\n---\n")
 
 
-def llamar_ollama(messages):
+def llamar_ollama(messages, timeout_secs=300):
     url = "http://127.0.0.1:11434/api/chat"
     payload = {
         "model": "llama3.2",
         "messages": messages,
         "options": {
-            "num_ctx": 32768
+            "num_ctx": 32768  # Contexto amplio y completo
         },
         "stream": False,
     }
     try:
-        res = requests.post(url, json=payload, timeout=90)
+        res = requests.post(url, json=payload, timeout=timeout_secs)
         if res.status_code == 200:
             return res.json().get("message", {}).get("content", "").strip()
     except Exception as e:
@@ -38,35 +38,33 @@ def llamar_ollama(messages):
 
 def extraer_conceptos_semanticos(consulta):
     """
-    Expande la consulta del usuario a términos conceptuales, sinónimos y temas relacionados
-    para poder hacer match por sentido dentro del .txt.
+    Expande la consulta del usuario a términos conceptuales y sinónimos 
+    para buscar por sentido en todo el .txt.
     """
     prompt = [
         {
             "role": "system",
             "content": (
                 "Sos un extractor de conceptos semánticos. Dado el mensaje de un usuario, generá una lista "
-                "de 5 a 10 palabras o conceptos clave relacionados (incluyendo sinónimos, nombres propios, "
-                "categorías o términos afines) para buscar por sentido en un historial de chat.\n"
+                "de 5 a 10 palabras o conceptos clave relacionados (incluyendo sinónimos, categorías o términos afines) "
+                "para buscar por sentido en un historial de chat.\n"
                 "Devolvé SOLAMENTE los términos separados por comas, sin explicaciones."
             ),
         },
         {"role": "user", "content": f"Mensaje del usuario: {consulta}"},
     ]
-    respuesta = llamar_ollama(prompt)
+    respuesta = llamar_ollama(prompt, timeout_secs=120)
     if respuesta:
         conceptos = [c.strip().lower() for c in respuesta.replace("\n", "").split(",") if len(c.strip()) > 2]
         print(f"🔍 Conceptos semánticos expandidos -> {conceptos}")
         return conceptos
     
-    # Fallback básico si Ollama no responde la expansión
     return [p.lower() for p in re.findall(r'\w+', consulta) if len(p) > 3]
 
 
 def recuperar_contexto_de_txt(consulta, max_bloques=8):
     """
-    Busca dentro de TODO conversaciones.txt los fragmentos con mayor relevancia por sentido/concepto,
-    sin importar si usan exactamente las mismas palabras o cuán viejos sean.
+    Busca dentro de TODO conversaciones.txt los fragmentos con mayor relevancia por sentido.
     """
     if not os.path.exists(TXT_FILE):
         return ""
@@ -79,13 +77,10 @@ def recuperar_contexto_de_txt(consulta, max_bloques=8):
     if not bloques_validos:
         return ""
 
-    # 1. Obtener conceptos y sinónimos vía Ollama
     conceptos = extraer_conceptos_semanticos(consulta)
-
     if not conceptos:
         return ""
 
-    # 2. Puntuar cada bloque de TODO el archivo según la presencia de esos conceptos
     bloques_puntuados = []
     for b in bloques_validos:
         b_lower = b.lower()
@@ -93,17 +88,16 @@ def recuperar_contexto_de_txt(consulta, max_bloques=8):
         if coincidencias > 0:
             bloques_puntuados.append((coincidencias, b))
 
-    # Ordenar por relevancia conceptual
     bloques_puntuados.sort(key=lambda x: x[0], reverse=True)
-
-    # Extraer los bloques más afines al sentido de la consulta
     top_bloques = [b[1] for b in bloques_puntuados[:max_bloques]]
 
     return "\n\n".join(top_bloques)
 
 
 def generar_query_semantica(orden_usuario):
-    """Lee el archivo .txt COMPLETO para resolver pronombres e indirectas en búsquedas web."""
+    """
+    Lee el archivo .txt COMPLETO sin recortes para resolver referencias y pronombres.
+    """
     historial_completo = ""
     if os.path.exists(TXT_FILE):
         with open(TXT_FILE, "r", encoding="utf-8") as f:
@@ -126,7 +120,7 @@ def generar_query_semantica(orden_usuario):
             "content": f"HISTORIAL COMPLETO DEL .TXT:\n{historial_completo}\n\nCONSULTA ACTUAL: {orden_usuario}",
         },
     ]
-    query = llamar_ollama(prompt)
+    query = llamar_ollama(prompt, timeout_secs=120)
     query_limpia = query.replace('"', "").replace("'", "").strip() if query else orden_usuario
     print(f"🧠 Búsqueda web semántica sobre TODO el .txt -> '{query_limpia}'")
     return query_limpia
@@ -166,7 +160,6 @@ def buscar_web(orden_usuario):
 
 
 def responder_usuario(orden):
-    # Recuperación semántica por sentido
     contexto_txt = recuperar_contexto_de_txt(orden)
     info_web = buscar_web(orden)
 
@@ -174,13 +167,13 @@ def responder_usuario(orden):
         "Sos Leandro Bot, el asistente personal de Leandro.\n"
         "REGLAS:\n"
         "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
-        "- Nutrite de los fragmentos de conversaciones pasadas recuperados semánticamente por sentido del archivo .txt para responder.\n"
+        "- Nutrite de los fragmentos de conversaciones pasadas recuperados semánticamente del archivo .txt para responder.\n"
         "- Sé directo, conciso y técnico."
     )
 
     mensaje_usuario = f"CONSULTA: {orden}"
     if contexto_txt:
-        mensaje_usuario += f"\n\n[FRAGMENTOS EXTRAÍDOS POR SENTIDO/CONCEPTO DEL HISTORIAL .TXT]:\n{contexto_txt}"
+        mensaje_usuario += f"\n\n[FRAGMENTOS EXTRAÍDOS DEL HISTORIAL .TXT]:\n{contexto_txt}"
     if info_web:
         mensaje_usuario += f"\n\n[DATOS RECUPERADOS DE LA WEB]:\n{info_web}"
 
@@ -189,7 +182,7 @@ def responder_usuario(orden):
         {"role": "user", "content": mensaje_usuario},
     ]
 
-    respuesta = llamar_ollama(mensajes_chat)
+    respuesta = llamar_ollama(mensajes_chat, timeout_secs=300)
 
     if respuesta:
         guardar_en_txt("usuario", orden)
@@ -199,7 +192,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo con búsqueda conceptual y de sentido en el .txt.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo y listo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -209,7 +202,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     respuesta = responder_usuario(texto_usuario)
     if not respuesta:
-        respuesta = "Che, se me complicó la respuesta con Ollama, pero acá sigo activo."
+        respuesta = "Che, se me complicó la respuesta con Ollama por tiempo, pero acá sigo activo."
 
     await update.message.reply_text(respuesta)
 
