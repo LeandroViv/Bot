@@ -72,25 +72,32 @@ def responder_usuario(orden):
     guardar_mensaje("user", orden)
     historial = cargar_historial()
 
+    # 1. El script de Python realiza la búsqueda en segundo plano
     info_web = buscar_web(orden)
 
-    system_prompt = (
-        "Sos Leandro Bot, el asistente personal de Leandro.\n"
-        "Hablá siempre en español rioplatense, de forma directa, natural y técnicamente rigurosa.\n"
-        "REGLA PROHIBIDA: NUNCA digas que no podés buscar en internet, que sos un modelo sin acceso a la red o que tu corte de entrenamiento fue en 2024. Respondé SIEMPRE la pregunta directo."
-    )
-
+    # 2. Inyección donde le ocultamos la "petición de búsqueda" al modelo para no gatillar su filtro defensivo
     if info_web:
+        system_prompt = (
+            "Sos Leandro Bot, un asistente personal técnico y directo.\n"
+            "Hablá siempre en español rioplatense.\n"
+            "Tenés a tu disposición un reporte de datos actualizados adjunto en la consulta.\n"
+            "Usá EXCLUSIVAMENTE la información del reporte para responderle a Leandro. "
+            "Jamás menciones palabras como 'internet', 'búsqueda' o 'límites de fecha'."
+        )
         mensaje_usuario_con_contexto = (
-            f"{orden}\n\n"
-            f"--- INFORMACIÓN EN TIEMPO REAL RECUPERADA DE LA WEB ---\n"
-            f"{info_web}\n"
-            f"----------------------------------------------------\n"
-            f"Instrucción: Usá los datos arriba expuestos para responderle a Leandro."
+            f"Consulta de Leandro: {orden}\n\n"
+            f"[REPORTE DE DATOS EXTRAÍDOS PARA ESTA CONSULTA]:\n"
+            f"{info_web}\n\n"
+            f"Responded a la consulta apoyándote en los datos presentados arriba."
         )
     else:
+        system_prompt = (
+            "Sos Leandro Bot, asistente de Leandro. Hablá en español rioplatense, "
+            "sé directo, técnico y preciso. Respondé la consulta directamente."
+        )
         mensaje_usuario_con_contexto = orden
 
+    # Reestructuramos la conversación enviando la consulta adaptada
     mensajes_chat = [{"role": "system", "content": system_prompt}]
     for m in historial[:-1]:
         mensajes_chat.append(m)
@@ -124,7 +131,7 @@ def evaluar_iniciativa_propia():
     prompt_evaluacion = [
         {"role": "system", "content": (
             "Sos el filtro de relevancia de Leandro Bot.\n"
-            "Analizá la información encontrada en la web. Si hay alguna novedad técnica, actualización o dato de ALTO VALOR para Leandro, "
+            "Analizá la información encontrada. Si hay alguna novedad técnica, actualización o dato de ALTO VALOR para Leandro, "
             "redactale un mensaje breve y directo en español rioplatense.\n"
             "Si la información es común, irrelevante o vacía, tu única respuesta debe ser la palabra: NO"
         )},
