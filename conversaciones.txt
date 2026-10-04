@@ -24,3 +24,20 @@ Mirá, el mensaje de voz es el siguiente: "Hola, es Leandro. Che, necesito ayuda
 ---
 [USUARIO]: necesitaba que me cuente salgo acerca de implementaciones, el LM, en apps y esas cosas si me lo puedo buscar en la web.
 ---
+[LEANDRO_BOT]: Mirá, si estás buscando herramientas para extraer palabras clave, hay algunas opciones que podrías considerar. Aquí te cuento sobre algunas de ellas:
+
+**Extractor de palabras clave con IA**
+
+* WordCount (https://wordcount.com/es/keyword-extractor): es un extractor de palabras clave con IA que te permite extraer las palabras clave y frases más importantes de cualquier texto. No se almacena nunca la información.
+* Ahrefs (https://ahrefs.com/es/keyword-generator): es un generador de palabras clave con IA que te permite generar cientos de ideas de palabras clave gratuitas para Google, Bing, YouTube y Amazon.
+
+**Keywords Explorer de Ahrefs**
+
+* Ahrefs (https://ahrefs.com/es/keywords-explorer): es una herramienta que te permite acceder a 28.700 millones de temas para investigación de palabras clave, generar miles de ideas de palabras clave y agruparlas de forma instantánea. También te ofrece métricas fiables para elegir las palabras clave que mejor te servirán.
+
+**Investigación de Palabras Clave**
+
+* Josegaspard (https://josegaspard.dev/blog/keyword-research-guia-investigacion/): es una guía paso a paso para investigar palabras clave, incluyendo herramientas gratuitas, cómo leer el volumen y la dificultad, y en qué orden atacarlas.
+
+Fijate, estas son solo algunas de las opciones que podrías considerar. Es importante investigar y comparar las características y precios de cada herramienta para encontrar la que mejor se adapte a tus necesidades.
+---
