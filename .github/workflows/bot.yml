@@ -1,18 +1,18 @@
-name: Leandro Bot 24/7 Continuo
+name: Leandro Bot 24/7
 
 on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-# Cancela ejecuciones viejas para evitar conflictos de múltiples bots
-concurrency:
-  group: bot-telegram-session
-  cancel-in-progress: true
+  schedule:
+    # Reinicia el runner cada 5 horas para mantener el bucle activo de forma indefinida
+    - cron: '0 */5 * * *'
+  workflow_dispatch: # Permite iniciarlo manualmente desde GitHub cuando quieras
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+
+    # 🔑 PERMISOS DE ESCRITURA OBLIGATORIOS PARA EL GIT PUSH DEL .TXT
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout del repositorio
@@ -23,37 +23,23 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar dependencias del sistema y Ollama
+      - name: Instalar Ollama y dependencias del sistema
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl build-essential
           curl -fsSL https://ollama.com/install.sh | sh
-
-      - name: Iniciar servidor Ollama, descargar y precalentar Llama 3.2
-        run: |
-          ollama serve &
-          echo "Esperando que Ollama inicie..."
-          sleep 8
+          nohup ollama serve > ollama.log 2>&1 &
+          sleep 5
           ollama pull llama3.2
-          echo "🔥 Precalentando modelo en memoria..."
-          curl http://127.0.0.1:11434/api/generate -d '{"model": "llama3.2", "prompt": "hola", "stream": false}'
 
-      - name: Instalar requerimientos de Python (usando paquete actualizado ddgs)
+      - name: Instalar librerías de Python
         run: |
-          pip install --upgrade pip
-          pip install python-telegram-bot requests beautifulsoup4 ddgs
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub
 
-      - name: Sincronizar memoria e iniciar Bot 24/7 (Reconexión cada 5h)
+      - name: Ejecutar el Bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: ${{ secrets.HF_DATASET_REPO }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Bucle que reinicia el proceso cada 5 horas (18000s) para renovar el runner
-          while true; do
-            echo "🚀 Lanzando Leandro Bot (Ciclo de 5 horas)..."
-            timeout 18000 python procesar.py
-            echo "🔄 Pasaron 5 horas o el script se detuvo. Reiniciando en 5 segundos..."
-            sleep 5
-          done
+          python procesar.py
