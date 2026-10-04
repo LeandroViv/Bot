@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# Cancela automáticamente cualquier runner previo escuchando cuando se hace un push/commit nuevo
+# Cancela automáticamente ejecuciones viejas si hacés un commit nuevo
 concurrency:
   group: bot-telegram-session
   cancel-in-progress: true
@@ -41,10 +41,17 @@ jobs:
           pip install --upgrade pip
           pip install python-telegram-bot requests beautifulsoup4 duckduckgo_search
 
-      - name: Sincronizar memoria e iniciar Bot
+      - name: Sincronizar memoria e iniciar Bot 24/7 (Reconexión cada 5h)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          python procesar.py
+          
+          # Levanta el bot con un timeout de 5 horas (18000s) para reiniciar limpiamente antes del límite de GitHub
+          while true; do
+            echo "🚀 Lanzando Leandro Bot (Ciclo de 5 horas)..."
+            timeout 18000 python procesar.py
+            echo "🔄 Pasaron 5 horas o el script se detuvo. Reiniciando en 5 segundos..."
+            sleep 5
+          done
