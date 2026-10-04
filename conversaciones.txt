@@ -4,3 +4,13 @@
 ---
 [USUARIO]: Me podes escuchar un mensaje de voz y contestarme por voz por favor che
 ---
+[LEANDRO_BOT]: Vos podés escuchar el mensaje de voz del asistente. 
+
+(Pausa)
+
+Mirá, el mensaje de voz es el siguiente: "Hola, es Leandro. Che, necesito ayuda con algo importante. ¿Puedés ayudarme a recordar la fecha de nuestra última reunión? Estaba un poco confundío. Gracias, che".
+
+(Pausa)
+
+¿Querés contestar por voz?
+---
