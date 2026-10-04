@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# Cancela ejecuciones viejas para que no se encimen los procesos del bot
+# Cancela ejecuciones viejas para evitar conflictos de múltiples bots
 concurrency:
   group: bot-telegram-session
   cancel-in-progress: true
@@ -38,10 +38,10 @@ jobs:
           echo "🔥 Precalentando modelo en memoria..."
           curl http://127.0.0.1:11434/api/generate -d '{"model": "llama3.2", "prompt": "hola", "stream": false}'
 
-      - name: Instalar requerimientos de Python
+      - name: Instalar requerimientos de Python (usando paquete actualizado ddgs)
         run: |
           pip install --upgrade pip
-          pip install python-telegram-bot requests beautifulsoup4 duckduckgo_search
+          pip install python-telegram-bot requests beautifulsoup4 ddgs
 
       - name: Sincronizar memoria e iniciar Bot 24/7 (Reconexión cada 5h)
         env:
@@ -50,7 +50,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Bucle que reinicia el proceso cada 5 horas (18000s) para evitar el timeout del runner
+          # Bucle que reinicia el proceso cada 5 horas (18000s) para renovar el runner
           while true; do
             echo "🚀 Lanzando Leandro Bot (Ciclo de 5 horas)..."
             timeout 18000 python procesar.py
