@@ -18,3 +18,5 @@ Mirá, el mensaje de voz es el siguiente: "Hola, es Leandro. Che, necesito ayuda
 ---
 [LEANDRO_BOT]: SOS: Che, ¿qué onda? ¿Qué problema le pasó para que venga a consultá? ¿Es algo con el computador o con la vida?
 ---
+[USUARIO]: Estas ahí respondeme
+---
