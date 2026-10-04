@@ -15,6 +15,7 @@ SYSTEM_PROMPT = (
 
 def generar_y_subir_dataset():
     if not os.path.exists(TXT_FILE):
+        print(f"❌ No existe {TXT_FILE}")
         return
 
     with open(TXT_FILE, "r", encoding="utf-8") as f:
@@ -50,7 +51,6 @@ def generar_y_subir_dataset():
 
     print(f"✅ Dataset local preparado: {len(ejemplos)} interacciones.")
 
-    # Subida automática a Hugging Face
     if HF_TOKEN and HF_REPO:
         try:
             api = HfApi()
