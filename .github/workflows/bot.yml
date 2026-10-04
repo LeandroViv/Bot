@@ -1,1 +1,44 @@
+name: Ejecutar Leandro Bot
 
+on:
+  workflow_dispatch:
+    inputs:
+      orden:
+        description: 'Orden o consulta para el bot'
+        required: true
+        default: 'Hola, dame un resumen del día'
+  schedule:
+    - cron: '0 12 * * *'
+
+jobs:
+  procesar-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias de Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests duckduckgo_search
+
+      - name: Instalar e Iniciar Ollama en el Runner
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 5
+          ollama pull llama3.2
+
+      - name: Ejecutar Bot
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          ORDEN_USUARIO: ${{ github.event.inputs.orden }}
+        run: |
+          python bot.py
