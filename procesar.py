@@ -23,23 +23,35 @@ def llamar_ollama(messages, timeout_secs=300):
         "model": "llama3.2",
         "messages": messages,
         "options": {
-            "num_ctx": 32768  # Contexto amplio y completo
+            "num_ctx": 32768  # Ventana de contexto completa
         },
         "stream": False,
     }
     try:
         res = requests.post(url, json=payload, timeout=timeout_secs)
         if res.status_code == 200:
-            return res.json().get("message", {}).get("content", "").strip()
+            contenido = res.json().get("message", {}).get("content", "").strip()
+            if contenido:
+                return contenido
     except Exception as e:
         print(f"⚠️ Error conectando con Ollama: {e}")
+
+    # Reintento directo en caso de microcorte
+    try:
+        print("🔄 Reintentando llamada a Ollama...")
+        res = requests.post(url, json=payload, timeout=timeout_secs)
+        if res.status_code == 200:
+            return res.json().get("message", {}).get("content", "").strip()
+    except Exception as e:
+        print(f"⚠️ Falló el reintento con Ollama: {e}")
+
     return ""
 
 
 def extraer_conceptos_semanticos(consulta):
     """
     Expande la consulta del usuario a términos conceptuales y sinónimos 
-    para buscar por sentido en todo el .txt.
+    para buscar por sentido en TODO el .txt.
     """
     prompt = [
         {
@@ -64,7 +76,8 @@ def extraer_conceptos_semanticos(consulta):
 
 def recuperar_contexto_de_txt(consulta, max_bloques=8):
     """
-    Busca dentro de TODO conversaciones.txt los fragmentos con mayor relevancia por sentido.
+    Escanea TODO el archivo conversaciones.txt sin importar cuán viejo sea
+    y extrae los bloques con mayor relevancia por sentido.
     """
     if not os.path.exists(TXT_FILE):
         return ""
@@ -88,6 +101,7 @@ def recuperar_contexto_de_txt(consulta, max_bloques=8):
         if coincidencias > 0:
             bloques_puntuados.append((coincidencias, b))
 
+    # Ordenar por máxima coincidencia conceptual
     bloques_puntuados.sort(key=lambda x: x[0], reverse=True)
     top_bloques = [b[1] for b in bloques_puntuados[:max_bloques]]
 
@@ -96,7 +110,7 @@ def recuperar_contexto_de_txt(consulta, max_bloques=8):
 
 def generar_query_semantica(orden_usuario):
     """
-    Lee el archivo .txt COMPLETO sin recortes para resolver referencias y pronombres.
+    Lee el archivo .txt COMPLETO para resolver 'eso', 'aquello' o referencias históricas.
     """
     historial_completo = ""
     if os.path.exists(TXT_FILE):
@@ -167,13 +181,13 @@ def responder_usuario(orden):
         "Sos Leandro Bot, el asistente personal de Leandro.\n"
         "REGLAS:\n"
         "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
-        "- Nutrite de los fragmentos de conversaciones pasadas recuperados semánticamente del archivo .txt para responder.\n"
+        "- Nutrite de los fragmentos de conversaciones pasadas recuperados semánticamente por sentido del archivo .txt para responder.\n"
         "- Sé directo, conciso y técnico."
     )
 
     mensaje_usuario = f"CONSULTA: {orden}"
     if contexto_txt:
-        mensaje_usuario += f"\n\n[FRAGMENTOS EXTRAÍDOS DEL HISTORIAL .TXT]:\n{contexto_txt}"
+        mensaje_usuario += f"\n\n[FRAGMENTOS EXTRAÍDOS POR SENTIDO/CONCEPTO DEL HISTORIAL .TXT]:\n{contexto_txt}"
     if info_web:
         mensaje_usuario += f"\n\n[DATOS RECUPERADOS DE LA WEB]:\n{info_web}"
 
@@ -202,7 +216,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     respuesta = responder_usuario(texto_usuario)
     if not respuesta:
-        respuesta = "Che, se me complicó la respuesta con Ollama por tiempo, pero acá sigo activo."
+        respuesta = "Che, la consulta demoró en responder, pero ya quedé listo para la siguiente."
 
     await update.message.reply_text(respuesta)
 
