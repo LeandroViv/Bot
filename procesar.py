@@ -1,34 +1,67 @@
 import os
 import json
-import time
+import re
 import requests
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-HISTORIAL_FILE = "historial.json"
+TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 
-def cargar_historial():
-    if os.path.exists(HISTORIAL_FILE):
-        try:
-            with open(HISTORIAL_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+def guardar_en_txt(rol, texto):
+    """Guarda absolutamente todo el historial en un archivo .txt plano sin borrar nada nunca."""
+    with open(TXT_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{rol.upper()}]: {texto}\n---\n")
 
 
-def guardar_historial(historial):
-    with open(HISTORIAL_FILE, "w", encoding="utf-8") as f:
-        json.dump(historial[-20:], f, ensure_ascii=False, indent=2)
+def recuperar_contexto_de_txt(consulta, max_bloques=5):
+    """
+    Busca dentro de conversaciones.txt los fragmentos más relevantes 
+    para la consulta actual (RAG simplificado por coincidencia semántica/palabras).
+    """
+    if not os.path.exists(TXT_FILE):
+        return ""
+
+    with open(TXT_FILE, "r", encoding="utf-8") as f:
+        contenido = f.read()
+
+    bloques = contenido.split("---\n")
+    if not bloques:
+        return ""
+
+    # Palabras clave de la consulta actual para filtrar
+    palabras_clave = [p.lower() for p in re.findall(r'\w+', consulta) if len(p) > 3]
+    
+    bloques_relevantes = []
+    
+    # 1. Priorizar siempre los últimos 3 bloques para mantener el hilo inmediato
+    ultimos_bloques = [b.strip() for b in bloques if b.strip()][-3:]
+    
+    # 2. Buscar bloques pasados que contengan las palabras clave de la consulta
+    for b in bloques:
+        b_lower = b.lower()
+        if any(pc in b_lower for pc in palabras_clave):
+            if b.strip() not in ultimos_bloques and b.strip() not in bloques_relevantes:
+                bloques_relevantes.append(b.strip())
+
+    # Combinar coincidencias pasadas + contexto reciente
+    contexto_final = bloques_relevantes[-max_bloques:] + ultimos_bloques
+    return "\n\n".join(contexto_final)
 
 
 def llamar_ollama(messages):
     url = "http://127.0.0.1:11434/api/chat"
-    payload = {"model": "llama3.2", "messages": messages, "stream": False}
+    payload = {
+        "model": "llama3.2",
+        "messages": messages,
+        "options": {
+            "num_ctx": 32768  # Contexto amplio y estable
+        },
+        "stream": False,
+    }
     try:
         res = requests.post(url, json=payload, timeout=90)
         if res.status_code == 200:
@@ -38,38 +71,26 @@ def llamar_ollama(messages):
     return ""
 
 
-def generar_query_semantica(orden_usuario, historial):
-    contexto = ""
-    for msg in historial[-4:]:
-        rol = "Usuario" if msg["role"] == "user" else "Asistente"
-        texto = msg['content'][:250].replace('\n', ' ')
-        contexto += f"{rol}: {texto}\n"
-
+def generar_query_semantica(orden_usuario, contexto_txt):
     prompt = [
         {
             "role": "system",
             "content": (
-                "Sos un extractor de búsquedas semánticas. Tu único trabajo es responder con 2 a 5 palabras clave "
-                "para buscar en Google/DuckDuckGo.\n"
-                "REGLAS STRICTAS:\n"
-                "1. Mirá el historial para entender a qué se refiere el usuario con palabras como 'eso', 'aquello', 'de nuevo', 'gratis', etc.\n"
-                "2. NO incluyas comandos como 'buscame', 'dame', 'links'.\n"
-                "3. Devolvé SOLAMENTE los términos de búsqueda en texto plano."
+                "Sos un extractor de búsquedas semánticas. Mirá el contexto del .txt y la consulta actual "
+                "para devolver de 2 a 5 palabras clave para buscar en la web.\n"
+                "Devolvé SOLAMENTE las palabras clave en texto plano."
             ),
         },
-        {"role": "user", "content": f"HISTORIAL:\n{contexto}\nCONSULTA ACTUAL: {orden_usuario}"},
+        {"role": "user", "content": f"CONTEXTO RECUPERADO:\n{contexto_txt}\n\nCONSULTA: {orden_usuario}"},
     ]
     query = llamar_ollama(prompt)
-    query_limpia = query.replace('"', "").replace("'", "").strip() if query else orden_usuario
-    print(f"🧠 Búsqueda semántica generada -> '{query_limpia}'")
-    return query_limpia
+    return query.replace('"', "").replace("'", "").strip() if query else orden_usuario
 
 
-def buscar_web(orden_usuario, historial):
-    query = generar_query_semantica(orden_usuario, historial)
+def buscar_web(orden_usuario, contexto_txt):
+    query = generar_query_semantica(orden_usuario, contexto_txt)
     texto_resultados = ""
 
-    # Intento 1: DDGS HTML
     try:
         with DDGS() as ddgs:
             res = list(ddgs.text(query, max_results=4, backend="html"))
@@ -80,7 +101,6 @@ def buscar_web(orden_usuario, historial):
     except Exception as e:
         print(f"⚠️ DDGS falló: {e}")
 
-    # Intento 2: Fallback DDG Lite
     try:
         url = "https://lite.duckduckgo.com/lite/"
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -99,50 +119,48 @@ def buscar_web(orden_usuario, historial):
 
 
 def responder_usuario(orden):
-    historial = cargar_historial()
-    info_web = buscar_web(orden, historial)
+    # 1. Recuperar los fragmentos del .txt relevantes + los últimos chats
+    contexto_txt = recuperar_contexto_de_txt(orden)
 
-    system_prompt = {
-        "role": "system",
-        "content": (
-            "Sos Leandro Bot, el asistente personal de Leandro.\n"
-            "REGLAS FUNDAMENTALES:\n"
-            "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
-            "- CONTINUIDAD: Tenés pleno acceso a los mensajes anteriores en la conversación. Si el usuario pregunta por 'eso', 'aquello' o 'gratis', respondé basándote en lo que hablaron recién.\n"
-            "- NUNCA digas '¿sobre qué tema buscas?' o 'dame contexto' si el tema ya fue mencionado previamente en el historial.\n"
-            "- Sé directo, conciso y técnico."
-        )
-    }
+    # 2. Buscar datos en la web si hace falta
+    info_web = buscar_web(orden, contexto_txt)
 
-    mensajes_chat = [system_prompt]
-    for msg in historial:
-        mensajes_chat.append(msg)
+    system_prompt = (
+        "Sos Leandro Bot, el asistente personal de Leandro.\n"
+        "REGLAS:\n"
+        "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
+        "- Nutrite de los fragmentos de conversaciones pasadas recuperados del archivo .txt para responder.\n"
+        "- Sé directo, conciso y técnico."
+    )
 
-    contenido_actual = orden
+    mensaje_usuario = f"CONSULTA: {orden}"
+    if contexto_txt:
+        mensaje_usuario += f"\n\n[FRAGMENTOS EXTRAÍDOS DEL HISTORIAL .TXT]:\n{contexto_txt}"
     if info_web:
-        contenido_actual += f"\n\n[DATOS RECUPERADOS EN TIEMPO REAL PARA ESTA CONSULTA]:\n{info_web}"
-    
-    mensajes_chat.append({"role": "user", "content": contenido_actual})
+        mensaje_usuario += f"\n\n[DATOS RECUPERADOS DE LA WEB]:\n{info_web}"
+
+    mensajes_chat = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": mensaje_usuario}
+    ]
 
     respuesta = llamar_ollama(mensajes_chat)
 
     if respuesta:
-        historial.append({"role": "user", "content": orden})
-        historial.append({"role": "assistant", "content": respuesta})
-        guardar_historial(historial)
+        # Guardar la interacción actual en el .txt permanente
+        guardar_en_txt("usuario", orden)
+        guardar_en_txt("leandro_bot", respuesta)
 
     return respuesta
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Acá Leandro Bot activo y listo. Decime en qué andamos.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo y recuperando memoria desde .txt.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
     print(f"📩 Mensaje recibido: {texto_usuario}")
-    
-    # Indicar que está procesando
     await update.message.chat.send_action(action="typing")
     
     respuesta = responder_usuario(texto_usuario)
@@ -154,15 +172,13 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     if not TOKEN:
-        print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN en las variables de entorno.")
+        print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN.")
         return
 
-    print("🚀 Iniciando Leandro Bot en Telegram...")
+    print("🚀 Iniciando Leandro Bot en Telegram con lectura de .txt...")
     app = Application.builder().token(TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-
     app.run_polling()
 
 
