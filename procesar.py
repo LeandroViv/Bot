@@ -69,15 +69,6 @@ def llamar_ollama(messages, timeout_secs=300):
                 return contenido
     except Exception as e:
         print(f"⚠️ Error conectando con Ollama: {e}")
-
-    try:
-        print("🔄 Reintentando llamada a Ollama...")
-        res = requests.post(url, json=payload, timeout=timeout_secs)
-        if res.status_code == 200:
-            return res.json().get("message", {}).get("content", "").strip()
-    except Exception as e:
-        print(f"⚠️ Falló el reintento con Ollama: {e}")
-
     return ""
 
 
@@ -87,10 +78,9 @@ def requiere_busqueda_web(consulta):
             "role": "system",
             "content": (
                 "Analizá la consulta del usuario. Si requiere datos en vivo, "
-                "fechas recientes, enlaces, noticias, especificaciones "
-                "técnicas de terceros o búsquedas externas, respondé 'SI'. Si "
-                "es charla casual, opinión, instrucciones de control, gracias o "
-                "conversación fluida, respondé 'NO'. Devolvé SOLAMENTE 'SI' o 'NO'."
+                "fechas recientes, enlaces, noticias o especificaciones "
+                "técnicas de terceros, respondé 'SI'. Si es charla casual, "
+                "opinión o conversación fluida, respondé 'NO'. Devolvé SOLAMENTE 'SI' o 'NO'."
             ),
         },
         {"role": "user", "content": consulta},
@@ -105,9 +95,8 @@ def extraer_conceptos_semanticos(consulta):
             "role": "system",
             "content": (
                 "Sos un extractor de conceptos semánticos. Dado el mensaje de un "
-                "usuario, generá una lista de 5 a 10 palabras clave "
-                "(incluyendo sinónimos) para buscar por sentido en el historial.\n"
-                "Devolvé SOLAMENTE los términos separados por comas, sin explicaciones."
+                "usuario, generá una lista de palabras clave separados por comas.\n"
+                "Devolvé SOLAMENTE los términos, sin explicaciones."
             ),
         },
         {"role": "user", "content": f"Mensaje del usuario: {consulta}"},
@@ -168,10 +157,7 @@ def generar_query_semantica(orden_usuario):
     prompt = [
         {
             "role": "system",
-            "content": (
-                "Analizá el historial y la consulta para devolver de 2 a 5 "
-                "palabras clave de búsqueda web. Devolvé SOLAMENTE los términos en texto plano."
-            ),
+            "content": "Analizá el historial y la consulta para devolver de 2 a 5 palabras clave de búsqueda web en texto plano.",
         },
         {
             "role": "user",
@@ -184,7 +170,6 @@ def generar_query_semantica(orden_usuario):
 
 def buscar_web(orden_usuario):
     if not requiere_busqueda_web(orden_usuario):
-        print("⏭️ Búsqueda web omitida (conversación general / control).")
         return ""
 
     query = generar_query_semantica(orden_usuario)
@@ -196,25 +181,11 @@ def buscar_web(orden_usuario):
             for r in res:
                 texto_resultados += (
                     f"• Título: {r.get('title')}\n  Detalle: {r.get('body')}\n  URL: {r.get('href')}\n\n"
-                )
+            )
             if texto_resultados:
                 return texto_resultados
     except Exception as e:
         print(f"⚠ DDGS falló: {e}")
-
-    try:
-        url = "https://lite.duckduckgo.com/lite/"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        res = requests.post(url, data={"q": query}, headers=headers, timeout=10)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "html.parser")
-            filas = soup.find_all("td", class_="result-snippet")
-            for f in filas[:4]:
-                texto_resultados += f"• {f.get_text(strip=True)}\n\n"
-            if texto_resultados:
-                return texto_resultados
-    except Exception as e:
-        print(f"⚠️ Fallback Lite falló: {e}")
 
     return texto_resultados
 
@@ -228,8 +199,7 @@ def responder_usuario(orden):
         "REGLAS:\n"
         "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
         "- Nutrite de los fragmentos recuperados del archivo .txt para mantener coherencia.\n"
-        "- Sé directo, conciso y técnico. Si el usuario te pide una tarea "
-        "programada o de fondo que no podés ejecutar por ti solo, aclaraselo con precisión."
+        "- Sé directo, conciso y técnico."
     )
 
     mensaje_usuario = f"CONSULTA: {orden}"
@@ -254,7 +224,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo, escuchando audios y respondiendo en voz alta.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo y al firme.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -264,13 +234,13 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     respuesta = responder_usuario(texto_usuario)
     if not respuesta:
-        respuesta = "Che, la consulta demoró en responder, pero ya quedé listo para la siguiente."
+        respuesta = "Che, la consulta demoró en responder, pero ya quedé listo."
 
     await update.message.reply_text(respuesta)
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Descarga nota de voz, la transcribe con Whisper, genera respuesta y la devuelve en audio."""
+    """Descarga nota de voz, la transcribe con Whisper, genera respuesta y la devuelve grabada en audio."""
     print("🎤 Audio recibido, procesando voz con Whisper...")
     await update.message.chat.send_action(action="record_voice")
 
@@ -279,7 +249,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ruta_respuesta_ogg = "respuesta.ogg"
 
     try:
-        # Carga Whisper bajo demanda para que el bot inicie rápido
+        # Cargamos Whisper bajo demanda para evitar bloqueos pesados al iniciar
         modelo_whisper = whisper.load_model("base")
 
         archivo_telegram = await update.message.voice.get_file()
@@ -288,7 +258,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resultado_transcripcion = modelo_whisper.transcribe(ruta_ogg, language="es")
         texto_reconocido = resultado_transcripcion.get("text", "").strip()
         
-        print(f"🗣️ Texto reconocido de la voz: '{texto_reconocido}'")
+        print(f"🗣️️ Texto reconocido de la voz: '{texto_reconocido}'")
 
         if os.path.exists(ruta_ogg):
             os.remove(ruta_ogg)
@@ -299,20 +269,19 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         respuesta = responder_usuario(texto_reconocido)
         if not respuesta:
-            respuesta = "Che, la consulta de voz demoró en responder, pero ya quedé listo."
+            respuesta = "Che, la consulta de voz demoró en responder."
 
-        # Convertimos la respuesta de texto a voz con gTTS (español)
-        tts = gTTS(text=respuesta, lang="es", tld="com.ar") # tld com.ar le da tonada más rioplatense
+        # Convertimos la respuesta de texto a voz con gTTS (español rioplatense)
+        tts = gTTS(text=respuesta, lang="es", tld="com.ar")
         tts.save(ruta_respuesta_mp3)
 
         # Convertimos mp3 a ogg (formato nota de voz de Telegram) usando ffmpeg
         subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, "-c:a", "libopus", ruta_respuesta_ogg], check=True)
 
-        # Enviamos la nota de voz al usuario
+        # Enviamos la nota de voz de respuesta al usuario
         with open(ruta_respuesta_ogg, "rb") as voice_file:
             await update.message.reply_voice(voice=voice_file, caption=f"*(Entendido: \"{texto_reconocido}\")*")
 
-        # Limpieza de archivos temporales de audio
         for archivo in [ruta_respuesta_mp3, ruta_respuesta_ogg]:
             if os.path.exists(archivo):
                 os.remove(archivo)
@@ -330,20 +299,21 @@ def main():
         print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN.")
         return
 
+    # Limpieza estricta de webhooks previos para evitar el error de conflicto
     try:
-        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook")
-        print("🧹 Webhook previo eliminado correctamente.")
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true")
+        print("🧹 Webhook y actualizaciones pendientes limpiadas correctamente.")
     except Exception as e:
-        print(f"⚠️ No se pudo eliminar el webhook: {e}")
+        print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot en Telegram con soporte de voz bidireccional...")
+    print("🚀 Iniciando Leandro Bot en Telegram (modo voz bidireccional)...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
     app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
     
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
