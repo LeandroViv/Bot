@@ -1,3 +1,4 @@
+async_lock_voz = None
 import asyncio
 import json
 import os
@@ -195,6 +196,7 @@ def buscar_web(orden_usuario):
 
 
 def responder_usuario(orden):
+    """Función unificada: Usa exactamente el mismo modelo y lógica tanto para texto como para voz."""
     if not orden or not orden.strip():
         return "Che, no entendí bien lo que dijiste, ¿me lo repetís?"
 
@@ -232,8 +234,16 @@ def responder_usuario(orden):
     return respuesta
 
 
+def limpiar_texto_para_voz(texto):
+    """Limpia URLs, Markdown y símbolos raros para que gTTS hable natural sin leer códigos."""
+    texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', texto)
+    texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio)
+    texto_limpio = re.sub(r'\n+', '. ', texto_limpio)
+    return texto_limpio.strip()
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo y al firme con voz bidireccional.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo y al firme con inteligencia unificada.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -242,14 +252,11 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.chat.send_action(action="typing")
 
     respuesta = responder_usuario(texto_usuario)
-    if not respuesta:
-        respuesta = "Che, la consulta demoró en responder, pero ya quedé listo."
-
     await update.message.reply_text(respuesta)
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa notas de voz en orden secuencial (lock), las transcribe, genera IA y devuelve audio."""
+    """Procesa notas de voz usando la misma IA de texto y devuelve audio limpio con gTTS."""
     async with lock_voz:
         print("🎤 Audio recibido, procesando voz con Whisper...")
         await update.message.chat.send_action(action="record_voice")
@@ -278,10 +285,16 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Che, no te pude captar bien el audio, ¿me lo repetís?")
                 return
 
+            # LLAMADA UNIFICADA: Usa exactamente la misma función que el chat de texto
             respuesta = responder_usuario(texto_reconocido)
             print(f"🔊 Respuesta generada: '{respuesta}'")
 
-            tts = gTTS(text=respuesta, lang="es", tld="com.ar")
+            # Filtramos links y símbolos para que el audio suene natural y rioplatense
+            respuesta_para_voz = limpiar_texto_para_voz(respuesta)
+            if not respuesta_para_voz:
+                respuesta_para_voz = "Che, me quedé pensando y no supe qué decirte."
+
+            tts = gTTS(text=respuesta_para_voz, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
             subprocess.run([
@@ -325,7 +338,7 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot en Telegram con soporte de voz completo...")
+    print("🚀 Iniciando Leandro Bot en Telegram con modelo unificado y voz inteligente...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
@@ -335,5 +348,5 @@ def main():
     app.run_polling(drop_pending_updates=True)
 
 
-if __name__ == "__main__":
+if __name__ == "main" or __name__ == "__main__":
     main()
