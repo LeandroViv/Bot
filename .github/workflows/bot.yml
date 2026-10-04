@@ -34,9 +34,10 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Instalar Ollama y descargar modelo
+      - name: Instalar y levantar Ollama (Optimizado sin usuarios de sistema)
         run: |
-          curl -fsSL https://ollama.com/install.sh | sh
+          curl -L https://ollama.com/download/ollama-linux-amd64.tgz -o ollama.tgz
+          sudo tar -C /usr/local -xzf ollama.tgz
           nohup ollama serve > ollama.log 2>&1 &
           sleep 5
           ollama pull llama3.2
