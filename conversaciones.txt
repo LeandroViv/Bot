@@ -22,3 +22,5 @@ Mirá, el mensaje de voz es el siguiente: "Hola, es Leandro. Che, necesito ayuda
 ---
 [LEANDRO_BOT]: Sí, estoy aquí para ayudarte. ¿En qué necesitas mi ayuda, che?
 ---
+[USUARIO]: necesitaba que me cuente salgo acerca de implementaciones, el LM, en apps y esas cosas si me lo puedo buscar en la web.
+---
