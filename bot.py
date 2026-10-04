@@ -19,7 +19,6 @@ def responder_telegram(chat_id, texto):
     try:
         res = requests.post(url, json=payload, timeout=15)
         if res.status_code != 200:
-            # Reintento sin formato si falla la sintaxis Markdown
             payload.pop("parse_mode")
             requests.post(url, json=payload, timeout=15)
     except Exception as e:
@@ -35,15 +34,13 @@ def main():
 
     print(f"📩 Procesando orden: {orden}")
 
-    # Generar respuesta con la IA
     respuesta = generar_respuesta_llm(orden)
 
-    # Responder al canal/chat de Telegram
     if respuesta:
         print("📤 Enviando respuesta a Telegram...")
         responder_telegram(CHAT_ID, respuesta)
     else:
-        mensaje_error = "⚠️ No pude obtener respuesta del servidor de Ollama en Hugging Face."
+        mensaje_error = "⚠️ No pude obtener respuesta del servidor de Ollama."
         responder_telegram(CHAT_ID, mensaje_error)
 
 
