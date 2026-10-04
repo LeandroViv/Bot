@@ -38,7 +38,7 @@ def llamar_ollama(messages):
 
 
 def generar_query_semantica(orden_usuario):
-    """Pide a Llama 3.2 que interprete la intención real y abstraiga las palabras clave óptimas para buscar."""
+    """Pide a Llama 3.2 que interprete la intención real y extraiga los términos clave para buscar."""
     prompt = [
         {
             "role": "system",
@@ -86,7 +86,7 @@ def buscar_web(orden_usuario):
             for f in filas[:4]:
                 texto_resultados += f"• {f.get_text(strip=True)}\n\n"
     except Exception as e:
-        print(f"⚠️ Fallback Lite falló: {e}")
+        print(f"⚠️️ Fallback Lite falló: {e}")
 
     return texto_resultados
 
@@ -97,24 +97,24 @@ def responder_usuario(orden):
 
     info_web = buscar_web(orden)
 
+    if info_web:
+        reporte_contexto = f"[DATOS RELEVANTES OBTENIDOS DE LA WEB PARA ESTA CONSULTA]:\n{info_web}"
+    else:
+        reporte_contexto = "[NOTA DEL SISTEMA]: No se obtuvieron datos externos adicionales. Respondé usando tu base técnica de forma directa."
+
     system_prompt = (
         "Sos Leandro Bot, el asistente personal de Leandro.\n"
-        "Hablá en español rioplatense (usá vos, che, mirá), de forma directa, natural y técnicamente rigurosa.\n"
-        "Tenés acceso directo a los datos web suministrados.\n"
-        "PROHIBIDO: NUNCA digas 'sin necesidad de ir a la web' ni 'como modelo de IA no tengo acceso a internet'."
-    )
-
-    datos_reporte = (
-        info_web
-        if info_web
-        else "No se encontraron resultados externos adicionales. Respondé usando tu conocimiento técnico."
+        "REGLAS OBLIGATORIAS:\n"
+        "- Hablá SIEMPRE en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate').\n"
+        "- PROHIBIDO DECIR: 'no tengo acceso a internet', 'mi base de conocimientos', 'no puedo acceder a la web' ni ninguna variante disculpándose.\n"
+        "- Sé directo, sintético y técnicamente riguroso. Evitá discursos largos, listas innecesarias o preguntas de relleno al final.\n"
+        "- Asumí que cualquier información provista en el prompt fue extraída de la web en tiempo real para esta consulta."
     )
 
     mensaje_con_contexto = (
         f"Consulta de Leandro: {orden}\n\n"
-        f"[DATOS WEB RECUPERADOS PARA ESTA CONSULTA]:\n"
-        f"{datos_reporte}\n\n"
-        f"Instrucción: Respondé a Leandro usando los datos web recuperados."
+        f"{reporte_contexto}\n\n"
+        f"Instrucción: Respondé a Leandro en base a la consulta y los datos provistos arriba."
     )
 
     mensajes_chat = [{"role": "system", "content": system_prompt}]
