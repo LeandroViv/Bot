@@ -1,8 +1,6 @@
-import json
 import os
-import re
-from duckduckgo_search import DDGS
 import requests
+from duckduckgo_search import DDGS
 
 
 # ---------------------------------------------------------
@@ -28,18 +26,13 @@ def evaluar_y_buscar_web(orden):
 
 
 # ---------------------------------------------------------
-# 2. LLAMADA A OLLAMA EN HUGGING FACE SPACE (GPU)
+# 2. LLAMADA A OLLAMA LOCAL EN EL RUNNER
 # ---------------------------------------------------------
-def llamar_ollama_gpu_space(messages, retries=3):
+def llamar_ollama_local(messages, retries=3):
     """
-    Se conecta al servidor de Ollama alojado en Hugging Face Spaces.
+    Se conecta al servidor de Ollama corriendo en el mismo runner de GitHub Actions.
     """
-    base_url = os.environ.get("OLLAMA_URL", "").strip().rstrip("/")
-    if not base_url:
-        print("❌ Error: No se encontró la variable OLLAMA_URL en las variables de entorno.")
-        return ""
-
-    url = f"{base_url}/api/chat"
+    url = "http://127.0.0.1:11434/api/chat"
     headers = {"Content-Type": "application/json"}
 
     payload = {
@@ -50,8 +43,8 @@ def llamar_ollama_gpu_space(messages, retries=3):
 
     for intento in range(retries):
         try:
-            print(f"📡 Consultando Ollama GPU Space ({url}, intento {intento + 1}/{retries})...")
-            res = requests.post(url, json=payload, headers=headers, timeout=60)
+            print(f"📡 Consultando Ollama local ({url}, intento {intento + 1}/{retries})...")
+            res = requests.post(url, json=payload, headers=headers, timeout=120)
 
             if res.status_code == 200:
                 data = res.json()
@@ -61,7 +54,7 @@ def llamar_ollama_gpu_space(messages, retries=3):
             print(f"⚠️ Ollama devolvió status HTTP {res.status_code}: {res.text}")
 
         except Exception as e:
-            print(f"⚠️ Excepción al conectar con Ollama GPU Space: {e}")
+            print(f"⚠️ Excepción al conectar con Ollama: {e}")
 
     return ""
 
@@ -70,10 +63,8 @@ def llamar_ollama_gpu_space(messages, retries=3):
 # 3. FUNCIÓN PRINCIPAL DE GENERACIÓN
 # ---------------------------------------------------------
 def generar_respuesta_llm(orden, contexto_base=""):
-    # 1. Búsqueda web condicional según la orden
     info_web = evaluar_y_buscar_web(orden)
 
-    # 2. Definición del system prompt
     prompt_sistema = (
         "Sos Leandro Bot, el asistente personal de Leandro.\n"
         "Respondé siempre en español rioplatense natural, directo y técnicamente riguroso."
@@ -90,10 +81,10 @@ def generar_respuesta_llm(orden, contexto_base=""):
         {"role": "user", "content": orden},
     ]
 
-    print("🧠 Generando respuesta con la IA (GPU)...")
-    respuesta = llamar_ollama_gpu_space(messages)
+    print("🧠 Generando respuesta con la IA...")
+    respuesta = llamar_ollama_local(messages)
 
     if not respuesta:
-        print("❌ Ollama en el Space GPU no devolvió una respuesta válida.")
+        print("❌ Ollama no devolvió una respuesta válida.")
 
     return respuesta
