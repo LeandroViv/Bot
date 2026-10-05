@@ -81,3 +81,41 @@ En resumen, las palabras clave son fundamentales para la optimización SEO, ya q
 ---
 [USUARIO]: Bueno, un grande día a partir de las 9, si quieres empezar a buscar cosas en la web, sobre estas cosas, implementaciones del NM, y si si os encontrará un interesante, me lo envías por el incentivo propia, eso te quería pedir gracias. Es fundamental lo del incentivo propia.
 ---
+[LEANDRO_BOT]: Fijate, che. Acá te voy a dar todo el contexto que te interesará para entender cómo funcionan las palabras clave y cómo implementarlas para SEO.
+
+**¿Qué son las palabras clave?**
+
+Las palabras clave son aquellas que definen y realzan el contenido de una página web. Son como los "palitos" que te ayudan a encontrar a la gente en el motor de búsqueda.
+
+**¿Por qué son importantes las palabras clave?**
+
+Las palabras clave son fundamentales para la optimización SEO, ya que ayudan a encontrar a la gente en el motor de búsqueda y mejorar el posicionamiento del sitio web.
+
+**¿Cómo se identifican las palabras clave?**
+
+Para identificar las palabras clave, es importante analizar la intención del usuario y entender qué palabras y términos están relacionados con su búsqueda.
+
+**¿Qué herramientas se utilizan para encontrar palabras clave?**
+
+Hay varias herramientas que se pueden utilizar para encontrar palabras clave, como:
+
+* WordCount (https://wordcount.com/es/keyword-extractor): un extractor de palabras clave con IA que te permite extraer las palabras clave y frases más importantes de cualquier texto.
+* Ahrefs (https://ahrefs.com/es/keyword-generator): un generador de palabras clave con IA que te permite generar cientos de ideas de palabras clave gratuitas para Google, Bing, YouTube y Amazon.
+* Josegaspard (https://josegaspard.dev/blog/keyword-research-guia-investigacion/): una guía paso a paso para investigar palabras clave, incluyendo herramientas gratuitas, cómo leer el volumen y la dificultad, y en qué orden atacarlas.
+
+**¿Cómo se implementan las palabras clave?**
+
+Es importante planificar y implementar cuidadosamente palabras clave para conectar tu contenido con posibles visitantes. Esto incluye:
+
+* Analizar la intención del usuario y explorar palabras clave de cola larga.
+* Utilizar herramientas de investigación de palabras clave para encontrar las opciones más adecuadas.
+* Crear un mapa de contenidos y priorizar términos.
+
+**Recursos adicionales**
+
+* Guía Técnica - Análisis e Implementación de Palabras Clave (https://www.visibilidadweb.unam.mx/guia/analisis-implementacion-palabras-clave)
+* Estudio de Palabras Clave SEO: Guía Paso a Paso 2026 (https://dango.sh/blog/es/estudio-de-palabras-clave)
+* Análisis de palabras clave: cómo hacerlo y para qué sirve en SEO (https://seogp.co/blog/analisis-de-palabras-clave-como-hacerlo-y-para-que-sirve-en-seo)
+
+Espero que esto te ayude a entender mejor cómo funcionan las palabras clave y cómo implementarlas para SEO, che. Si tienes alguna pregunta o necesitas más ayuda, no dudes en preguntar.
+---
