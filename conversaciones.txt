@@ -183,3 +183,5 @@ Además, se pueden utilizar modelos de lenguaje grande para generar contenido de
 
 La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencilla y eficiente. ¿Te parece bien, che? ¿Quieres saber más sobre cómo implementar estas herramientas y monetizar el servicio?
 ---
+[USUARIO]: che pero nadie te esta pidiendo que resumas amigo
+---
