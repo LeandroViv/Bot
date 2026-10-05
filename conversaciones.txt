@@ -210,3 +210,33 @@ La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencill
 ---
 [USUARIO]: Use el buscador
 ---
+[LEANDRO_BOT]: Che, fijate. Acá te voy a dar un resumen de todo lo que habíamos hablado sobre las palabras clave y cómo implementarlas para SEO.
+
+**¿Qué son las palabras clave?**
+
+Las palabras clave son aquellas que definen y realzan el contenido de una página web. Son como los "palitos" que te ayudan a encontrar a la gente en el motor de búsqueda.
+
+**¿Por qué son importantes las palabras clave?**
+
+Las palabras clave son fundamentales para la optimización SEO, ya que ayudan a encontrar a la gente en el motor de búsqueda y mejorar el posicionamiento del sitio web.
+
+**¿Cómo se identifican las palabras clave?**
+
+Para identificar las palabras clave, es importante analizar la intención del usuario y entender qué palabras y términos están relacionados con su búsqueda.
+
+**¿Qué herramientas se utilizan para encontrar palabras clave?**
+
+Hay varias herramientas que se pueden utilizar para encontrar palabras clave, como WordCount, Ahrefs y Josegaspard.
+
+**¿Cómo se implementan las palabras clave?**
+
+Es importante planificar y implementar cuidadosamente palabras clave para conectar tu contenido con posibles visitantes. Esto incluye analizar la intención del usuario y explorar palabras clave de cola larga, utilizar herramientas de investigación de palabras clave para encontrar las opciones más adecuadas, y crear un mapa de contenidos y priorizar términos.
+
+**Recursos adicionales**
+
+* Guía Técnica - Análisis e Implementación de Palabras Clave (https://www.visibilidadweb.unam.mx/guia/analisis-implementacion-palabras-clave)
+* Estudio de Palabras Clave SEO: Guía Paso a Paso 2026 (https://dango.sh/blog/es/estudio-de-palabras-clave)
+* Análisis de palabras clave: cómo hacerlo y para qué sirve en SEO (https://seogp.co/blog/analisis-de-palabras-clave-como-hacerlo-y-para-que-sirve-en-seo)
+
+Espero que esto te ayude a entender mejor cómo funcionan las palabras clave y cómo implementarlas para SEO, che. Si tienes alguna pregunta o necesitas más ayuda, no dudes en preguntar.
+---
