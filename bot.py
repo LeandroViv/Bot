@@ -1,7 +1,8 @@
 import os
 import time
 import requests
-from procesar import responder_usuario, evaluar_iniciativa_propia
+# Asumimos que en 'procesar.py' tenés tus funciones adaptadas
+from procesar import responder_usuario, evaluar_iniciativa_propia, procesar_voz_con_induccion, registrar_correccion_voz
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = str(os.environ.get("CHAT_ID", ""))
@@ -55,7 +56,7 @@ def gatillar_reenganche():
         else:
             print(f"⚠️ Error en reenganche HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print(f"⚠️️ Excepción al solicitar reenganche: {e}")
+        print(f"⚠️ Excepción al solicitar reenganche: {e}")
 
 
 def main():
@@ -70,14 +71,51 @@ def main():
         for u in updates:
             offset = u["update_id"] + 1
             mensaje = u.get("message", {})
-            texto = mensaje.get("text", "")
             id_chat = str(mensaje.get("chat", {}).get("id", ""))
 
-            if texto and (not CHAT_ID or id_chat == CHAT_ID):
-                print(f"📩 Mensaje recibido: {texto}")
-                respuesta = responder_usuario(texto)
-                if respuesta:
-                    enviar_telegram(id_chat, respuesta)
+            if not CHAT_ID or id_chat == CHAT_ID:
+                
+                # 1. CASO: Mensaje de texto plano
+                texto = mensaje.get("text", "")
+                if texto:
+                    # Si es una respuesta a un mensaje anterior (para corregir audio previo)
+                    if mensaje.get("reply_to_message"):
+                        print(f"🔄 Recibida corrección por texto: {texto}")
+                        respuesta = registrar_correccion_voz(mensaje, texto)
+                    else:
+                        print(f"📩 Mensaje de texto recibido: {texto}")
+                        respuesta = responder_usuario(texto)
+                        
+                    if respuesta:
+                        enviar_telegram(id_chat, respuesta)
+
+                # 2. CASO: Nota de voz de Telegram (.ogg)
+                elif mensaje.get("voice"):
+                    print("🎙️ Nota de voz recibida. Procesando con Whisper local e inducción...")
+                    voice_info = mensaje.get("voice")
+                    file_id = voice_info.get("file_id")
+                    
+                    # Descargar el .ogg usando la API de Telegram al vuelo
+                    file_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getFile?file_id={file_id}"
+                    file_res = requests.get(file_url).json()
+                    
+                    if file_res.get("ok"):
+                        file_path_tg = file_res["result"]["file_path"]
+                        download_url = f"https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path_tg}"
+                        
+                        audio_data = requests.get(download_url).content
+                        audio_path = "temp_voice.ogg"
+                        with open(audio_path, "wb") as f:
+                            f.write(audio_data)
+                        
+                        # Procesar con tu motor de Whisper local + inducción por muestras
+                        respuesta_voz, message_id_guardado = procesar_voz_con_induccion(audio_path, mensaje.get("message_id"))
+                        
+                        if os.path.exists(audio_path):
+                            os.remove(audio_path)
+                            
+                        if respuesta_voz:
+                            enviar_telegram(id_chat, respuesta_voz)
 
         # Chequeo periódico de proactividad
         if (time.time() - ultimo_chequeo_iniciativa) > INTERVALO_INICIATIVA:
