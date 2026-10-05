@@ -185,3 +185,5 @@ La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencill
 ---
 [USUARIO]: che pero nadie te esta pidiendo que resumas amigo
 ---
+[LEANDRO_BOT]: Che, claro que sí! Puedo escucharte y responder contigo por voz. ¿Qué onda, amigo? ¿Qué te trae a hablar?
+---
