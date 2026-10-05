@@ -1,4 +1,3 @@
-async_lock_voz = None
 import asyncio
 import json
 import os
@@ -189,7 +188,7 @@ def extraer_conceptos_semanticos(consulta):
     return [p.lower() for p in re.findall(r"\w+", consulta) if len(p) > 3]
 
 
-def recuperar_contexto_de_txt(consulta, max_bloques=8):
+def recuperar_contexto_de_txt(consulta, max_bloques=3):
     if not os.path.exists(TXT_FILE):
         return ""
 
@@ -247,52 +246,46 @@ def generar_query_semantica(orden_usuario):
 
 
 def consultar_ia_duckduckgo(orden_usuario):
-    """Consulta directamente a la IA y buscador de DuckDuckGo sin topes ni bloqueos."""
+    """Extrae datos limpios y directos desde la IA/Web de DuckDuckGo sin contaminar."""
     query = generar_query_semantica(orden_usuario)
     texto_resultados = ""
     try:
         with DDGS() as ddgs:
-            # Primero intentamos usar la interfaz de chat/IA integrada si está disponible
             if hasattr(ddgs, "chat"):
                 respuestas = list(ddgs.chat(query))
                 if respuestas:
                     texto_resultados = "\n".join([str(r) for r in respuestas])
             
-            # Si no devolvió chat, usamos el motor de texto avanzado por backend HTML sin límites
             if not texto_resultados:
-                res = list(ddgs.text(query, max_results=6, backend="html"))
+                res = list(ddgs.text(query, max_results=5, backend="html"))
                 for r in res:
-                    texto_resultados += (
-                        f"• Título: {r.get('title')}\n  Detalle: {r.get('body')}\n  URL: {r.get('href')}\n\n"
-                    )
+                    texto_resultados += f"• {r.get('title')}: {r.get('body')}\n"
     except Exception as e:
         print(f"⚠️ Error consultando DuckDuckGo: {e}")
 
-    return texto_resultados if texto_resultados else "Sin datos web disponibles por el momento."
+    return texto_resultados if texto_resultados else "Sin datos web disponibles."
 
 
 def responder_usuario(orden):
-    """Modelo unificado: Nutrición vía IA de DuckDuckGo obligatoria y cadencia natural."""
+    """Procesa la respuesta usando el historial solo como guía de estilo y DuckDuckGo como verdad absoluta."""
     if not orden or not orden.strip():
         return "Che, no te entendí nada, tirámela de nuevo."
 
-    contexto_txt = recuperar_contexto_de_txt(orden)
+    contexto_txt = recuperar_contexto_de_txt(orden, max_bloques=3)
     info_web = consultar_ia_duckduckgo(orden)
 
     system_prompt = (
-        "Sos Leandro hablando con un colega en una charla de Telegram. CERO formato de asistente virtual, cero respuestas acartonadas o de manual.\n"
-        "REGLAS DE ORO DE CADENCIA Y TONO:\n"
-        "- Hablá de igual a igual, replicando la estructura rítmica, pausas y longitud de frase que el usuario usa en el historial.\n"
-        "- Usá modismos rioplatenses de forma orgánica ('vos', 'che', 'fijate', 'onda').\n"
-        "- Cero introducciones falsas o cierres corporativos. Directo al hueso.\n"
-        "- Integrá la data de la web de DuckDuckGo y del historial como si ya la supieras de memoria, sin citar fuentes de manera robótica."
+        "Sos Leandro hablando con un colega por Telegram. CERO formato de asistente virtual o de manual.\n"
+        "REGLAS ESTRICTAS:\n"
+        "1. FUENTE DE INFORMACIÓN: La respuesta factual debe basarse EXCLUSIVAMENTE en los 'DATOS FRESCOS DE DUCKDUCKGO'. No inventes información ni mezcles datos viejos del historial como si fueran actuales.\n"
+        "2. USO DEL HISTORIAL: El bloque de historial provisto es SÓLO para entender tu tono, modismos rioplatenses ('vos', 'che', 'fijate') y términos técnicos previos. No lo resumas ni repitas lo que ya se charló antes.\n"
+        "3. CADENCIA: Hablar directo al hueso, frases naturales y al pie."
     )
 
-    mensaje_usuario = f"MENSAJE ACTUAL: {orden}"
+    mensaje_usuario = f"MENSAJE ACTUAL: {orden}\n\n[DATOS FRESCOS DE DUCKDUCKGO - USAR ESTO COMO VERDAD ABSOLUTA]:\n{info_web}"
+    
     if contexto_txt:
-        mensaje_usuario += f"\n\n[HISTORIAL DE NUESTRAS CHARLAS - USAR PARA CALIBRAR CADENCIA]:\n{contexto_txt}"
-    if info_web:
-        mensaje_usuario += f"\n\n[DATOS FRESCOS DE LA IA/WEB DE DUCKDUCKGO]:\n{info_web}"
+        mensaje_usuario += f"\n\n[HISTORIAL DE REFERENCIA DE ESTILO - NO REPETIR NI RESUMIR]:\n{contexto_txt}"
 
     mensajes_chat = [
         {"role": "system", "content": system_prompt},
@@ -320,7 +313,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo con conexión a DuckDuckGo y pulido de voz paramétrico.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo con DuckDuckGo puro y uso inteligente del historial de estilo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -396,7 +389,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print("✅ Nota de voz paramétrica enviada con éxito.")
 
         except Exception as e:
-            print(f"⚠️️ Error procesando el audio: {e}")
+            print(f"⚠ Error procesando el audio: {e}")
             try:
                 await update.message.reply_text(f"*(Entendido: \"{texto_reconocido}\")*\n\n{respuesta}")
             except:
@@ -422,7 +415,7 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot con DuckDuckGo IA y pulido paramétrico...")
+    print("🚀 Iniciando Leandro Bot con DuckDuckGo puro y guía de estilo limpia...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
