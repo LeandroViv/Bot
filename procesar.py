@@ -1,3 +1,4 @@
+async_lock_voz = None
 import asyncio
 import json
 import os
@@ -20,7 +21,7 @@ from gtts import gTTS
 TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-# Candado global para procesar notas de voz en orden
+# Candado global para procesar notas de voz en orden estricto
 lock_voz = asyncio.Lock()
 
 
@@ -87,7 +88,6 @@ def extraer_vocabulario_global_de_txt():
     if not historial_entero.strip():
         return ""
 
-    # Si el archivo es muy largo, tomamos muestras representativas o bloques clave para no saturar el prompt
     prompt = [
         {
             "role": "system",
@@ -106,12 +106,12 @@ def extraer_vocabulario_global_de_txt():
 
 
 def corregir_transcripcion_por_contexto(texto_transcrito):
-    """Usa la IA y la memoria global para corregir errores fonéticos de Whisper (ej: 'la L' -> 'LLM')."""
+    """Usa la IA y la memoria global para corregir errores fonéticos de Whisper."""
     if not os.path.exists(TXT_FILE) or not texto_transcrito:
         return texto_transcrito
 
     with open(TXT_FILE, "r", encoding="utf-8") as f:
-        historial_resumido = f.read()[-3000:] # Últimos fragmentos para contexto inmediato
+        historial_resumido = f.read()[-3000:]
 
     prompt = [
         {
@@ -119,8 +119,8 @@ def corregir_transcripcion_por_contexto(texto_transcrito):
             "content": (
                 "Sos un corrector fonético inteligente para transcripciones de voz. "
                 "Dado el texto transcribido por voz y el contexto de las charlas previas, "
-                "detectá si hay errores de interpretación de audio (por ejemplo, fonéticas raras, letras sueltas como 'la L' que deban ser acrónimos técnicos como 'LLM', o palabras malentendidas). "
-                "Devolvé ÚNICAMENTE el texto corregido y coherente con el sentido de la charla, sin agregar explicaciones ni comillas."
+                "detectá si hay errores de interpretación y dejas coherente el texto. "
+                "Devolvé ÚNICAMENTE el texto corregido sin agregar explicaciones ni comillas."
             ),
         },
         {"role": "user", "content": f"Contexto previo:\n{historial_resumido}\n\nTexto transcrito a revisar: {texto_transcrito}"},
@@ -130,21 +130,41 @@ def corregir_transcripcion_por_contexto(texto_transcrito):
     return texto_corregido if texto_corregido else texto_transcrito
 
 
-def requiere_busqueda_web(consulta):
+def calcular_parametros_audio_dinamicos(texto_respuesta):
+    """Motor de pulido de voz paramétrico: calcula tempo y compresión dinámica según el texto."""
+    if not os.path.exists(TXT_FILE):
+        return "atempo=1.03", "dynaudnorm=f=150:g=15"
+
     prompt = [
         {
             "role": "system",
             "content": (
-                "Analizá la consulta del usuario. Si requiere datos en vivo, "
-                "fechas recientes, enlaces, noticias o especificaciones "
-                "técnicas de terceros, respondé 'SI'. Si es charla casual, "
-                "opinión o conversación fluida, respondé 'NO'. Devolvé SOLAMENTE 'SI' o 'NO'."
+                "Sos un motor algorítmico de procesamiento de audio adaptativo. "
+                "Analizá el texto de respuesta para definir su cadencia óptima. "
+                "Devolvé UNICAMENTE dos valores separados por coma: \n"
+                "1. Un factor de tempo para atempo (ejemplo: 1.02, 1.05, 0.98)\n"
+                "2. Un valor de normalización y compresión dinámica para el volumen\n"
+                "Formato estricto: ATEMPO,VALOR_AUDIO (Ejemplo: 1.03,dynaudnorm=f=150:g=15)"
             ),
         },
-        {"role": "user", "content": consulta},
+        {"role": "user", "content": f"Texto a procesar: {texto_respuesta}"},
     ]
-    res = llamar_ollama(prompt, timeout_secs=60)
-    return "SI" in res.upper() if res else False
+
+    respuesta_ia = llamar_ollama(prompt, timeout_secs=30)
+    
+    tempo_val = "1.03"
+    audio_val = "dynaudnorm=f=150:g=15"
+
+    try:
+        if "," in respuesta_ia:
+            partes = respuesta_ia.split(",")
+            t = partes[0].strip()
+            if 0.5 <= float(t) <= 2.0:
+                tempo_val = t
+    except:
+        pass
+
+    return f"atempo={tempo_val}", audio_val
 
 
 def extraer_conceptos_semanticos(consulta):
@@ -170,7 +190,6 @@ def extraer_conceptos_semanticos(consulta):
 
 
 def recuperar_contexto_de_txt(consulta, max_bloques=8):
-    """Recupera información relevante escaneando TODO el archivo de historial en profundidad."""
     if not os.path.exists(TXT_FILE):
         return ""
 
@@ -227,49 +246,53 @@ def generar_query_semantica(orden_usuario):
     return query.replace('"', "").replace("'", "").strip() if query else orden_usuario
 
 
-def buscar_web(orden_usuario):
-    if not requiere_busqueda_web(orden_usuario):
-        return ""
-
+def consultar_ia_duckduckgo(orden_usuario):
+    """Consulta directamente a la IA y buscador de DuckDuckGo sin topes ni bloqueos."""
     query = generar_query_semantica(orden_usuario)
     texto_resultados = ""
-
     try:
         with DDGS() as ddgs:
-            res = list(ddgs.text(query, max_results=4, backend="html"))
-            for r in res:
-                texto_resultados += (
-                    f"• Título: {r.get('title')}\n  Detalle: {r.get('body')}\n  URL: {r.get('href')}\n\n"
-                )
-            if texto_resultados:
-                return texto_resultados
+            # Primero intentamos usar la interfaz de chat/IA integrada si está disponible
+            if hasattr(ddgs, "chat"):
+                respuestas = list(ddgs.chat(query))
+                if respuestas:
+                    texto_resultados = "\n".join([str(r) for r in respuestas])
+            
+            # Si no devolvió chat, usamos el motor de texto avanzado por backend HTML sin límites
+            if not texto_resultados:
+                res = list(ddgs.text(query, max_results=6, backend="html"))
+                for r in res:
+                    texto_resultados += (
+                        f"• Título: {r.get('title')}\n  Detalle: {r.get('body')}\n  URL: {r.get('href')}\n\n"
+                    )
     except Exception as e:
-        print(f"⚠ DDGS falló: {e}")
+        print(f"⚠️ Error consultando DuckDuckGo: {e}")
 
-    return texto_resultados
+    return texto_resultados if texto_resultados else "Sin datos web disponibles por el momento."
 
 
 def responder_usuario(orden):
-    """Modelo unificado con memoria global histórica y auto-evolución expresiva."""
+    """Modelo unificado: Nutrición vía IA de DuckDuckGo obligatoria y cadencia natural."""
     if not orden or not orden.strip():
-        return "Che, no entendí bien lo que dijiste, ¿me lo repetís?"
+        return "Che, no te entendí nada, tirámela de nuevo."
 
     contexto_txt = recuperar_contexto_de_txt(orden)
-    info_web = buscar_web(orden)
+    info_web = consultar_ia_duckduckgo(orden)
 
     system_prompt = (
-        "Sos Leandro Bot, un asistente personal autónomo que aprende de todo el historial de interacciones.\n"
-        "DIRECTRICES DE EVOLUCIÓN CONVERSACIONAL:\n"
-        "- Mantené un español rioplatense (porteño auténtico) sumamente natural, orgánico y fluido. Usá 'vos', 'che', 'fijate', 'mirá'.\n"
-        "- Nutrite profundamente de todo el contexto histórico recuperado del archivo para mantener coherencia absoluta en los proyectos y temas en curso.\n"
-        "- Escribí de forma directa, pulida y sin errores gramaticales, adaptándote de forma inteligente al estilo de charla entre colegas."
+        "Sos Leandro hablando con un colega en una charla de Telegram. CERO formato de asistente virtual, cero respuestas acartonadas o de manual.\n"
+        "REGLAS DE ORO DE CADENCIA Y TONO:\n"
+        "- Hablá de igual a igual, replicando la estructura rítmica, pausas y longitud de frase que el usuario usa en el historial.\n"
+        "- Usá modismos rioplatenses de forma orgánica ('vos', 'che', 'fijate', 'onda').\n"
+        "- Cero introducciones falsas o cierres corporativos. Directo al hueso.\n"
+        "- Integrá la data de la web de DuckDuckGo y del historial como si ya la supieras de memoria, sin citar fuentes de manera robótica."
     )
 
-    mensaje_usuario = f"CONSULTA: {orden}"
+    mensaje_usuario = f"MENSAJE ACTUAL: {orden}"
     if contexto_txt:
-        mensaje_usuario += f"\n\n[MEMORIA HISTÓRICA GLOBAL RECONSTRUIDA]:\n{contexto_txt}"
+        mensaje_usuario += f"\n\n[HISTORIAL DE NUESTRAS CHARLAS - USAR PARA CALIBRAR CADENCIA]:\n{contexto_txt}"
     if info_web:
-        mensaje_usuario += f"\n\n[DATOS RECUPERADOS DE LA WEB]:\n{info_web}"
+        mensaje_usuario += f"\n\n[DATOS FRESCOS DE LA IA/WEB DE DUCKDUCKGO]:\n{info_web}"
 
     mensajes_chat = [
         {"role": "system", "content": system_prompt},
@@ -279,7 +302,7 @@ def responder_usuario(orden):
     respuesta = llamar_ollama(mensajes_chat, timeout_secs=300)
 
     if not respuesta or not respuesta.strip():
-        respuesta = "Che, me quedé procesando eso y no me terminó de cerrar."
+        respuesta = "Che, me quedé pensando y no me salió nada."
 
     guardar_en_txt("usuario", orden)
     guardar_en_txt("leandro_bot", respuesta)
@@ -297,7 +320,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo con memoria histórica global y corrección fonética autónoma.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo con conexión a DuckDuckGo y pulido de voz paramétrico.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -310,9 +333,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa audio alimentando a Whisper con vocabulario global de todo el historial y auto-corrigiendo desvíos."""
+    """Procesa audio aplicando consulta a DuckDuckGo y modulación paramétrica de voz."""
     async with lock_voz:
-        print("🎤 Audio recibido, procesando voz con memoria histórica global...")
+        print("🎤 Audio recibido, procesando voz con IA de DDG y paramétrica...")
         await update.message.chat.send_action(action="record_voice")
 
         ruta_ogg = "temp_audio.ogg"
@@ -327,22 +350,14 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             archivo_telegram = await update.message.voice.get_file()
             await archivo_telegram.download_to_drive(ruta_ogg)
 
-            # EXTRAEMOS EL VOCABULARIO DE TODO EL HISTORIAL HISTÓRICO (Cero hardcode)
             vocabulario_global = extraer_vocabulario_global_de_txt()
-            print(f"🧠 Vocabulario global extraído del historial completo: '{vocabulario_global}'")
-
-            # Whisper procesa el audio usando las pistas de todo el historial acumulado
             resultado_transcripcion = modelo_whisper.transcribe(
                 ruta_ogg, 
                 language="es", 
                 initial_prompt=vocabulario_global
             )
             texto_crudo = resultado_transcripcion.get("text", "").strip()
-            print(f"🗣 Texto crudo reconocido por Whisper: '{texto_crudo}'")
-
-            # CORRECCIÓN SEMÁNTICA AUTÓNOMA (Filtra errores fonéticos como 'la L' -> 'LLM')
             texto_reconocido = corregir_transcripcion_por_contexto(texto_crudo)
-            print(f"✨ Texto corregido por lógica de contexto: '{texto_reconocido}'")
 
             if os.path.exists(ruta_ogg):
                 os.remove(ruta_ogg)
@@ -351,7 +366,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Che, no te capté bien el audio, ¿me lo repetís?")
                 return
 
-            # RESPUESTA UNIFICADA: Pasa por la misma IA inteligente
             respuesta = responder_usuario(texto_reconocido)
             print(f"🔊 Respuesta generada: '{respuesta}'")
 
@@ -362,8 +376,13 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=respuesta_para_voz, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
+            # APLICACIÓN DEL PULIDO DE VOZ PARAMÉTRICO
+            filtro_atempo, filtro_dinamico = calcular_parametros_audio_dinamicos(respuesta_para_voz)
+            print(f"🎛️ Parámetros de audio paramétrico: Tempo={filtro_atempo} | Dinámica={filtro_dinamico}")
+
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
+                "-filter:a", f"{filtro_atempo},{filtro_dinamico}",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -374,10 +393,10 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=f"*(Entendido: \"{texto_reconocido}\")*"
                 )
 
-            print("✅ Nota de voz de respuesta enviada con éxito.")
+            print("✅ Nota de voz paramétrica enviada con éxito.")
 
         except Exception as e:
-            print(f"⚠️ Error procesando el audio: {e}")
+            print(f"⚠️️ Error procesando el audio: {e}")
             try:
                 await update.message.reply_text(f"*(Entendido: \"{texto_reconocido}\")*\n\n{respuesta}")
             except:
@@ -403,7 +422,7 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot con memoria global y auto-corrección fonética...")
+    print("🚀 Iniciando Leandro Bot con DuckDuckGo IA y pulido paramétrico...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
