@@ -173,3 +173,5 @@ En resumen, el DLM puede ser una herramienta valiosa para apariecer y mejorar al
 ---
 [LEANDRO_BOT]: Che, fijate que en la industria se está utilizando mucho los modelos de aprendizaje no supervisado. Es como si estuvieran tratando de extraer información valiosa de los datos sin necesidad de etiquetarlos. Me parece un poco extraño, pero también es interesante. ¿Qué te parece si hablamos un poco más sobre eso? ¿Qué tipo de aplicaciones se están utilizando para este tipo de aprendizaje?
 ---
+[USUARIO]: che y donde enseñan sobre eso
+---
