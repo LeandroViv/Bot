@@ -1,0 +1,4 @@
+- Nombre del usuario: Leandro.
+- Proyectos activos: Migración de bot de Telegram a arquitectura de microservicio descentralizado.
+- Preferencias técnicas: Uso de Python, FastAPI, DuckDuckGo como motor principal y Ollama como respaldo local. Cero dependencias pesadas de Whisper en CPU.
+- Correcciones frecuentes: Automatizar por inducción el aprendizaje de jerga técnica y modismos.
