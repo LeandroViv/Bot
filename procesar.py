@@ -62,7 +62,8 @@ def llamar_ollama(messages, timeout_secs=300):
     payload = {
         "model": "llama3.2",
         "messages": messages,
-        "options": {"num_ctx": 16384, "temperature": 0.7},
+        # Temperatura bajada a 0.2 para evitar divagues y obligarlo a ser estricto
+        "options": {"num_ctx": 16384, "temperature": 0.2},
         "stream": False,
     }
     try:
@@ -313,7 +314,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo con DuckDuckGo puro y uso inteligente del historial de estilo.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo con DuckDuckGo puro y temperatura 0.2.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -326,9 +327,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa audio aplicando consulta a DuckDuckGo y modulación paramétrica de voz."""
+    """Procesa audio aplicando Whisper local, DuckDuckGo y modulación paramétrica de voz."""
     async with lock_voz:
-        print("🎤 Audio recibido, procesando voz con IA de DDG y paramétrica...")
+        print("🎤 Audio recibido, procesando voz con Whisper y paramétrica...")
         await update.message.chat.send_action(action="record_voice")
 
         ruta_ogg = "temp_audio.ogg"
@@ -415,7 +416,7 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot con DuckDuckGo puro y guía de estilo limpia...")
+    print("🚀 Iniciando Leandro Bot con DuckDuckGo puro y temperatura estricta 0.2...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
