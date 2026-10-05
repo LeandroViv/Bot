@@ -198,3 +198,5 @@ La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencill
 ---
 [USUARIO]: Gracias
 ---
+[LEANDRO_BOT]: Che, vos te vas a reencontrar con la fecha de la última reunión. Según el historial, el mensaje de voz fue de vos, y vos dijiste que necesitabas ayuda con algo importante. Luego, vos me preguntaste si podía ayudarte a recordar la fecha de la última reunión. Y vos me dijiste que un grande día a partir de las 9, si querías empezar a buscar cosas en la web, sobre estas cosas, implementaciones del NM, y si si os encontrabas un interesante, me lo envías por el incentivo propia. Y también dijiste que unas o menos a partir de las 9 y picos si querías, puedes empezar a buscar cosas del LLM y aplicaciones y eso y cuando me contestas a lo interesante durante el día me lo envías.
+---
