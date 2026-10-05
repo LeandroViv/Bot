@@ -14,11 +14,15 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-import whisper
 from gtts import gTTS
 
 TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+# Token de Hugging Face (si tu Space o modelo requiere autenticación)
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+
+# URL oficial de la API de inferencia de Hugging Face para Whisper Large v3
+HF_WHISPER_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
 
 # Candado global para procesar notas de voz en orden estricto
 lock_voz = asyncio.Lock()
@@ -35,9 +39,9 @@ def sincronizar_txt_con_github():
         
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ conversaciones.txt sincronizado con éxito en GitHub.")
+            print("☁️️ conversaciones.txt sincronizado con éxito en GitHub.")
     except Exception as e:
-        print(f"⚠️ No se pudo sincronizar el .txt con GitHub: {e}")
+        print(f"⚠️️ No se pudo sincronizar el .txt con GitHub: {e}")
 
 
 def guardar_en_txt(rol, texto):
@@ -62,7 +66,6 @@ def llamar_ollama(messages, timeout_secs=300):
     payload = {
         "model": "llama3.2",
         "messages": messages,
-        # Temperatura bajada a 0.2 para evitar divagues y obligarlo a ser estricto
         "options": {"num_ctx": 16384, "temperature": 0.2},
         "stream": False,
     }
@@ -77,105 +80,15 @@ def llamar_ollama(messages, timeout_secs=300):
     return ""
 
 
-def extraer_vocabulario_global_de_txt():
-    """Extrae dinámicamente términos, acrónimos y jerga técnica de TODO el historial histórico."""
-    if not os.path.exists(TXT_FILE):
-        return ""
-    
-    with open(TXT_FILE, "r", encoding="utf-8") as f:
-        historial_entero = f.read()
-
-    if not historial_entero.strip():
-        return ""
-
-    prompt = [
-        {
-            "role": "system",
-            "content": (
-                "Analizá todo el historial de conversaciones provisto. "
-                "Extraé una lista consolidada de palabras clave, términos técnicos, "
-                "acrónimos, nombres propios o conceptos recurrentes que definan el universo de temas del usuario.\n"
-                "Devolvé SOLAMENTE las palabras separadas por comas, sin explicaciones."
-            ),
-        },
-        {"role": "user", "content": historial_entero},
-    ]
-    
-    resultado = llamar_ollama(prompt, timeout_secs=45)
-    return resultado if resultado else ""
-
-
-def corregir_transcripcion_por_contexto(texto_transcrito):
-    """Usa la IA y la memoria global para corregir errores fonéticos de Whisper."""
-    if not os.path.exists(TXT_FILE) or not texto_transcrito:
-        return texto_transcrito
-
-    with open(TXT_FILE, "r", encoding="utf-8") as f:
-        historial_resumido = f.read()[-3000:]
-
-    prompt = [
-        {
-            "role": "system",
-            "content": (
-                "Sos un corrector fonético inteligente para transcripciones de voz. "
-                "Dado el texto transcribido por voz y el contexto de las charlas previas, "
-                "detectá si hay errores de interpretación y dejas coherente el texto. "
-                "Devolvé ÚNICAMENTE el texto corregido sin agregar explicaciones ni comillas."
-            ),
-        },
-        {"role": "user", "content": f"Contexto previo:\n{historial_resumido}\n\nTexto transcrito a revisar: {texto_transcrito}"},
-    ]
-
-    texto_corregido = llamar_ollama(prompt, timeout_secs=60)
-    return texto_corregido if texto_corregido else texto_transcrito
-
-
 def calcular_parametros_audio_dinamicos(texto_respuesta):
-    """Motor de pulido de voz paramétrico: calcula tempo y compresión dinámica según el texto."""
-    if not os.path.exists(TXT_FILE):
-        return "atempo=1.03", "dynaudnorm=f=150:g=15"
-
-    prompt = [
-        {
-            "role": "system",
-            "content": (
-                "Sos un motor algorítmico de procesamiento de audio adaptativo. "
-                "Analizá el texto de respuesta para definir su cadencia óptima. "
-                "Devolvé UNICAMENTE dos valores separados por coma: \n"
-                "1. Un factor de tempo para atempo (ejemplo: 1.02, 1.05, 0.98)\n"
-                "2. Un valor de normalización y compresión dinámica para el volumen\n"
-                "Formato estricto: ATEMPO,VALOR_AUDIO (Ejemplo: 1.03,dynaudnorm=f=150:g=15)"
-            ),
-        },
-        {"role": "user", "content": f"Texto a procesar: {texto_respuesta}"},
-    ]
-
-    respuesta_ia = llamar_ollama(prompt, timeout_secs=30)
-    
-    tempo_val = "1.03"
-    audio_val = "dynaudnorm=f=150:g=15"
-
-    try:
-        if "," in respuesta_ia:
-            partes = respuesta_ia.split(",")
-            t = partes[0].strip()
-            if 0.5 <= float(t) <= 2.0:
-                tempo_val = t
-    except:
-        pass
-
-    return f"atempo={tempo_val}", audio_val
+    return "atempo=1.03", "dynaudnorm=f=150:g=15"
 
 
 def extraer_conceptos_semanticos(consulta):
     prompt = [
         {
             "role": "system",
-            "content": (
-                "Sos un extractor de conceptos semánticos. Dado el mensaje de un "
-                "usuario, generá una lista de palabras clave separadas por comas.\n"
-                "Devolvé SOLAMENTE los términos, sin explicaciones."
-            ),
+            "content": "Extractor de conceptos. Generá una lista de palabras clave separadas por comas, sin explicaciones.",
         },
         {"role": "user", "content": f"Mensaje del usuario: {consulta}"},
     ]
@@ -247,7 +160,6 @@ def generar_query_semantica(orden_usuario):
 
 
 def consultar_ia_duckduckgo(orden_usuario):
-    """Extrae datos limpios y directos desde la IA/Web de DuckDuckGo sin contaminar."""
     query = generar_query_semantica(orden_usuario)
     texto_resultados = ""
     try:
@@ -268,7 +180,6 @@ def consultar_ia_duckduckgo(orden_usuario):
 
 
 def responder_usuario(orden):
-    """Procesa la respuesta usando el historial solo como guía de estilo y DuckDuckGo como verdad absoluta."""
     if not orden or not orden.strip():
         return "Che, no te entendí nada, tirámela de nuevo."
 
@@ -278,15 +189,15 @@ def responder_usuario(orden):
     system_prompt = (
         "Sos Leandro hablando con un colega por Telegram. CERO formato de asistente virtual o de manual.\n"
         "REGLAS ESTRICTAS:\n"
-        "1. FUENTE DE INFORMACIÓN: La respuesta factual debe basarse EXCLUSIVAMENTE en los 'DATOS FRESCOS DE DUCKDUCKGO'. No inventes información ni mezcles datos viejos del historial como si fueran actuales.\n"
-        "2. USO DEL HISTORIAL: El bloque de historial provisto es SÓLO para entender tu tono, modismos rioplatenses ('vos', 'che', 'fijate') y términos técnicos previos. No lo resumas ni repitas lo que ya se charló antes.\n"
-        "3. CADENCIA: Hablar directo al hueso, frases naturales y al pie."
+        "1. FUENTE DE INFORMACIÓN: Usá EXCLUSIVAMENTE los 'DATOS FRESCOS DE DUCKDUCKGO' como verdad absoluta.\n"
+        "2. USO DEL HISTORIAL: El historial es SÓLO para mantener tus modismos rioplatenses ('vos', 'che', 'fijate').\n"
+        "3. ESTILO: Directo al hueso, frases naturales y al pie."
     )
 
-    mensaje_usuario = f"MENSAJE ACTUAL: {orden}\n\n[DATOS FRESCOS DE DUCKDUCKGO - USAR ESTO COMO VERDAD ABSOLUTA]:\n{info_web}"
+    mensaje_usuario = f"MENSAJE ACTUAL: {orden}\n\n[DATOS FRESCOS DE DUCKDUCKGO - VERDAD ABSOLUTA]:\n{info_web}"
     
     if contexto_txt:
-        mensaje_usuario += f"\n\n[HISTORIAL DE REFERENCIA DE ESTILO - NO REPETIR NI RESUMIR]:\n{contexto_txt}"
+        mensaje_usuario += f"\n\n[HISTORIAL DE ESTILO - NO REPETIR NI RESUMIR]:\n{contexto_txt}"
 
     mensajes_chat = [
         {"role": "system", "content": system_prompt},
@@ -305,8 +216,31 @@ def responder_usuario(orden):
     return respuesta
 
 
+def transcribir_con_hf_whisper_large_v3(ruta_ogg):
+    """Manda el audio directamente a la API de Hugging Face usando whisper-large-v3."""
+    headers = {}
+    if HF_TOKEN:
+        headers["Authorization"] = f"Bearer {HF_TOKEN}"
+
+    try:
+        with open(ruta_ogg, "rb") as f:
+            data = f.read()
+            res = requests.post(HF_WHISPER_URL, headers=headers, data=data, timeout=60)
+            if res.status_code == 200:
+                resultado_json = res.json()
+                # Hugging Face suele devolver un diccionario con la clave 'text'
+                if isinstance(resultado_json, dict):
+                    return resultado_json.get("text", "").strip()
+                elif isinstance(resultado_json, list) and len(resultado_json) > 0:
+                    return resultado_json[0].get("text", "").strip()
+            else:
+                print(f"⚠️ Error API Hugging Face ({res.status_code}): {res.text}")
+    except Exception as e:
+        print(f"⚠️ Error conectando con Hugging Face Whisper Large v3: {e}")
+    return ""
+
+
 def limpiar_texto_para_voz(texto):
-    """Limpia formatos para síntesis de voz fluida."""
     texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', texto)
     texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio)
     texto_limpio = re.sub(r'\n+', '. ', texto_limpio)
@@ -314,7 +248,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo con DuckDuckGo puro y temperatura 0.2.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo con Whisper Large v3 (Hugging Face API) y DuckDuckGo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -327,9 +261,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa audio aplicando Whisper local, DuckDuckGo y modulación paramétrica de voz."""
+    """Procesa audio mandándolo a la API de Whisper Large v3 en Hugging Face."""
     async with lock_voz:
-        print("🎤 Audio recibido, procesando voz con Whisper y paramétrica...")
+        print("🎤 Audio recibido, mandando a Hugging Face Whisper Large v3...")
         await update.message.chat.send_action(action="record_voice")
 
         ruta_ogg = "temp_audio.ogg"
@@ -339,25 +273,17 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         respuesta = ""
 
         try:
-            modelo_whisper = whisper.load_model("base")
-
             archivo_telegram = await update.message.voice.get_file()
             await archivo_telegram.download_to_drive(ruta_ogg)
 
-            vocabulario_global = extraer_vocabulario_global_de_txt()
-            resultado_transcripcion = modelo_whisper.transcribe(
-                ruta_ogg, 
-                language="es", 
-                initial_prompt=vocabulario_global
-            )
-            texto_crudo = resultado_transcripcion.get("text", "").strip()
-            texto_reconocido = corregir_transcripcion_por_contexto(texto_crudo)
+            # Llamada directa a Whisper Large v3 en Hugging Face
+            texto_reconocido = transcribir_con_hf_whisper_large_v3(ruta_ogg)
 
             if os.path.exists(ruta_ogg):
                 os.remove(ruta_ogg)
 
             if not texto_reconocido:
-                await update.message.reply_text("Che, no te capté bien el audio, ¿me lo repetís?")
+                await update.message.reply_text("Che, no te capté bien el audio o la API de Hugging Face está cargando.")
                 return
 
             respuesta = responder_usuario(texto_reconocido)
@@ -370,9 +296,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=respuesta_para_voz, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # APLICACIÓN DEL PULIDO DE VOZ PARAMÉTRICO
             filtro_atempo, filtro_dinamico = calcular_parametros_audio_dinamicos(respuesta_para_voz)
-            print(f"🎛️ Parámetros de audio paramétrico: Tempo={filtro_atempo} | Dinámica={filtro_dinamico}")
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
@@ -387,7 +311,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=f"*(Entendido: \"{texto_reconocido}\")*"
                 )
 
-            print("✅ Nota de voz paramétrica enviada con éxito.")
+            print("✅ Nota de voz procesada con Whisper Large v3 y enviada con éxito.")
 
         except Exception as e:
             print(f"⚠ Error procesando el audio: {e}")
@@ -412,11 +336,11 @@ def main():
 
     try:
         requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true")
-        print("🧹 Webhook y actualizaciones limpiadas correctamente.")
+        print("🧹 Webhook limpiado correctamente.")
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot con DuckDuckGo puro y temperatura estricta 0.2...")
+    print("🚀 Iniciando Leandro Bot (Whisper Large v3 API + DuckDuckGo)...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
