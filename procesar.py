@@ -19,7 +19,7 @@ TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
-# URL oficial de la API de inferencia de Hugging Face para Whisper Large v3
+# URL oficial del router de inferencia de Hugging Face para Whisper Large v3
 HF_WHISPER_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3"
 
 # Candado global para procesar notas de voz en orden estricto
@@ -215,15 +215,22 @@ def responder_usuario(orden):
 
 
 def transcribir_con_hf_whisper(ruta_ogg):
-    """Manda el audio a la API oficial de Hugging Face usando el router de inferencia."""
+    """Manda el audio a la API oficial de Hugging Face con logs detallados y timeout ampliado."""
     headers = {}
     if HF_TOKEN:
         headers["Authorization"] = f"Bearer {HF_TOKEN}"
+    else:
+        print("⚠️ ATENCIÓN: No hay HF_TOKEN configurado. La API pública puede limitar las peticiones.")
 
     try:
+        print(f"📤 Subiendo {ruta_ogg} al router de Hugging Face (esperando respuesta / cold start)...")
         with open(ruta_ogg, "rb") as f:
             data = f.read()
-            res = requests.post(HF_WHISPER_URL, headers=headers, data=data, timeout=120)
+            # Timeout ampliado a 300 segundos (5 minutos) para que no se corte por frío
+            res = requests.post(HF_WHISPER_URL, headers=headers, data=data, timeout=300)
+            
+            print(f"📥 Respuesta recibida de Hugging Face. Status: {res.status_code}")
+
             if res.status_code == 200:
                 resultado_json = res.json()
                 if isinstance(resultado_json, dict):
@@ -232,6 +239,8 @@ def transcribir_con_hf_whisper(ruta_ogg):
                     return resultado_json[0].get("text", "").strip()
             else:
                 print(f"⚠️ Error API Hugging Face ({res.status_code}): {res.text}")
+    except requests.exceptions.Timeout:
+        print("❌ TIMEOUT: Hugging Face tardó más de 5 minutos en responder.")
     except Exception as e:
         print(f"⚠️ Error conectando con el router de Hugging Face: {e}")
     return ""
@@ -245,7 +254,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot activo conectado al Whisper de Hugging Face y Ollama local.")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo con Whisper (Router HF) y Ollama.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -258,9 +267,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa audio mandándolo a la API de Hugging Face."""
+    """Procesa audio mandándolo a la API oficial de Hugging Face."""
     async with lock_voz:
-        print("🎤 Audio recibido, mandando al router de Hugging Face...")
+        print("🎤 Audio recibido, procesando para Hugging Face...")
         await update.message.chat.send_action(action="record_voice")
 
         ruta_ogg = "temp_audio.ogg"
@@ -273,7 +282,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             archivo_telegram = await update.message.voice.get_file()
             await archivo_telegram.download_to_drive(ruta_ogg)
 
-            # Llamada exacta basada en la documentación oficial de Hugging Face
             texto_reconocido = transcribir_con_hf_whisper(ruta_ogg)
 
             if os.path.exists(ruta_ogg):
