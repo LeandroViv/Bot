@@ -169,3 +169,5 @@ En cuanto a las aplicaciones específicas, el DLM puede ser utilizado en la fisi
 
 En resumen, el DLM puede ser una herramienta valiosa para apariecer y mejorar algunos empleos, especialmente en los sectores de la salud y la fisioterapia. Sin embargo, es importante recordar que debe ser utilizado bajo la supervisión de un profesional capacitado y con conocimientos anatómicos y fisiológicos precisos.
 ---
+[USUARIO]: En la industria se está utilizando los modelos de aprendizaje no supervisado
+---
