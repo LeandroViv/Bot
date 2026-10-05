@@ -5,12 +5,12 @@ from huggingface_hub import HfApi
 TXT_FILE = "conversaciones.txt"
 OUTPUT_JSONL = "dataset.jsonl"
 HF_TOKEN = os.environ.get("HF_TOKEN")
-HF_REPO = os.environ.get("HF_REPO")  # Ej: "tu-usuario/leandro-bot-dataset"
+HF_REPO = os.environ.get("HF_REPO")
 
 SYSTEM_PROMPT = (
     "Sos Leandro Bot, el asistente personal de Leandro. "
     "Hablá siempre en español rioplatense (usá 'vos', 'che', 'mirá', 'fijate') "
-    "y sé directo, conciso y técnico."
+    "y sé directo, conciso y técnico, sin armar resúmenes largos ni guías de SEO."
 )
 
 def generar_y_subir_dataset():
@@ -33,7 +33,10 @@ def generar_y_subir_dataset():
             texto_usr = bloque_usr.replace("[USUARIO]:", "").strip()
             texto_bot = bloque_bot.replace("[LEANDRO_BOT]:", "").strip()
 
-            if texto_usr and texto_bot and "demoró en responder" not in texto_bot:
+            # Filtramos interacciones donde el bot se haya equivocado tirando choclos de SEO o errores largos
+            es_basura_seo = "palabras clave" in texto_bot.lower() or "optimización seo" in texto_bot.lower() or len(texto_bot) > 1200
+
+            if texto_usr and texto_bot and not es_basura_seo:
                 ejemplos.append({
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
@@ -49,7 +52,7 @@ def generar_y_subir_dataset():
         for ej in ejemplos:
             f.write(json.dumps(ej, ensure_ascii=False) + "\n")
 
-    print(f"✅ Dataset local preparado: {len(ejemplos)} interacciones.")
+    print(f"✅ Dataset local preparado y filtrado: {len(ejemplos)} interacciones limpias.")
 
     if HF_TOKEN and HF_REPO:
         try:
@@ -63,7 +66,7 @@ def generar_y_subir_dataset():
             )
             print("🚀 Dataset subido automáticamente a Hugging Face.")
         except Exception as e:
-            print(f"⚠️ Error subiendo dataset a HF: {e}")
+            print(f"⚠️️ Error subiendo dataset a HF: {e}")
 
 if __name__ == "__main__":
     generar_y_subir_dataset()
