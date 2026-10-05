@@ -119,3 +119,5 @@ Es importante planificar y implementar cuidadosamente palabras clave para conect
 
 Espero que esto te ayude a entender mejor cómo funcionan las palabras clave y cómo implementarlas para SEO, che. Si tienes alguna pregunta o necesitas más ayuda, no dudes en preguntar.
 ---
+[USUARIO]: si me buscas en la web alguna implementación que haya el LM pero particularmente en robóticas.
+---
