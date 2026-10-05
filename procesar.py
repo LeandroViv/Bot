@@ -19,9 +19,8 @@ TXT_FILE = "conversaciones.txt"
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
-# Endpoints oficiales de la API de Inferencia de Hugging Face
-HF_WHISPER_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
-HF_GPT_URL = "https://api-inference.huggingface.co/models/openai/gpt-oss-120b"
+# URL oficial de la API de inferencia de Hugging Face para Whisper Large v3
+HF_WHISPER_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3"
 
 # Candado global para procesar notas de voz en orden estricto
 lock_voz = asyncio.Lock()
@@ -60,31 +59,22 @@ def exportar_dataset_actualizado():
         print(f"⚠️ No se pudo exportar el dataset: {e}")
 
 
-def llamar_huggingface_gpt(messages, timeout_secs=120):
-    """Consulta al modelo openai/gpt-oss-120b mediante la API de Hugging Face."""
-    headers = {"Content-Type": "application/json"}
-    if HF_TOKEN:
-        headers["Authorization"] = f"Bearer {HF_TOKEN}"
-
-    # Formateamos los mensajes al estilo standard de chat completion compatible con la API
+def llamar_ollama(messages, timeout_secs=300):
+    url = "http://127.0.0.1:11434/api/chat"
     payload = {
-        "inputs": messages,
-        "parameters": {"temperature": 0.2, "max_new_tokens": 1000}
+        "model": "llama3.2",
+        "messages": messages,
+        "options": {"num_ctx": 16384, "temperature": 0.2},
+        "stream": False,
     }
-    
     try:
-        res = requests.post(HF_GPT_URL, headers=headers, json=payload, timeout=timeout_secs)
+        res = requests.post(url, json=payload, timeout=timeout_secs)
         if res.status_code == 200:
-            resultado = res.json()
-            # Dependiendo de cómo devuelva el formato la API de Hugging Face:
-            if isinstance(resultado, list) and len(resultado) > 0:
-                return resultado[0].get("generated_text", "").strip()
-            elif isinstance(resultado, dict):
-                return resultado.get("generated_text", "").strip()
-        else:
-            print(f"⚠️ Error API GPT-OSS Hugging Face ({res.status_code}): {res.text}")
+            contenido = res.json().get("message", {}).get("content", "").strip()
+            if contenido:
+                return contenido
     except Exception as e:
-        print(f"⚠️ Error conectando con openai/gpt-oss-120b: {e}")
+        print(f"⚠️ Error conectando con Ollama: {e}")
     return ""
 
 
@@ -92,17 +82,93 @@ def calcular_parametros_audio_dinamicos(texto_respuesta):
     return "atempo=1.03", "dynaudnorm=f=150:g=15"
 
 
+def extraer_conceptos_semanticos(consulta):
+    prompt = [
+        {
+            "role": "system",
+            "content": "Extractor de conceptos. Generá una lista de palabras clave separadas por comas, sin explicaciones.",
+        },
+        {"role": "user", "content": f"Mensaje del usuario: {consulta}"},
+    ]
+    respuesta = llamar_ollama(prompt, timeout_secs=120)
+    if respuesta:
+        return [
+            c.strip().lower()
+            for c in respuesta.replace("\n", "").split(",")
+            if len(c.strip()) > 2
+        ]
+    return [p.lower() for p in re.findall(r"\w+", consulta) if len(p) > 3]
+
+
+def recuperar_contexto_de_txt(consulta, max_bloques=3):
+    if not os.path.exists(TXT_FILE):
+        return ""
+
+    with open(TXT_FILE, "r", encoding="utf-8") as f:
+        contenido = f.read()
+
+    bloques = contenido.split("---\n")
+    bloques_validos = [b.strip() for b in bloques if b.strip()]
+    if not bloques_validos:
+        return ""
+
+    conceptos = extraer_conceptos_semanticos(consulta)
+    if not conceptos:
+        return ""
+
+    bloques_puntuados = []
+    for b in bloques_validos:
+        b_lower = b.lower()
+        coincidencias = sum(1 for c in conceptos if c in b_lower)
+        if coincidencias > 0:
+            bloques_puntuados.append((coincidencias, b))
+
+    bloques_puntuados.sort(key=lambda x: x[0], reverse=True)
+
+    top_bloques = []
+    vistos = set()
+    for _, b in bloques_puntuados:
+        if b not in vistos:
+            top_bloques.append(b)
+            vistos.add(b)
+        if len(top_bloques) >= max_bloques:
+            break
+
+    return "\n\n".join(top_bloques)
+
+
+def generar_query_semantica(orden_usuario):
+    historial_completo = ""
+    if os.path.exists(TXT_FILE):
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            historial_completo = f.read()
+
+    prompt = [
+        {
+            "role": "system",
+            "content": "Analizá el historial y la consulta para devolver de 2 a 5 palabras clave de búsqueda web en texto plano.",
+        },
+        {
+            "role": "user",
+            "content": f"HISTORIAL:\n{historial_completo}\n\nCONSULTA: {orden_usuario}",
+        },
+    ]
+    query = llamar_ollama(prompt, timeout_secs=120)
+    return query.replace('"', "").replace("'", "").strip() if query else orden_usuario
+
+
 def consultar_ia_duckduckgo(orden_usuario):
+    query = generar_query_semantica(orden_usuario)
     texto_resultados = ""
     try:
         with DDGS() as ddgs:
             if hasattr(ddgs, "chat"):
-                respuestas = list(ddgs.chat(orden_usuario))
+                respuestas = list(ddgs.chat(query))
                 if respuestas:
                     texto_resultados = "\n".join([str(r) for r in respuestas])
             
             if not texto_resultados:
-                res = list(ddgs.text(orden_usuario, max_results=5, backend="html"))
+                res = list(ddgs.text(query, max_results=5, backend="html"))
                 for r in res:
                     texto_resultados += f"• {r.get('title')}: {r.get('body')}\n"
     except Exception as e:
@@ -115,18 +181,28 @@ def responder_usuario(orden):
     if not orden or not orden.strip():
         return "Che, no te entendí nada, tirámela de nuevo."
 
+    contexto_txt = recuperar_contexto_de_txt(orden, max_bloques=3)
     info_web = consultar_ia_duckduckgo(orden)
 
     system_prompt = (
         "Sos Leandro hablando con un colega por Telegram. CERO formato de asistente virtual o de manual.\n"
         "REGLAS ESTRICTAS:\n"
         "1. FUENTE DE INFORMACIÓN: Usá EXCLUSIVAMENTE los 'DATOS FRESCOS DE DUCKDUCKGO' como verdad absoluta.\n"
-        "2. ESTILO: Directo al hueso, modismos rioplatenses ('vos', 'che', 'fijate'), frases naturales y al pie."
+        "2. USO DEL HISTORIAL: El historial es SÓLO para mantener tus modismos rioplatenses ('vos', 'che', 'fijate').\n"
+        "3. ESTILO: Directo al hueso, frases naturales y al pie."
     )
 
-    prompt_texto = f"{system_prompt}\n\n[DATOS FRESCOS DE DUCKDUCKGO]:\n{info_web}\n\nMENSAJE ACTUAL: {orden}"
+    mensaje_usuario = f"MENSAJE ACTUAL: {orden}\n\n[DATOS FRESCOS DE DUCKDUCKGO - VERDAD ABSOLUTA]:\n{info_web}"
+    
+    if contexto_txt:
+        mensaje_usuario += f"\n\n[HISTORIAL DE ESTILO - NO REPETIR NI RESUMIR]:\n{contexto_txt}"
 
-    respuesta = llamar_huggingface_gpt(prompt_texto, timeout_secs=120)
+    mensajes_chat = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": mensaje_usuario},
+    ]
+
+    respuesta = llamar_ollama(mensajes_chat, timeout_secs=300)
 
     if not respuesta or not respuesta.strip():
         respuesta = "Che, me quedé pensando y no me salió nada."
@@ -139,7 +215,7 @@ def responder_usuario(orden):
 
 
 def transcribir_con_hf_whisper(ruta_ogg):
-    """Manda el audio directamente a la API de Hugging Face usando whisper-large-v3."""
+    """Manda el audio a la API oficial de Hugging Face usando el router de inferencia."""
     headers = {}
     if HF_TOKEN:
         headers["Authorization"] = f"Bearer {HF_TOKEN}"
@@ -155,9 +231,9 @@ def transcribir_con_hf_whisper(ruta_ogg):
                 elif isinstance(resultado_json, list) and len(resultado_json) > 0:
                     return resultado_json[0].get("text", "").strip()
             else:
-                print(f"⚠️️ Error API Whisper Hugging Face ({res.status_code}): {res.text}")
+                print(f"⚠️ Error API Hugging Face ({res.status_code}): {res.text}")
     except Exception as e:
-        print(f"⚠️ Error conectando con Whisper Large v3 en Hugging Face: {e}")
+        print(f"⚠️ Error conectando con el router de Hugging Face: {e}")
     return ""
 
 
@@ -169,7 +245,7 @@ def limpiar_texto_para_voz(texto):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Leandro Bot conectado 100% a Hugging Face (Whisper Large v3 + GPT-OSS-120B).")
+    await update.message.reply_text("¡Buenas che! Leandro Bot activo conectado al Whisper de Hugging Face y Ollama local.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -182,9 +258,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa audio mandándolo a Whisper Large v3 en Hugging Face."""
+    """Procesa audio mandándolo a la API de Hugging Face."""
     async with lock_voz:
-        print("🎤 Audio recibido, mandando a Hugging Face Whisper...")
+        print("🎤 Audio recibido, mandando al router de Hugging Face...")
         await update.message.chat.send_action(action="record_voice")
 
         ruta_ogg = "temp_audio.ogg"
@@ -197,13 +273,14 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             archivo_telegram = await update.message.voice.get_file()
             await archivo_telegram.download_to_drive(ruta_ogg)
 
+            # Llamada exacta basada en la documentación oficial de Hugging Face
             texto_reconocido = transcribir_con_hf_whisper(ruta_ogg)
 
             if os.path.exists(ruta_ogg):
                 os.remove(ruta_ogg)
 
             if not texto_reconocido:
-                await update.message.reply_text("Che, la API de Hugging Face está calentando motores (cold start). Intentá de nuevo en unos segundos.")
+                await update.message.reply_text("Che, el modelo de Hugging Face está cargando (cold start). Probá de nuevo en unos segundos.")
                 return
 
             respuesta = responder_usuario(texto_reconocido)
@@ -231,7 +308,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=f"*(Entendido: \"{texto_reconocido}\")*"
                 )
 
-            print("✅ Nota de voz procesada con éxito.")
+            print("✅ Nota de voz procesada y enviada con éxito.")
 
         except Exception as e:
             print(f"⚠️ Error procesando el audio: {e}")
@@ -260,7 +337,7 @@ def main():
     except Exception as e:
         print(f"⚠️ No se pudo limpiar el webhook: {e}")
 
-    print("🚀 Iniciando Leandro Bot (Hugging Face API Puro)...")
+    print("🚀 Iniciando Leandro Bot (Whisper Router de Hugging Face + Ollama)...")
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
