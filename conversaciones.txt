@@ -206,3 +206,5 @@ La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencill
 ---
 [USUARIO]: Saludos
 ---
+[LEANDRO_BOT]: Che, fijate! ¿Sabías que hay herramientas de búsqueda de palabras clave gratuitas? Me parece genial que DuckDuckGo tenga una lista de generadores de palabras clave con IA. ¿Cuál es tu experiencia con ellas? ¿Las has utilizado para algo en particular?
+---
