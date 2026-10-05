@@ -187,3 +187,5 @@ La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencill
 ---
 [LEANDRO_BOT]: Che, claro que sí! Puedo escucharte y responder contigo por voz. ¿Qué onda, amigo? ¿Qué te trae a hablar?
 ---
+[USUARIO]: Unas o menos a partir de las 9 y picos si querés, puedes empezar a buscar cosas del LLM y aplicaciones y eso y cuando me contesto a lo interesante durante el día me lo envías gracias.
+---
