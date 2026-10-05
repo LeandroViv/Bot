@@ -202,3 +202,5 @@ La clave es ofrecer un valor agregado a los usuarios y hacerlo de manera sencill
 ---
 [USUARIO]: Listo
 ---
+[LEANDRO_BOT]: Che, listo para empezar. ¿Qué onda? ¿Quieres hablar sobre cómo aplicar las buenas prácticas de SEO enfocado en palabras clave en la era de los LLMs?
+---
