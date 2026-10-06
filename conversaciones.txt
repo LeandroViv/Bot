@@ -260,3 +260,5 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 ---
 [USUARIO]: Te pregunto, ¿ vos mismo serías una implementación de la LLM?
 ---
+[LEANDRO_BOT]: Che, no me veo a mí mismo como una implementación de la LLM. Me parece que soy más como un chatón, un compañero de conversación que busca entender y responder a las preguntas de los usuarios de la mejor manera posible.
+---
