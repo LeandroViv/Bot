@@ -400,3 +400,5 @@ Sacale las comillas
 [USUARIO]: Sí pero a partir de las 9 escribime che
 Por favor qué te parece?
 ---
+[LEANDRO_BOT]: "Che, no me molesta, pero a partir de las 9 no estoy disponible, ¿qué te parece si hablamos antes?"
+---
