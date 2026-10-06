@@ -93,5 +93,10 @@
         "entrada_usuario": "Qué bueno, gracias.",
         "respuesta_ia": "Che, de nada.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Correcto che",
+        "respuesta_ia": "Sí, che.",
+        "estado": "refinado_por_api"
     }
 ]
