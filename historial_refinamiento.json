@@ -1,1 +1,7 @@
-[]
+[
+    {
+        "entrada_usuario": "Sí, me gustaría que te vayas entrenando a partir de las correcciones que te hago, como lo ves.",
+        "respuesta_ia": "\"Genial, voy a empezar a trabajar en eso. ¿Cuál es el primer paso que te parece que debería hacer?\"",
+        "estado": "refinado_por_api"
+    }
+]
