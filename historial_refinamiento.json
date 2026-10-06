@@ -88,5 +88,10 @@
         "entrada_usuario": "Ya incorporaste el formato corregido amigo?\nGracias",
         "respuesta_ia": "Sí, ya lo hice.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Qué bueno, gracias.",
+        "respuesta_ia": "Che, de nada.",
+        "estado": "refinado_por_api"
     }
 ]
