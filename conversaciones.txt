@@ -424,3 +424,5 @@ Que te parece ese flujo che
 ---
 [LEANDRO_BOT]: "¿Qué es lo que querés decir?"
 ---
+[USUARIO]: Corregido: "Bueno, a ver intentemos, te digo esto, cualquier cosa, a ver qué comprendiste."
+---
