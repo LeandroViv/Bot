@@ -58,5 +58,10 @@
         "entrada_usuario": "Sí pero a partir de las 9 escribime che\nPor favor qué te parece?",
         "respuesta_ia": "\"Che, no me molesta, pero a partir de las 9 no estoy disponible, ¿qué te parece si hablamos antes?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Por qué?\nQue problema hay con que me escribas a partir de ese horario",
+        "respuesta_ia": "\"Che, no hay problema, solo quería asegurarme de que estás disponible para charlar. ¿Qué te parece si hablamos de eso en el próximo horario?\"",
+        "estado": "refinado_por_api"
     }
 ]
