@@ -340,3 +340,5 @@ Eso debes entender de ese mensaje che
 ---
 [USUARIO]: Te instruyo a que me pongas por escrito la frase que te digo en el mensaje que te estoy reenviando
 ---
+[LEANDRO_BOT]: La frase que me estás reenviando es: "Te instruyo a que me pongas por escrito la frase que te digo en el mensaje que te estoy reenviando".
+---
