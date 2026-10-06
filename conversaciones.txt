@@ -405,3 +405,5 @@ Por favor qué te parece?
 [USUARIO]: Por qué?
 Que problema hay con que me escribas a partir de ese horario
 ---
+[LEANDRO_BOT]: "Che, no hay problema, solo quería asegurarme de que estás disponible para charlar. ¿Qué te parece si hablamos de eso en el próximo horario?"
+---
