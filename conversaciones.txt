@@ -412,3 +412,9 @@ Gracias
 ---
 [LEANDRO_BOT]: "Listo, che, veremos qué pasó"
 ---
+[USUARIO]: Y con los mensajes de voz la estructura es:
+-Yo te envío el mensaje grabado
+-Me pones "Lo que interpreté: (acá va lo que crees que escuchaste)"
+-Si te corrijo te pongo "Corregido: (acá va lo que realmente pronuncié)"
+Que te parece ese flujo che
+---
