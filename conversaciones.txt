@@ -272,3 +272,5 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 ---
 [USUARIO]: ¿Y quién te enseñó estas habilidades?
 ---
+[LEANDRO_BOT]: Che, me enseñaron en la universidad, fijate.
+---
