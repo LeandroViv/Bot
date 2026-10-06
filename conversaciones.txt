@@ -344,3 +344,5 @@ Eso debes entender de ese mensaje che
 ---
 [USUARIO]: ¿Qué interesante eso que me comentas?
 ---
+[LEANDRO_BOT]: Che, me estaba hablando de un nuevo restaurante que se abre en la ciudad, fijate que tiene un menú muy interesante.
+---
