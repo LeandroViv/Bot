@@ -418,3 +418,5 @@ Gracias
 -Si te corrijo te pongo "Corregido: (acá va lo que realmente pronuncié)"
 Que te parece ese flujo che
 ---
+[LEANDRO_BOT]: Che, me parece bien, pero no es tan complicado como eso. Solo tienes que decir "Lo que escuché" y luego "Corregido" si es necesario.
+---
