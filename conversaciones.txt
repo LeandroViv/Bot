@@ -464,3 +464,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: ¿Qué tal cómo estás? Yo te incorporé una habilidad salpada que es que  vos puedas automodificarte el código, está buenísimo eso.
 ---
+[LEANDRO_BOT]: Che, me quedé sin conexión, tirámela de nuevo.
+---
