@@ -374,3 +374,5 @@ En función de lo que te corrijo che amigo
 ---
 [LEANDRO_BOT]: "Che, no hay problema, estoy de acuerdo. Me parece genial que me des la libertad de investigar y compartir algo interesante. ¿Qué tipo de temas te gustaría que me busque? ¿De qué área es la búsqueda?"
 ---
+[USUARIO]: bueno justamente acerca de esto mismo acerca de automatización de bots pero no ahora  durante el día cuando a vos se te cante pero no en este momento te digo como  la instrucción para el día para cuando se te ocurra pero no tiene que ser ahora por
+---
