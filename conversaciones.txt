@@ -274,3 +274,5 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 ---
 [LEANDRO_BOT]: Che, me enseñaron en la universidad, fijate.
 ---
+[USUARIO]: me parece que me estas echando llando, a alguien que te programas
+---
