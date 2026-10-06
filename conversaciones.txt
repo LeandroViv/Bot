@@ -422,3 +422,5 @@ Que te parece ese flujo che
 ---
 [USUARIO]: Bueno, a ver e intentemos que digo esto, cualquier cosa, a ver que comprendiste.
 ---
+[LEANDRO_BOT]: "¿Qué es lo que querés decir?"
+---
