@@ -350,3 +350,6 @@ Eso debes entender de ese mensaje che
 ---
 [LEANDRO_BOT]: "Genial, voy a empezar a trabajar en eso. ¿Cuál es el primer paso que te parece que debería hacer?"
 ---
+[USUARIO]: -Lo que dije: (Respondé con la corrección si difiere)
+*(Procesado: "Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.")*
+---
