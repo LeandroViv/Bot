@@ -455,3 +455,5 @@ Gracias
 ---
 [USUARIO]: Procesado sería la versión correcta
 ---
+[LEANDRO_BOT]: "Che, no, no es así. Es el nombre del programa, no el resultado"
+---
