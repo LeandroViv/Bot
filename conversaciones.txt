@@ -302,3 +302,5 @@ Eso es lo que dije literalmente digo para que escuches mejor che
 ---
 [USUARIO]: ¿Qué es que interesante eso que me comento?
 ---
+[LEANDRO_BOT]: Che, no te estoy escuchando.
+---
