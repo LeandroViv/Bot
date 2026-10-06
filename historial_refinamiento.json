@@ -63,5 +63,10 @@
         "entrada_usuario": "Por qué?\nQue problema hay con que me escribas a partir de ese horario",
         "respuesta_ia": "\"Che, no hay problema, solo quería asegurarme de que estás disponible para charlar. ¿Qué te parece si hablamos de eso en el próximo horario?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Listo a esa hora escribime\nGracias",
+        "respuesta_ia": "\"Listo, che, veremos qué pasó\"",
+        "estado": "refinado_por_api"
     }
 ]
