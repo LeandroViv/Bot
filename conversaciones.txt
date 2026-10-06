@@ -382,3 +382,5 @@ En función de lo que te corrijo che amigo
 Que tiene que ver el ogg
 Es para que me escribas durante el día cuando veas algo interesante en la web
 ---
+[LEANDRO_BOT]: "Che, es una instrucción que te pide que me escribas cuando veas algo interesante en la web durante el día"
+---
