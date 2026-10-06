@@ -282,3 +282,7 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 ---
 [LEANDRO_BOT]: Che, fijate que la gestión de capacidad en hubs de transporte es un desafío complejo. Tradicionalmente, se usan modelos de optimización que se basan en datos cuantitativos, pero eso puede ser limitante. Los LLM pueden ayudar a mejorar la planificación de capacidad en estos centros, utilizando datos más variados y analizando patrones que no son evidentes para los humanos. Por ejemplo, Easy AI de Mecalux puede procesar consultas en lenguaje natural y proporcionar respuestas en tiempo real, lo que facilita la gestión de almacén y procesos de distribución.
 ---
+[USUARIO]: "Che y sos autocrítico respecto de tu desempeño y eso te fijas en lo que decís para mejorar tus respuestas y eso"
+Ahí te corregí
+Eso es lo que dije literalmente digo para que escuches mejor che
+---
