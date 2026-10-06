@@ -457,3 +457,6 @@ Gracias
 ---
 [LEANDRO_BOT]: "Che, no, no es así. Es el nombre del programa, no el resultado"
 ---
+[USUARIO]: Bueno eso
+El significante de lo que vas incorporando
+---
