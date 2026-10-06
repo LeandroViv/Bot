@@ -4,7 +4,6 @@ import os
 import re
 import difflib
 import subprocess
-from bs4 import BeautifulSoup
 from ddgs import DDGS
 import requests
 from telegram import Update
@@ -22,7 +21,14 @@ from gtts import gTTS
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
 CARPETA_MUESTRAS = "muestras_voz"
+
+# Aseguramos que existan las carpetas y archivos base localmente antes de tocar git
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
+if not os.path.exists(REGISTRO_INDUCCION):
+    with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+if not os.path.exists(TXT_FILE):
+    open(TXT_FILE, "w", encoding="utf-8").close()
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -30,24 +36,28 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# Candado global para procesar notas de voz en orden estricto
 lock_voz = asyncio.Lock()
 
 
 def sincronizar_txt_con_github():
-    """Hace commit y push automático de la memoria e inducción al repositorio."""
+    """Sincroniza de forma segura la memoria y la inducción sin romper si falta algún archivo."""
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         
-        subprocess.run(["git", "add", TXT_FILE, REGISTRO_INDUCCION], check=True)
-        resultado = subprocess.run(["git", "commit", "-m", "🤖 Sincronización automática de inducción y memoria"], capture_output=True, text=True)
+        # Agregamos solo si existen para evitar el error de pathspec
+        archivos_a_subir = [TXT_FILE]
+        if os.path.exists(REGISTRO_INDUCCION):
+            archivos_a_subir.append(REGISTRO_INDUCCION)
+            
+        subprocess.run(["git", "add"] + archivos_a_subir, check=True)
+        resultado = subprocess.run(["git", "commit", "-m", "🤖 Sincronización automática de inducción"], capture_output=True, text=True)
         
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ Archivos sincronizados con éxito en GitHub.")
+            print("☁️ Sincronizado con éxito en GitHub.")
     except Exception as e:
-        print(f"⚠️ No se pudo sincronizar con GitHub: {e}")
+        print(f"⚠️ Aviso de git (no crítico): {e}")
 
 
 def guardar_en_txt(rol, texto):
@@ -57,7 +67,7 @@ def guardar_en_txt(rol, texto):
 
 
 # ==========================================
-# SISTEMA DE INDUCCIÓN Y APRENDIZAJE FONÉTICO
+# SISTEMA DE INDUCCIÓN Y REGISTRO
 # ==========================================
 def cargar_historial_induccion():
     if os.path.exists(REGISTRO_INDUCCION):
@@ -70,7 +80,7 @@ def cargar_historial_induccion():
 
 
 def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
-    """Asocia el audio físico guardado con la corrección real provista por vos."""
+    """Guarda la corrección en el JSON y asegura que el archivo de audio quede referenciado."""
     historial = cargar_historial_induccion()
     historial[error_whisper.lower()] = {
         "correcto": correccion_real,
@@ -78,12 +88,11 @@ def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
     }
     with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
         json.dump(historial, f, indent=4, ensure_ascii=False)
-    print(f"🧠 [Inducción Aprendida]: '{error_whisper}' -> '{correccion_real}' (Atado a {audio_path})")
+    print(f"🧠 [Inducción Aprendida]: '{error_whisper}' -> '{correccion_real}'")
     sincronizar_txt_con_github()
 
 
 def cotejar_y_corregir_induccion(texto_crudo):
-    """Compara la transcripción con el historial inductivo usando difflib."""
     historial = cargar_historial_induccion()
     if not historial:
         return texto_crudo
@@ -103,34 +112,28 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_corregido
 
 
-# ==========================================
-# CONSULTA A LA IA (GEMINI / OLLAMA) CON BÚSQUEDA WEB
-# ==========================================
 def llamar_ia_externa_o_local(prompt_usuario):
-    """Usa Gemini con DuckDuckGo o respaldo local, enfocado estrictamente en transporte e industria."""
-    # Buscamos datos frescos en la web relacionados con la consulta
     info_web = ""
     try:
         with DDGS() as ddgs:
-            res = list(ddgs.text(f"implementaciones LLM industria transporte {prompt_usuario}", max_results=3))
+            res = list(ddgs.text(f"implementaciones LLM industria transporte {prompt_usuario}", max_results=2))
             for r in res:
                 info_web += f"• {r.get('title')}: {r.get('body')}\n"
     except Exception as e:
         print(f"⚠️ Error en web: {e}")
 
     system_prompt = (
-        "Sos Leandro hablando con un colega por Telegram. CERO formato de asistente virtual, ni manuales largos, ni resúmenes.\n"
+        "Sos Leandro hablando con un colega por Telegram. CERO formato de asistente virtual.\n"
         "REGLAS ESTRICTAS:\n"
-        "1. AL HUESO: Respondé directo sobre lo que te pidió (ej. LLM en transporte).\n"
-        "2. TONO PORTEÑO NATURAL: Hablá directo, al pie, usando 'vos', 'che', 'fijate', sin formalidades.\n"
-        "3. VERDAD WEB: Si hay datos frescos de la web, usalos como base técnica."
+        "1. AL HUESO: Respondé directo sobre lo que te pidió.\n"
+        "2. TONO PORTEÑO NATURAL: Hablá directo, al pie, usando 'vos', 'che', 'fijate'.\n"
+        "3. BREVEDAD: No te flashees con textos larguísimos."
     )
 
     prompt_final = f"MENSAJE: {prompt_usuario}"
     if info_web:
-        prompt_final += f"\n\n[DATOS FRESCOS WEB]:\n{info_web}"
+        prompt_final += f"\n\n[DATOS WEB]:\n{info_web}"
 
-    # 1. Intento con Google Gemini API
     if GEMINI_API_KEY:
         try:
             model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
@@ -138,9 +141,8 @@ def llamar_ia_externa_o_local(prompt_usuario):
             if response and response.text:
                 return response.text.strip()
         except Exception as e:
-            print(f"⚠️ Falló Gemini: {e}. Probando Ollama...")
+            print(f"⚠️ Gemini falló: {e}")
 
-    # 2. Respaldo Ollama local
     url = "http://127.0.0.1:11434/api/chat"
     payload = {
         "model": "llama3.2",
@@ -164,7 +166,6 @@ def llamar_ia_externa_o_local(prompt_usuario):
 def responder_usuario(orden):
     if not orden or not orden.strip():
         return "Che, no te entendí nada, tirámela de nuevo."
-
     respuesta = llamar_ia_externa_o_local(orden)
     guardar_en_txt("usuario", orden)
     guardar_en_txt("leandro_bot", respuesta)
@@ -172,64 +173,60 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con inducción fonética y persistencia de muestras.")
+    await update.message.reply_text("¡Buenas che! Bot activo con corrección inductiva directa.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
-    print(f"📩 Mensaje de texto recibido: {texto_usuario}")
+    print(f"📩 Mensaje recibido: {texto_usuario}")
     await update.message.chat.send_action(action="typing")
-
     respuesta = responder_usuario(texto_usuario)
     await update.message.reply_text(respuesta)
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Procesa audio guardándolo permanentemente en muestras_voz/, aplicando Whisper e inducción."""
     async with lock_voz:
-        print("🎤 Audio recibido, procesando persistencia y Whisper...")
+        print("🎤 Procesando audio...")
         await update.message.chat.send_action(action="record_voice")
 
         message_id = update.message.message_id
         ruta_respuesta_mp3 = "respuesta.mp3"
         ruta_respuesta_ogg = "respuesta.ogg"
         texto_reconocido = ""
-        respuesta = ""
 
         try:
             archivo_telegram = await update.message.voice.get_file()
             
-            # Guardado permanente del archivo físico en muestras_voz/
+            # Guardado físico permanente en muestras_voz/
             audio_filename = f"audio_{message_id}.ogg"
             audio_path = os.path.join(CARPETA_MUESTRAS, audio_filename)
             await archivo_telegram.download_to_drive(audio_path)
-            print(f"🎙️ Audio guardado de forma permanente en: {audio_path}")
+            print(f"🎙️ Audio guardado en: {audio_path}")
 
-            # Transcripción con Faster-Whisper
             model = WhisperModel("base", device="cpu", compute_type="int8")
             segments, _ = model.transcribe(audio_path, beam_size=5, language="es")
             texto_crudo = " ".join([segment.text for segment in segments]).strip()
             
             print(f"🗣️ Whisper crudo: {texto_crudo}")
 
-            # Aplicamos cotejo inductivo fonético
+            # Cotejo inductivo
             texto_reconocido = cotejar_y_corregir_induccion(texto_crudo)
 
-            # Si nos pasaste explícitamente el texto real por el chat o detectamos desvío, registramos la inducción
+            # Si detectamos que pifió feo y el usuario nos pasó la posta o queremos registrarlo:
+            mensaje_feedback = ""
             if texto_crudo != texto_reconocido:
                 registrar_correccion_inductiva(audio_path, texto_crudo, texto_reconocido)
+                mensaje_feedback = f"Listo, ahí lo corrigí, che. Entendí: \"{texto_reconocido}\".\n\n"
 
             if not texto_reconocido:
                 await update.message.reply_text("Che, no te capté bien el audio, ¿me lo repetís?")
                 return
 
             respuesta = responder_usuario(texto_reconocido)
-            print(f"🔊 Respuesta generada: '{respuesta}'")
+            respuesta_final_voz = mensaje_feedback + respuesta
 
             texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
             texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
-            if not texto_limpio:
-                texto_limpio = "Che, me quedé pensando y no supe qué decirte."
 
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
@@ -247,14 +244,11 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=f"*(Entendido: \"{texto_reconocido}\")*"
                 )
 
-            print("✅ Nota de voz procesada y enviada con éxito.")
+            print("✅ Nota de voz procesada con éxito.")
 
         except Exception as e:
-            print(f"⚠️ Error procesando el audio: {e}")
-            try:
-                await update.message.reply_text(f"*(Entendido: \"{texto_reconocido}\")*\n\n{respuesta}")
-            except:
-                await update.message.reply_text("Che, se me armó un lío procesando el audio.")
+            print(f"⚠️ Error en audio: {e}")
+            await update.message.reply_text("Che, se me armó un lío procesando el audio.")
 
         finally:
             for archivo in [ruta_respuesta_mp3, ruta_respuesta_ogg]:
@@ -267,22 +261,20 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     if not TOKEN:
-        print("❌ ERROR: No se encontró TELEGRAM_BOT_TOKEN.")
+        print("❌ ERROR: Falta token.")
         return
 
     try:
         requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true")
-        print("🧹 Webhook limpiado correctamente.")
+        print("🧹 Webhook limpio.")
     except Exception as e:
-        print(f"⚠️ No se pudo limpiar el webhook: {e}")
+        print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando Leandro Bot con Inducción Fonética y Muestras Activas...")
+    print("🚀 Iniciando bot blindado contra errores de Git y con feedback inductivo...")
     app = Application.builder().token(TOKEN).build()
-    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
     app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
-    
     app.run_polling(drop_pending_updates=True)
 
 
