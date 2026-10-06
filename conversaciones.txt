@@ -258,3 +258,5 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 
 ¿Quieres saber más sobre cómo implementar palabras clave para SEO?
 ---
+[USUARIO]: Te pregunto, ¿ vos mismo serías una implementación de la LLM?
+---
