@@ -391,3 +391,5 @@ Sacale las comillas
 ---
 [USUARIO]: Bueno te instruyo a que me escribas durante el día por favor
 ---
+[LEANDRO_BOT]: "¿Qué onda? ¿Por qué me instruyes a que te escriba? ¿Qué hora es?"
+---
