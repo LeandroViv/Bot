@@ -20,15 +20,20 @@ from gtts import gTTS
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
+REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
 CARPETA_MUESTRAS = "muestras_voz"
 
 # Aseguramos directorios y archivos base
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
-if not os.path.exists(REGISTRO_INDUCCION):
-    with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
-        json_lib.dump({}, f)
-if not os.path.exists(TXT_FILE):
-    open(TXT_FILE, "w", encoding="utf-8").close()
+for archivo_base, contenido_inicial in [
+    (REGISTRO_INDUCCION, {}),
+    (REGISTRO_REFINAMIENTO, []),
+    (TXT_FILE, "")
+]:
+    if not os.path.exists(archivo_base):
+        with open(archivo_base, "w", encoding="utf-8") as f:
+            if isinstance(contenido_inicial, dict) or isinstance(contenido_inicial, list):
+                json_lib.dump(contenido_inicial, f, indent=4, ensure_ascii=False)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -37,8 +42,6 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 lock_voz = asyncio.Lock()
-
-# Variable temporal para rastrear el último audio y su transcripción cruda por usuario/sesion
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 
@@ -47,13 +50,11 @@ def sincronizar_con_github():
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         
-        archivos = [TXT_FILE, REGISTRO_INDUCCION]
+        archivos = [TXT_FILE, REGISTRO_INDUCCION, REGISTRO_REFINAMIENTO]
         subprocess.run(["git", "add"] + archivos, check=True)
-        
-        # Agregamos también los archivos .ogg de muestras si hay nuevos
         subprocess.run(["git", "add", f"{CARPETA_MUESTRAS}/"], check=True)
         
-        resultado = subprocess.run(["git", "commit", "-m", "🤖 Sincronización automática de muestras y觉inducción"], capture_output=True, text=True)
+        resultado = subprocess.run(["git", "commit", "-m", "🤖 Sincronización de inducción y refinamiento de IA"], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
             print("☁️ Sincronizado con éxito en GitHub.")
@@ -68,97 +69,114 @@ def guardar_en_txt(rol, texto):
 
 
 # ==========================================
-# SISTEMA DE INDUCCIÓN Y REGISTRO
+# GESTIÓN DE HISTORIALES (INDUCCIÓN Y REFINAMIENTO)
 # ==========================================
-def cargar_historial_induccion():
-    if os.path.exists(REGISTRO_INDUCCION):
-        with open(REGISTRO_INDUCCION, "r", encoding="utf-8") as f:
+def cargar_json(path, tipo_defecto):
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
             try:
                 return json_lib.load(f)
             except:
-                return {}
-    return {}
+                return tipo_defecto
+    return tipo_defecto
 
 
 def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
-    historial = cargar_historial_induccion()
-    # Guardamos la frase o error completo para asociarlo de forma directa
+    historial = cargar_json(REGISTRO_INDUCCION, {})
     historial[error_whisper.lower().strip()] = {
         "correcto": correccion_real.strip(),
         "audio_muestra": audio_path
     }
     with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
         json_lib.dump(historial, f, indent=4, ensure_ascii=False)
-    print(f"🧠 [Inducción Aprendida]: '{error_whisper}' -> '{correccion_real}' (Audio: {audio_path})")
+    print(f"🧠 [Inducción Registrada]: '{error_whisper}' -> '{correccion_real}'")
+    sincronizar_con_github()
+
+
+def registrar_refinamiento_ia(prompt_usuario, respuesta_generada):
+    """Guarda en un JSON separado cómo procesó y refinó la IA cada interacción para aprendizaje continuo."""
+    refinamientos = cargar_json(REGISTRO_REFINAMIENTO, [])
+    registro_nuevo = {
+        "entrada_usuario": prompt_usuario,
+        "respuesta_ia": respuesta_generada,
+        "estado": "refinado_por_api"
+    }
+    refinamientos.append(registro_nuevo)
+    # Mantenemos un historial razonable de las últimas 100 interacciones refinadas
+    if len(refinamientos) > 100:
+        refinamientos = refinamientos[-100:]
+        
+    with open(REGISTRO_REFINAMIENTO, "w", encoding="utf-8") as f:
+        json_lib.dump(refinamientos, f, indent=4, ensure_ascii=False)
+    print("💡 [Refinamiento IA Registrado en historial_refinamiento.json]")
     sincronizar_con_github()
 
 
 def cotejar_y_corregir_induccion(texto_crudo):
-    historial = cargar_historial_induccion()
+    historial = cargar_json(REGISTRO_INDUCCION, {})
     if not historial:
         return texto_crudo
     
     texto_lower = texto_crudo.lower().strip()
-    # 1. Si hay coincidencia exacta de frase guardada
     if texto_lower in historial:
-        correccion = historial[texto_lower]["correcto"]
-        print(f"🔍 [Inducción Exacta Aplicada]: '{texto_crudo}' -> '{correccion}'")
-        return correccion
+        return historial[texto_lower]["correcto"]
 
-    # 2. Si no, revisamos por aproximación de palabras con difflib
-    palabras = texto_crudo.split()
-    texto_corregido = texto_crudo
-    errores_conocidos = list(historial.keys())
-    
-    for palabra in palabras:
-        coincidencias = difflib.get_close_matches(palabra.lower(), errores_conocidos, n=1, cutoff=0.80)
-        if coincidencias:
-            error_encontrado = coincidencias[0]
-            correccion = historial[error_encontrado]["correcto"]
-            texto_corregido = texto_corregido.replace(palabra, correccion)
-            print(f"🔍 [Inducción Parcial Aplicada]: '{error_encontrado}' -> '{correccion}'")
-            
-    return texto_corregido
+    frases_conocidas = list(historial.keys())
+    coincidencias = difflib.get_close_matches(texto_lower, frases_conocidas, n=1, cutoff=0.70)
+    if coincidencias:
+        mejor_match = coincidencias[0]
+        return historial[mejor_match]["correcto"]
+
+    return texto_crudo
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
     system_prompt = (
-        "Sos Leandro hablando con un colega por Telegram. CERO formato de asistente virtual.\n"
-        "REGLAS ESTRICTAS:\n"
-        "1. AL HUESO: Respondé directo sobre lo que te pidió, sin dar vueltas.\n"
-        "2. TONO PORTEÑO NATURAL: Hablá directo, al pie, usando 'vos', 'che', 'fijate'.\n"
-        "3. BREVEDAD: Contestá corto y conciso."
+        "Sos Leandro hablando con un colega por Telegram.\n"
+        "REGLAS ABSOLUTAS:\n"
+        "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', 'Claro que sí', ni explicaciones técnicas.\n"
+        "2. CONTEXTO DE CHARLA: Te están pasando una consulta o comentario directo de voz. Analizalo y respondé como un par.\n"
+        "3. TONO PORTEÑO NATURAL: Hablá al pie, directo, usando 'vos', 'che', 'fijate'.\n"
+        "4. BREVEDAD: Al hueso, sin vueltas."
     )
 
-    prompt_final = f"MENSAJE: {prompt_usuario}"
+    prompt_final = f"Acá mi colega me está diciendo lo siguiente:\n\"{prompt_usuario}\"\n\nRespondé al contenido de forma directa."
 
+    respuesta_final = ""
     if GEMINI_API_KEY:
         try:
             model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
             response = model.generate_content(prompt_final)
             if response and response.text:
-                return response.text.strip()
+                respuesta_final = response.text.strip()
         except Exception as e:
             print(f"⚠️ Gemini falló: {e}")
 
-    url = "http://127.0.0.1:11434/api/chat"
-    payload = {
-        "model": "llama3.2",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt_final}
-        ],
-        "options": {"num_ctx": 16384, "temperature": 0.2},
-        "stream": False,
-    }
-    try:
-        res = requests.post(url, json=payload, timeout=300)
-        if res.status_code == 200:
-            return res.json().get("message", {}).get("content", "").strip()
-    except:
-        pass
-        
-    return "Che, me quedé sin conexión con las IAs, tirámela de nuevo."
+    if not respuesta_final:
+        url = "http://127.0.0.1:11434/api/chat"
+        payload = {
+            "model": "llama3.2",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt_final}
+            ],
+            "options": {"num_ctx": 16384, "temperature": 0.2},
+            "stream": False,
+        }
+        try:
+            res = requests.post(url, json=payload, timeout=300)
+            if res.status_code == 200:
+                respuesta_final = res.json().get("message", {}).get("content", "").strip()
+        except:
+            pass
+
+    if not respuesta_final:
+        respuesta_final = "Che, me quedé sin conexión, tirámela de nuevo."
+    else:
+        # Guardamos el refinamiento de la respuesta obtenida
+        registrar_refinamiento_ia(prompt_usuario, respuesta_final)
+
+    return respuesta_final
 
 
 def responder_usuario(orden):
@@ -171,15 +189,14 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con inducción por feedback directo.")
+    await update.message.reply_text("¡Buenas che! Bot activo con inducción fonética y registro de refinamiento de IA.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE
     texto_usuario = update.message.text
-    print(f"📩 Mensaje de texto recibido (posible corrección): {texto_usuario}")
+    print(f"📩 Mensaje de texto recibido (corrección): {texto_usuario}")
     
-    # Si el usuario responde justo después de un audio con texto, asumimos que es la corrección de ese audio
     if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"]:
         audio_p = ULTIMO_AUDIO_PENDIENTE["path"]
         crudo_p = ULTIMO_AUDIO_PENDIENTE["crudo"]
@@ -187,7 +204,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_correccion_inductiva(audio_p, crudo_p, texto_usuario)
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
         
-        await update.message.reply_text(f"Listo, che. Ya me anoté la corrección vinculada al audio físico y lo guardé en el historial inductivo.")
+        await update.message.reply_text("Listo, che. Inducción guardada y asociada al archivo .ogg físico.")
         return
 
     await update.message.chat.send_action(action="typing")
@@ -208,12 +225,10 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
             archivo_telegram = await update.message.voice.get_file()
-            
-            # Guardado físico permanente y forzado en muestras_voz/
             audio_filename = f"audio_{message_id}.ogg"
             audio_path = os.path.join(CARPETA_MUESTRAS, audio_filename)
             await archivo_telegram.download_to_drive(audio_path)
-            print(f"🎙️ Audio guardado de forma permanente en: {audio_path}")
+            print(f"🎙️ Audio guardado físicamente en: {audio_path}")
 
             model = WhisperModel("base", device="cpu", compute_type="int8")
             segments, _ = model.transcribe(audio_path, beam_size=5, language="es")
@@ -221,11 +236,9 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             print(f"🗣️ Whisper crudo: {texto_crudo}")
 
-            # Guardamos esto en la memoria temporal por si el usuario lo corrige al toque
             ULTIMO_AUDIO_PENDIENTE["path"] = audio_path
             ULTIMO_AUDIO_PENDIENTE["crudo"] = texto_crudo
 
-            # Cotejo inductivo
             texto_reconocido = cotejar_y_corregir_induccion(texto_crudo)
 
             if not texto_reconocido:
@@ -247,13 +260,19 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ruta_respuesta_ogg
             ], check=True)
 
+            caption_estructurado = (
+                f"-Lo que interpretaste: {texto_crudo}\n"
+                f"-Lo que dije: (Respondé con la corrección si difiere)\n"
+                f"*(Procesado: \"{texto_reconocido}\")*"
+            )
+
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(
                     voice=voice_file, 
-                    caption=f"*(Entendido: \"{texto_reconocido}\")*"
+                    caption=caption_estructurado
                 )
 
-            print("✅ Nota de voz procesada con éxito y archivo .ogg asegurado.")
+            print("✅ Nota de voz procesada con éxito y refinamiento registrado.")
 
         except Exception as e:
             print(f"⚠️ Error en audio: {e}")
@@ -279,7 +298,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con captura de feedback y muestras persistentes...")
+    print("🚀 Iniciando bot con inducción y registro de refinamiento de IA...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
