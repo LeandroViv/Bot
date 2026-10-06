@@ -410,3 +410,5 @@ Que problema hay con que me escribas a partir de ese horario
 [USUARIO]: Listo a esa hora escribime
 Gracias
 ---
+[LEANDRO_BOT]: "Listo, che, veremos qué pasó"
+---
