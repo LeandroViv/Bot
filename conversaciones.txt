@@ -395,3 +395,5 @@ Sacale las comillas
 ---
 [USUARIO]: Te dije a partir de las 9 cuando quieras busca cosas en la web interesantes y me mostras che
 ---
+[LEANDRO_BOT]: "Che, ya lo hice, busqué algo interesante, te voy a mostrar en un minuto"
+---
