@@ -30,5 +30,9 @@
     "que bueno...": {
         "correcto": "Muy bien interpretado",
         "audio_muestra": "muestras_voz/audio_719.ogg"
+    },
+    "tengo una fea que importante": {
+        "correcto": "Corregido: Tengo una fiaca importante che",
+        "audio_muestra": "muestras_voz/audio_723.ogg"
     }
 }
