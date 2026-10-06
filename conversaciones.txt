@@ -360,3 +360,5 @@ Eso debes entender de ese mensaje che
 ---
 [LEANDRO_BOT]: "Che, me parece bien, voy a hacerlo. ¿Cuál es el primer error que me vas a corregir?"
 ---
+[USUARIO]: En base a mis correcciones te vas a ir entrenando
+---
