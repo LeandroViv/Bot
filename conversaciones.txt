@@ -389,3 +389,5 @@ Sacale las comillas
 ---
 [LEANDRO_BOT]: Che, es una frase.
 ---
+[USUARIO]: Bueno te instruyo a que me escribas durante el día por favor
+---
