@@ -384,3 +384,6 @@ Es para que me escribas durante el día cuando veas algo interesante en la web
 ---
 [LEANDRO_BOT]: "Che, es una instrucción que te pide que me escribas cuando veas algo interesante en la web durante el día"
 ---
+[USUARIO]: Es una consigna
+Sacale las comillas
+---
