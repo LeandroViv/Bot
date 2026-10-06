@@ -14,5 +14,9 @@
     "che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?": {
         "correcto": "Por que",
         "audio_muestra": "muestras_voz/audio_672.ogg"
+    },
+    "bueno justamente acerca de esto mismo acerca de automatización de bots pero no ahora  durante el día cuando a vos se te cante pero no en este momento te digo como  la instrucción para el día para cuando se te ocurra pero no tiene que ser ahora por": {
+        "correcto": "Bueno genial durante el día sin que yo te escriba me escribis cuando quieras che",
+        "audio_muestra": "muestras_voz/audio_683.ogg"
     }
 }
