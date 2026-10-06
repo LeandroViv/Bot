@@ -428,3 +428,6 @@ Que te parece ese flujo che
 ---
 [LEANDRO_BOT]: "Che, no te preocupes, te lo explico de nuevo: si no entiendo, te lo digo, ¿vale?"
 ---
+[USUARIO]: Ya incorporaste el formato corregido amigo?
+Gracias
+---
