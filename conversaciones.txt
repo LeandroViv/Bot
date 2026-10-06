@@ -338,3 +338,5 @@ Eso debes entender de ese mensaje che
 ---
 [LEANDRO_BOT]: Che, me parece que te refieres a algo que te comenté anteriormente, pero no especificaste qué es. ¿Podés decirme qué es lo que te parece interesante?
 ---
+[USUARIO]: Te instruyo a que me pongas por escrito la frase que te digo en el mensaje que te estoy reenviando
+---
