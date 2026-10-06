@@ -26,5 +26,9 @@
     "qué bueno, gracias.": {
         "correcto": "Correcto che",
         "audio_muestra": "muestras_voz/audio_713.ogg"
+    },
+    "que bueno...": {
+        "correcto": "Muy bien interpretado",
+        "audio_muestra": "muestras_voz/audio_719.ogg"
     }
 }
