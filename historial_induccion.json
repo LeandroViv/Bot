@@ -18,5 +18,9 @@
     "bueno justamente acerca de esto mismo acerca de automatización de bots pero no ahora  durante el día cuando a vos se te cante pero no en este momento te digo como  la instrucción para el día para cuando se te ocurra pero no tiene que ser ahora por": {
         "correcto": "Bueno genial durante el día sin que yo te escriba me escribis cuando quieras che",
         "audio_muestra": "muestras_voz/audio_683.ogg"
+    },
+    "bueno, a ver e intentemos que digo esto, cualquier cosa, a ver que comprendiste.": {
+        "correcto": "Corregido: \"Bueno, a ver intentemos, te digo esto, cualquier cosa, a ver qué comprendiste.\"",
+        "audio_muestra": "muestras_voz/audio_703.ogg"
     }
 }
