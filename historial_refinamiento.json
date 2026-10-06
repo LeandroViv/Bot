@@ -18,5 +18,10 @@
         "entrada_usuario": "En base a mis correcciones te vas a ir entrenando",
         "respuesta_ia": "\"Che, eso es genial, voy a empezar a practicar y mejorar mi español\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Sí y también tus inferencias lógicas\nQue se vayan haciendo más complejas che\nEn función de lo que te corrijo che amigo",
+        "respuesta_ia": "\"Che, no te preocupes, estoy acostumbrado a eso\"",
+        "estado": "refinado_por_api"
     }
 ]
