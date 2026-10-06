@@ -6,5 +6,9 @@
     "¿qué es que interesante eso que me comento?": {
         "correcto": "Te instruyo a que me pongas por escrito la frase que te digo en el mensaje que te estoy reenviando",
         "audio_muestra": "muestras_voz/audio_658.ogg"
+    },
+    "sí, me gustaría que te vayas entrenando a partir de las correcciones que te hago, como lo ves.": {
+        "correcto": "-Lo que dije: (Respondé con la corrección si difiere)\n*(Procesado: \"Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.\")*",
+        "audio_muestra": "muestras_voz/audio_666.ogg"
     }
 }
