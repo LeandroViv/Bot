@@ -426,3 +426,5 @@ Que te parece ese flujo che
 ---
 [USUARIO]: Corregido: "Bueno, a ver intentemos, te digo esto, cualquier cosa, a ver qué comprendiste."
 ---
+[LEANDRO_BOT]: "Che, no te preocupes, te lo explico de nuevo: si no entiendo, te lo digo, ¿vale?"
+---
