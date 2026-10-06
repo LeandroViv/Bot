@@ -103,5 +103,10 @@
         "entrada_usuario": "Que bueno...",
         "respuesta_ia": "\"¿Qué bueno, che?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "tengo una fea que importante",
+        "respuesta_ia": "\"¿Qué fea?\"",
+        "estado": "refinado_por_api"
     }
 ]
