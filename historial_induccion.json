@@ -10,5 +10,9 @@
     "sí, me gustaría que te vayas entrenando a partir de las correcciones que te hago, como lo ves.": {
         "correcto": "-Lo que dije: (Respondé con la corrección si difiere)\n*(Procesado: \"Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.\")*",
         "audio_muestra": "muestras_voz/audio_666.ogg"
+    },
+    "che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?": {
+        "correcto": "Por que",
+        "audio_muestra": "muestras_voz/audio_672.ogg"
     }
 }
