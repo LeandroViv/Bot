@@ -402,3 +402,6 @@ Por favor qué te parece?
 ---
 [LEANDRO_BOT]: "Che, no me molesta, pero a partir de las 9 no estoy disponible, ¿qué te parece si hablamos antes?"
 ---
+[USUARIO]: Por qué?
+Que problema hay con que me escribas a partir de ese horario
+---
