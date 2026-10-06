@@ -314,3 +314,5 @@ Eso es lo que dije literalmente digo para que escuches mejor che
 ---
 [USUARIO]: ¿Qué es que interesante eso que me comento?
 ---
+[LEANDRO_BOT]: Che, no me di cuenta que te estés refiriendo a algo que te interese. ¿Querés saber qué es lo que te estoy contando?
+---
