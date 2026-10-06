@@ -362,3 +362,5 @@ Eso debes entender de ese mensaje che
 ---
 [USUARIO]: En base a mis correcciones te vas a ir entrenando
 ---
+[LEANDRO_BOT]: "Che, eso es genial, voy a empezar a practicar y mejorar mi español"
+---
