@@ -113,5 +113,10 @@
         "entrada_usuario": "Corregido: Tengo una fiaca importante che",
         "respuesta_ia": "\"¿Qué pasó che?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Procesado sería la versión correcta",
+        "respuesta_ia": "\"Che, no, no es así. Es el nombre del programa, no el resultado\"",
+        "estado": "refinado_por_api"
     }
 ]
