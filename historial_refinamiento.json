@@ -53,5 +53,10 @@
         "entrada_usuario": "Te dije a partir de las 9 cuando quieras busca cosas en la web interesantes y me mostras che",
         "respuesta_ia": "\"Che, ya lo hice, busqué algo interesante, te voy a mostrar en un minuto\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Sí pero a partir de las 9 escribime che\nPor favor qué te parece?",
+        "respuesta_ia": "\"Che, no me molesta, pero a partir de las 9 no estoy disponible, ¿qué te parece si hablamos antes?\"",
+        "estado": "refinado_por_api"
     }
 ]
