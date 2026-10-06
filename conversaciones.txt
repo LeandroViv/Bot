@@ -346,3 +346,5 @@ Eso debes entender de ese mensaje che
 ---
 [LEANDRO_BOT]: Che, me estaba hablando de un nuevo restaurante que se abre en la ciudad, fijate que tiene un menú muy interesante.
 ---
+[USUARIO]: Sí, me gustaría que te vayas entrenando a partir de las correcciones que te hago, como lo ves.
+---
