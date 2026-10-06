@@ -68,5 +68,10 @@
         "entrada_usuario": "Listo a esa hora escribime\nGracias",
         "respuesta_ia": "\"Listo, che, veremos qué pasó\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Y con los mensajes de voz la estructura es:\n-Yo te envío el mensaje grabado\n-Me pones \"Lo que interpreté: (acá va lo que crees que escuchaste)\"\n-Si te corrijo te pongo \"Corregido: (acá va lo que realmente pronuncié)\"\nQue te parece ese flujo che",
+        "respuesta_ia": "Che, me parece bien, pero no es tan complicado como eso. Solo tienes que decir \"Lo que escuché\" y luego \"Corregido\" si es necesario.",
+        "estado": "refinado_por_api"
     }
 ]
