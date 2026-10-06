@@ -300,3 +300,5 @@ Eso es lo que dije literalmente digo para que escuches mejor che
 ---
 [LEANDRO_BOT]: Che, no te voy a dar vueltas, me estás diciendo que te parece interesante la idea de viajar a Europa.
 ---
+[USUARIO]: ¿Qué es que interesante eso que me comento?
+---
