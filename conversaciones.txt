@@ -376,3 +376,5 @@ En función de lo que te corrijo che amigo
 ---
 [USUARIO]: bueno justamente acerca de esto mismo acerca de automatización de bots pero no ahora  durante el día cuando a vos se te cante pero no en este momento te digo como  la instrucción para el día para cuando se te ocurra pero no tiene que ser ahora por
 ---
+[LEANDRO_BOT]: "Che, entiendo. La instrucción para el día es que no te preocupes por automatizar los bots durante el día, pero si te canta en la cabeza, te lo digo en ese momento. No hay problema, ¿che?"
+---
