@@ -20,7 +20,7 @@
         "audio_muestra": "muestras_voz/audio_683.ogg"
     },
     "bueno, a ver e intentemos que digo esto, cualquier cosa, a ver que comprendiste.": {
-        "correcto": "Corregido: \"Bueno, a ver intentemos, te digo esto, cualquier cosa, a ver qué comprendiste.\"",
-        "audio_muestra": "muestras_voz/audio_703.ogg"
+        "correcto": "O sea la versión actual es la de corregido\nLo que interpretaste era tu idea original\nDecime si comprendi",
+        "audio_muestra": "muestras_voz/audio_707.ogg"
     }
 }
