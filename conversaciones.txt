@@ -397,3 +397,6 @@ Sacale las comillas
 ---
 [LEANDRO_BOT]: "Che, ya lo hice, busqué algo interesante, te voy a mostrar en un minuto"
 ---
+[USUARIO]: Sí pero a partir de las 9 escribime che
+Por favor qué te parece?
+---
