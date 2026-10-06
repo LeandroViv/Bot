@@ -1,1 +1,6 @@
-{}
+{
+    "che, no te voy a dar vueltas. me estás diciendo que te parece interesante la idea de viajar a europa.": {
+        "correcto": "\"¿Qué es que interesante eso que me comento?\" Lo que interpretaste\n\"Che qué interesante eso que me comentás\" Lo que dije en ese mensaje che\nLo digo para que ajustes tu percepción de mi voz che",
+        "audio_muestra": "muestras_voz/audio_639.ogg"
+    }
+}
