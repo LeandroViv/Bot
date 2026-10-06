@@ -355,3 +355,6 @@ Eso debes entender de ese mensaje che
 ---
 [LEANDRO_BOT]: "Entiendo que lo que me estás pidiendo es que me des una oportunidad para mejorar, pero necesito saber qué tipo de correcciones vas a hacer para que pueda entender mejor y aplicarlas de manera efectiva."
 ---
+[USUARIO]: -Lo que dije: (Respondé con la corrección si difiere)
+*(Procesado: "Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.")*
+---
