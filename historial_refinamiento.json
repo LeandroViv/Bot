@@ -28,5 +28,10 @@
         "entrada_usuario": "Te quiero pedir también por favor que me escribas espontáneamente durante el día, a partir  de las 9 si quieres empezar a hacer una búsqueda en la web y bueno que me comente sobre  alguna cosa interesante que encontrás, que sentís que me puedo allá de interesar, pero espontáneamente  sin que yo te escribo.",
         "respuesta_ia": "\"Che, no hay problema, estoy de acuerdo. Me parece genial que me des la libertad de investigar y compartir algo interesante. ¿Qué tipo de temas te gustaría que me busque? ¿De qué área es la búsqueda?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "bueno justamente acerca de esto mismo acerca de automatización de bots pero no ahora  durante el día cuando a vos se te cante pero no en este momento te digo como  la instrucción para el día para cuando se te ocurra pero no tiene que ser ahora por",
+        "respuesta_ia": "\"Che, entiendo. La instrucción para el día es que no te preocupes por automatizar los bots durante el día, pero si te canta en la cabeza, te lo digo en ese momento. No hay problema, ¿che?\"",
+        "estado": "refinado_por_api"
     }
 ]
