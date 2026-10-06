@@ -8,5 +8,10 @@
         "entrada_usuario": "-Lo que dije: (Respondé con la corrección si difiere)\n*(Procesado: \"Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.\")*",
         "respuesta_ia": "\"Entiendo que lo que me estás pidiendo es que me des una oportunidad para mejorar, pero necesito saber qué tipo de correcciones vas a hacer para que pueda entender mejor y aplicarlas de manera efectiva.\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "-Lo que dije: (Respondé con la corrección si difiere)\n*(Procesado: \"Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.\")*",
+        "respuesta_ia": "\"Che, me parece bien, voy a hacerlo. ¿Cuál es el primer error que me vas a corregir?\"",
+        "estado": "refinado_por_api"
     }
 ]
