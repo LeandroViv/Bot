@@ -43,5 +43,10 @@
         "entrada_usuario": "Es una consigna\nSacale las comillas",
         "respuesta_ia": "Che, es una frase.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Bueno te instruyo a que me escribas durante el día por favor",
+        "respuesta_ia": "\"¿Qué onda? ¿Por qué me instruyes a que te escriba? ¿Qué hora es?\"",
+        "estado": "refinado_por_api"
     }
 ]
