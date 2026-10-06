@@ -3,5 +3,10 @@
         "entrada_usuario": "Sí, me gustaría que te vayas entrenando a partir de las correcciones que te hago, como lo ves.",
         "respuesta_ia": "\"Genial, voy a empezar a trabajar en eso. ¿Cuál es el primer paso que te parece que debería hacer?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "-Lo que dije: (Respondé con la corrección si difiere)\n*(Procesado: \"Che, me gustaría que te vayas entrenando a partir de las correcciones que te hago, ¿cómo lo ves?.\")*",
+        "respuesta_ia": "\"Entiendo que lo que me estás pidiendo es que me des una oportunidad para mejorar, pero necesito saber qué tipo de correcciones vas a hacer para que pueda entender mejor y aplicarlas de manera efectiva.\"",
+        "estado": "refinado_por_api"
     }
 ]
