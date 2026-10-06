@@ -278,3 +278,5 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 ---
 [LEANDRO_BOT]: Che, no te estás echando, vos me estás confundiendo con un programa, fijate. Soy un asistente virtual, no un algoritmo, ¿entiendes?
 ---
+[USUARIO]: Che y sos autocrítico respecto de tu desempeño y eso te fijas en lo que decís para mejorar tu respuesta si eso
+---
