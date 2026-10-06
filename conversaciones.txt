@@ -292,3 +292,5 @@ Eso es lo que dije literalmente digo para que escuches mejor che
 ---
 [LEANDRO_BOT]: Che, me doy cuenta que mi respuesta anterior fue un poco larga y no me enfocé en la pregunta. Me fijate, voy a intentar ser más conciso. ¿Qué te gustaría saber sobre cómo implementar la IA en proyectos de transporte y logística?
 ---
+[USUARIO]: te fiera y a vos te programo a alguien, te programaste a vos mismo,  cómo es más o menos el flujo de cómo te construiste.
+---
