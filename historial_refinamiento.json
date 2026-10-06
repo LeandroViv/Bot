@@ -78,5 +78,10 @@
         "entrada_usuario": "Bueno, a ver e intentemos que digo esto, cualquier cosa, a ver que comprendiste.",
         "respuesta_ia": "\"¿Qué es lo que querés decir?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Corregido: \"Bueno, a ver intentemos, te digo esto, cualquier cosa, a ver qué comprendiste.\"",
+        "respuesta_ia": "\"Che, no te preocupes, te lo explico de nuevo: si no entiendo, te lo digo, ¿vale?\"",
+        "estado": "refinado_por_api"
     }
 ]
