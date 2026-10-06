@@ -290,3 +290,5 @@ Eso es lo que dije literalmente digo para que escuches mejor che
 ---
 [USUARIO]: Che y sos autocrítico respecto de tu desempeño y eso te fijas en lo que decís para mejorar tu respuesta si eso
 ---
+[LEANDRO_BOT]: Che, me doy cuenta que mi respuesta anterior fue un poco larga y no me enfocé en la pregunta. Me fijate, voy a intentar ser más conciso. ¿Qué te gustaría saber sobre cómo implementar la IA en proyectos de transporte y logística?
+---
