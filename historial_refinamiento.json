@@ -38,5 +38,10 @@
         "entrada_usuario": "Es una instrucción escrita che\nQue tiene que ver el ogg\nEs para que me escribas durante el día cuando veas algo interesante en la web",
         "respuesta_ia": "\"Che, es una instrucción que te pide que me escribas cuando veas algo interesante en la web durante el día\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Es una consigna\nSacale las comillas",
+        "respuesta_ia": "Che, es una frase.",
+        "estado": "refinado_por_api"
     }
 ]
