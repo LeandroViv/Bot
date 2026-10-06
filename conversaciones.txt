@@ -328,3 +328,6 @@ Eso asocialo con el mensaje que te estoy por reenviar
 ---
 [LEANDRO_BOT]: Che, ¿qué onda?
 ---
+[USUARIO]: "Che qué interesante eso que me comentás"
+Eso debes entender de ese mensaje che
+---
