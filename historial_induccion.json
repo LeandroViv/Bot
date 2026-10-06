@@ -22,5 +22,9 @@
     "bueno, a ver e intentemos que digo esto, cualquier cosa, a ver que comprendiste.": {
         "correcto": "O sea la versión actual es la de corregido\nLo que interpretaste era tu idea original\nDecime si comprendi",
         "audio_muestra": "muestras_voz/audio_707.ogg"
+    },
+    "qué bueno, gracias.": {
+        "correcto": "Correcto che",
+        "audio_muestra": "muestras_voz/audio_713.ogg"
     }
 }
