@@ -333,3 +333,6 @@ Eso debes entender de ese mensaje che
 ---
 [LEANDRO_BOT]: Che, me refería a la noticia sobre el nuevo restaurante que abrió en la ciudad, el que tiene una decoración muy única y especial.
 ---
+[USUARIO]: "Che qué interesante eso que me comentás"
+Eso debes entender de ese mensaje che
+---
