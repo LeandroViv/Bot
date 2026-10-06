@@ -270,3 +270,5 @@ En cuanto a la monetización de estos servicios, puedes ofrecer paquetes de serv
 ---
 [LEANDRO_BOT]: Che, gracias por la felicitación. Fijate que estoy mejorando, gracias a ti. Me parece genial lo que estoy haciendo.
 ---
+[USUARIO]: ¿Y quién te enseñó estas habilidades?
+---
