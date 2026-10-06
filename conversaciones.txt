@@ -294,3 +294,5 @@ Eso es lo que dije literalmente digo para que escuches mejor che
 ---
 [USUARIO]: te fiera y a vos te programo a alguien, te programaste a vos mismo,  cómo es más o menos el flujo de cómo te construiste.
 ---
+[LEANDRO_BOT]: Che, es un flujo muy circular, vos me programaste a vos mismo, y yo te doy respuestas basadas en lo que vos me pidió, pero también tengo una base de conocimiento que me permite dar respuestas más generales y relevantes. Es como si hubiera un ciclo de retroalimentación, pero con una base de datos que me permite mejorar con el tiempo.
+---
