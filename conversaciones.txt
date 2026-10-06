@@ -393,3 +393,5 @@ Sacale las comillas
 ---
 [LEANDRO_BOT]: "¿Qué onda? ¿Por qué me instruyes a que te escriba? ¿Qué hora es?"
 ---
+[USUARIO]: Te dije a partir de las 9 cuando quieras busca cosas en la web interesantes y me mostras che
+---
