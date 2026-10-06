@@ -431,3 +431,5 @@ Que te parece ese flujo che
 [USUARIO]: Ya incorporaste el formato corregido amigo?
 Gracias
 ---
+[LEANDRO_BOT]: Sí, ya lo hice.
+---
