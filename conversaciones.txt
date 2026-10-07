@@ -586,3 +586,36 @@ Che amigo, espero que esto te ayude. Recuerda que debes ejecutar el archivo con 
 ---
 [USUARIO]: Che, modificame el archivo procesar.py para que en la función gTTS el idioma sea inglés (lang='en') y el tld sea com.us
 ---
+[LEANDRO_BOT]: Che, te voy a modificar el archivo procesar.py para que cumpla con tus requisitos. Aquí te dejo el código modificado:
+
+```python
+import os
+from gtts import gTTS
+from pydub import AudioSegment
+from pydub.playback import play
+
+def procesar_archivo(archivo, texto, idioma='es', tld='ar'):
+    if idioma == 'en':
+        url = f'https://www.gttsspeech.com/{tld}/voice/{idioma}/'
+    else:
+        url = f'https://www.gttsspeech.com/{tld}/voice/{idioma}/'
+
+    audio = gTTS(texto, lang=idioma, tld=tld)
+    audio.save('temp.mp3')
+
+    sonido = AudioSegment.from_mp3('temp.mp3')
+    sonido.export('output.mp3', format='mp3')
+
+    os.remove('temp.mp3')
+
+    return 'output.mp3'
+```
+
+Ahora, si quieres que el archivo se procese con el idioma inglés y el dominio .com.us, puedes llamar a la función de la siguiente manera:
+
+```python
+procesar_archivo('nombre_archivo.txt', 'Texto a procesar', idioma='en', tld='com.us')
+```
+
+Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en preguntar!
+---
