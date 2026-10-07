@@ -494,3 +494,5 @@ El significante de lo que vas incorporando
 ---
 [LEANDRO_BOT]: Che, no te preocupes, no voy a modificar nada en los repositorios. Mi función es ayudarte a generar texto, no a acceder a sistemas de repositorio. ¿Qué necesitas ayuda con?
 ---
+[USUARIO]: Ah, yo creo que si podías modifitarme los archivos del repositorio.
+---
