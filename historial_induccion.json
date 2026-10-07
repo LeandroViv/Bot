@@ -34,5 +34,9 @@
     "tengo una fea que importante": {
         "correcto": "O sea el Procesado es la corrección que incorporaste a tu modelo fisico che amigo\nGracias",
         "audio_muestra": "muestras_voz/audio_727.ogg"
+    },
+    "bueno, me he ido a mi sistema de archivos de github, que por favor actualice el archivo  procesar de tal manera que yo pueda escucharte a vos responderme en inglés, porque se comprende  lo que estoy viviendo.": {
+        "correcto": "o sea que enviamos la orden de modificar procesar.py che\ngracias",
+        "audio_muestra": "muestras_voz/audio_767.ogg"
     }
 }
