@@ -213,5 +213,10 @@
         "entrada_usuario": "9 am escribime",
         "respuesta_ia": "Che, ¿qué onda?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Che, modificame el código: cambiá en la función tts el idioma predeterminado de 'es' a 'en'",
+        "respuesta_ia": "Che, no tengo información sobre el código que estés utilizando. ¿Podés especificar qué lenguaje de programación o framework estás utilizando? ¿Podés proporcionar más contexto o detalles sobre el código que necesitas modificar? Estoy aquí para ayudarte.",
+        "estado": "refinado_por_api"
     }
 ]
