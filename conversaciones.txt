@@ -619,3 +619,5 @@ procesar_archivo('nombre_archivo.txt', 'Texto a procesar', idioma='en', tld='com
 
 Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en preguntar!
 ---
+[USUARIO]: Bueno, pues no es el que vení, pasamos a una página web interesante que viés, pero a esa hora, por favor, sí.
+---
