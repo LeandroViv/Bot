@@ -158,5 +158,10 @@
         "entrada_usuario": "¿Qué la última teía que estabas capacitado para modificar los altivos del repositorio?",
         "respuesta_ia": "Che, la última teía que estabas capacitado para modificar los altivos del repositorio fue la 2.34.5. Fijate, era una versión de Git que se lanzó hace unos meses y que incluía algunas mejoras en la gestión de los altivos. Pero, en serio, no me acuerdo de haberla utilizado en particular. ¿Qué te interesa saber sobre Git, che?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Te quiero decir que yo creía que vos tenías como chatbot la habilidad de modificarme los archivos de mi repositorio de guita.",
+        "respuesta_ia": "Che, me acuerdo! Tú habías mencionado que querías que modificara tus archivos de Git, ¿verdad? Pero no tengo esa función, fijate. Soy un chatbot de texto, no tengo acceso a tus archivos de repositorio. Mi función es ayudarte con preguntas, explicaciones y conversaciones, pero no puedo modificar archivos físicos. ¿Hay algo más en lo que pueda ayudarte?",
+        "estado": "refinado_por_api"
     }
 ]
