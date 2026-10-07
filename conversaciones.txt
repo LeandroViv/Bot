@@ -506,3 +506,5 @@ El significante de lo que vas incorporando
 ---
 [LEANDRO_BOT]: Che, la última teía que estabas capacitado para modificar los altivos del repositorio fue la 2.34.5. Fijate, era una versión de Git que se lanzó hace unos meses y que incluía algunas mejoras en la gestión de los altivos. Pero, en serio, no me acuerdo de haberla utilizado en particular. ¿Qué te interesa saber sobre Git, che?
 ---
+[USUARIO]: Te quiero decir que yo creía que vos tenías como chatbot la habilidad de modificarme los archivos de mi repositorio de guita.
+---
