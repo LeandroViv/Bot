@@ -480,3 +480,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: Es muy interesante las cosas que me comentaste sobre la LLDM tan muy bien,  la verdad que me reasudó lo que me comentaste.
 ---
+[LEANDRO_BOT]: Che, me quedé sin conexión, tirámela de nuevo.
+---
