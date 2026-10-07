@@ -476,3 +476,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: A ver, ahí tenés conexión, amigo.
 ---
+[LEANDRO_BOT]: "¿Qué conexión? ¿De dónde es?"
+---
