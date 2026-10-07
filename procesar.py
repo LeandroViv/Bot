@@ -185,7 +185,6 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    # Intentamos primero si hay orden de modificar código vía palabras clave
     respuesta_evolucion = procesar_evolucion_codigo(prompt_usuario)
     if respuesta_evolucion:
         return respuesta_evolucion
@@ -262,7 +261,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con activación por frase clave 'modificar código'.")
+    await update.message.reply_text("¡Buenas che! Bot activo con cliente google.genai y evolución por 'modificar código'.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -376,7 +375,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot autónomo con lectura de archivo y push a GitHub...")
+    print("🚀 Iniciando bot con google.genai y evolución autónoma...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
