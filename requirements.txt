@@ -5,3 +5,6 @@ uvicorn==0.28.0
 duckduckgo_search==4.3.0
 ollama==0.1.7
 pydantic==2.6.4
+google-genai
+faster-whisper
+gtts
