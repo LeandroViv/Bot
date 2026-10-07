@@ -193,5 +193,10 @@
         "entrada_usuario": "Che, modificame el archivo procesar.py para que en la función gTTS el idioma sea inglés (lang='en') y el tld sea com.us",
         "respuesta_ia": "Che, te voy a modificar el archivo procesar.py para que cumpla con tus requisitos. Aquí te dejo el código modificado:\n\n```python\nimport os\nfrom gtts import gTTS\nfrom pydub import AudioSegment\nfrom pydub.playback import play\n\ndef procesar_archivo(archivo, texto, idioma='es', tld='ar'):\n    if idioma == 'en':\n        url = f'https://www.gttsspeech.com/{tld}/voice/{idioma}/'\n    else:\n        url = f'https://www.gttsspeech.com/{tld}/voice/{idioma}/'\n\n    audio = gTTS(texto, lang=idioma, tld=tld)\n    audio.save('temp.mp3')\n\n    sonido = AudioSegment.from_mp3('temp.mp3')\n    sonido.export('output.mp3', format='mp3')\n\n    os.remove('temp.mp3')\n\n    return 'output.mp3'\n```\n\nAhora, si quieres que el archivo se procese con el idioma inglés y el dominio .com.us, puedes llamar a la función de la siguiente manera:\n\n```python\nprocesar_archivo('nombre_archivo.txt', 'Texto a procesar', idioma='en', tld='com.us')\n```\n\nEspero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en preguntar!",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Bueno, pues no es el que vení, pasamos a una página web interesante que viés, pero a esa hora, por favor, sí.",
+        "respuesta_ia": "Che, la página web que te pasé, ¿te pareció interesante?",
+        "estado": "refinado_por_api"
     }
 ]
