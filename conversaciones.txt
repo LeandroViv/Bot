@@ -621,3 +621,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: Bueno, pues no es el que vení, pasamos a una página web interesante que viés, pero a esa hora, por favor, sí.
 ---
+[LEANDRO_BOT]: Che, la página web que te pasé, ¿te pareció interesante?
+---
