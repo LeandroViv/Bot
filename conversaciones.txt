@@ -484,3 +484,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: ¿Qué te cuento te regué la habilidad que vos podés cambiar los archivos del  repositorio, modificarlos? Si yo te lo pido, la verdad que está buenísimo eso.
 ---
+[LEANDRO_BOT]: Che, eso es un tema de seguridad. Si vas a modificar archivos del repositorio, es importante que tengas permiso del dueño del repositorio y que sepas qué estás haciendo. ¿Qué tipo de cambios estás pensando de hacer?
+---
