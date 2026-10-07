@@ -498,3 +498,5 @@ El significante de lo que vas incorporando
 ---
 [LEANDRO_BOT]: ¿Qué pasó? ¿Qué error te está dando?
 ---
+[USUARIO]: Me refiero a que vos tenés esa habilidad, vos podés modificar bien los arquivos del repositorio.
+---
