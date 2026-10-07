@@ -128,5 +128,10 @@
         "entrada_usuario": "A ver, ahí tenés conexión, amigo.",
         "respuesta_ia": "\"¿Qué conexión? ¿De dónde es?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "¿Qué te cuento te regué la habilidad que vos podés cambiar los archivos del  repositorio, modificarlos? Si yo te lo pido, la verdad que está buenísimo eso.",
+        "respuesta_ia": "Che, eso es un tema de seguridad. Si vas a modificar archivos del repositorio, es importante que tengas permiso del dueño del repositorio y que sepas qué estás haciendo. ¿Qué tipo de cambios estás pensando de hacer?",
+        "estado": "refinado_por_api"
     }
 ]
