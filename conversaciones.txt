@@ -639,3 +639,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: Che, no tengo información sobre el código que estés utilizando. ¿Podés especificar qué lenguaje de programación o framework estás utilizando? ¿Podés proporcionar más contexto o detalles sobre el código que necesitas modificar? Estoy aquí para ayudarte.
 ---
+[USUARIO]: Che, modificar código: cambiá en la función tts el idioma predeterminado de 'es' a 'en'
+---
