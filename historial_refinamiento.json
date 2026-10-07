@@ -143,5 +143,10 @@
         "entrada_usuario": "Sí, por supuesto que todo, con cuidado, pero lo que digo, vos tenés esa habilidad de modificar el contenido de los altivos de repositorio.",
         "respuesta_ia": "Che, no te preocupes, no voy a modificar nada en los repositorios. Mi función es ayudarte a generar texto, no a acceder a sistemas de repositorio. ¿Qué necesitas ayuda con?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Ah, yo creo que si podías modifitarme los archivos del repositorio.",
+        "respuesta_ia": "¿Qué pasó? ¿Qué error te está dando?",
+        "estado": "refinado_por_api"
     }
 ]
