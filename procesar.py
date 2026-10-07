@@ -48,8 +48,11 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva autom�
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         subprocess.run(["git", "add", "."], check=True)
+        
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
+            # Sincronizamos trayendo los cambios del remoto para evitar rechazos
+            subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=True)
             subprocess.run(["git", "push"], check=True)
             print("☁️ Sincronizado con éxito en GitHub.")
     except Exception as e:
@@ -232,7 +235,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
     print(f"📩 Mensaje recibido: {texto_usuario}")
     
-    # Si teníamos un audio pendiente y mandás texto, se asume automáticamente que es la corrección fonética conversacional
     if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"]:
         audio_p = ULTIMO_AUDIO_PENDIENTE["path"]
         crudo_p = ULTIMO_AUDIO_PENDIENTE["crudo"]
@@ -240,7 +242,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_correccion_inductiva(audio_p, crudo_p, texto_usuario)
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
         
-        # Procesamos también tu texto como parte de la charla de forma fluida
         await update.message.chat.send_action(action="typing")
         respuesta = responder_usuario(texto_usuario)
         await update.message.reply_text(respuesta)
@@ -272,7 +273,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             segments, _ = model.transcribe(audio_path, beam_size=5, language="es")
             texto_crudo = " ".join([segment.text for segment in segments]).strip()
             
-            print(f"🗣️️ Whisper crudo: {texto_crudo}")
+            print(f"🗣 Whisper crudo: {texto_crudo}")
 
             ULTIMO_AUDIO_PENDIENTE["path"] = audio_path
             ULTIMO_AUDIO_PENDIENTE["crudo"] = texto_crudo
@@ -298,7 +299,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ruta_respuesta_ogg
             ], check=True)
 
-            # Caption limpio y minimalista mostrando solo lo que entendió sin estructuras feas
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(
                     voice=voice_file, 
