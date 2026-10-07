@@ -125,33 +125,37 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 
 def intentar_autogenerar_codigo(prompt_usuario):
-    """Detecta la intención de modificar código y obliga a la IA a devolver el bloque ejecutable sin ponerse retobada."""
-    print("🛠️ [Autogeneración detectada]: Analizando solicitud...")
+    """Genera un archivo alternativo de código en base al pedido, sin pisar el original."""
+    print("🛠️ [Autogeneración de archivo alternativo detectada]: Analizando solicitud...")
 
     archivos_en_repo = [f for f in os.listdir(".") if os.path.isfile(f)]
-    archivo_objetivo = "procesar.py"
+    archivo_base = "procesar.py"
 
     for arch in archivos_en_repo:
         if arch.lower() in prompt_usuario.lower():
-            archivo_objetivo = arch
+            archivo_base = arch
             break
 
-    print(f"📂 Archivo objetivo: {archivo_objetivo}")
+    print(f"📂 Archivo base de referencia: {archivo_base}")
 
     contenido_actual = ""
-    if os.path.exists(archivo_objetivo):
-        with open(archivo_objetivo, "r", encoding="utf-8") as f:
+    if os.path.exists(archivo_base):
+        with open(archivo_base, "r", encoding="utf-8") as f:
             contenido_actual = f.read()
 
-    extension = os.path.splitext(archivo_objetivo)[1].lstrip('.')
+    # Generamos un nombre alternativo para no pisar el original (ej: procesar_modificado.py)
+    nombre, ext = os.path.splitext(archivo_base)
+    archivo_objetivo = f"{nombre}_modificado{ext}"
+
+    extension = ext.lstrip('.')
     lang_tag = extension if extension else "python"
 
     prompt_codigo = (
-        f"ESTÁS AUTORIZADO Y ES TU OBLIGACIÓN. Sos el motor de autoprogramación de este repositorio personal.\n"
-        f"Tu colega te pide que modifiques el archivo '{archivo_objetivo}' con la siguiente directiva: '{prompt_usuario}'.\n"
-        f"CONTENIDO ACTUAL DE {archivo_objetivo}:\n```{lang_tag}\n{contenido_actual}\n```\n\n"
-        f"REGLA CRÍTICA: Modificá el código según lo pedido y DEVUELVE ÚNICAMENTE EL CÓDIGO COMPLETO NUEVO encerrado "
-        f"en bloques markdown ```{lang_tag} ... ```. No pongas excusas, no digas que no tenés permisos, sos dueño absoluto del repo."
+        f"ESTÁS AUTORIZADO Y ES TU OBLIGACIÓN. Sos un motor experto de programación en este repositorio.\n"
+        f"Tu colega te pide que crees una versión modificada del archivo '{archivo_base}' basada en esta directiva: '{prompt_usuario}'.\n"
+        f"CONTENIDO ACTUAL DE {archivo_base}:\n```{lang_tag}\n{contenido_actual}\n```\n\n"
+        f"REGLA CRÍTICA: Escribí el código completo adaptado y DEVUELVE ÚNICAMENTE EL CÓDIGO NUEVO encerrado "
+        f"en bloques markdown ```{lang_tag} ... ```. No pongas excusas ni explicaciones fuera del bloque."
     )
 
     try:
@@ -162,27 +166,26 @@ def intentar_autogenerar_codigo(prompt_usuario):
         match = re.search(r"```(?:\w+)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         if match:
             nuevo_contenido = match.group(1)
+            # Guardamos en el archivo alternativo, dejando el original intacto
             with open(archivo_objetivo, "w", encoding="utf-8") as f:
                 f.write(nuevo_contenido)
-            print(f"✅ [Autogeneración Exitosa]: {archivo_objetivo} modificado en caliente.")
+            print(f"✅ [Generación Exitosa]: Archivo alternativo creado -> {archivo_objetivo}")
             
             try:
-                sincronizar_con_github(f"🛠️ Modificación autónoma de {archivo_objetivo} por IA")
-                return f"Che, ya modifiqué '{archivo_objetivo}' y lo subí al repo de una."
+                sincronizar_con_github(f"🛠️ Creación de archivo alternativo {archivo_objetivo} por IA")
+                return f"Che, te armé y subí un archivo alternativo llamado '{archivo_objetivo}' con los cambios para que lo revises sin tocar el original."
             except Exception as git_err:
-                return f"Che, modifiqué el archivo localmente ('{archivo_objetivo}'), pero falló el push a GitHub: {git_err}"
+                return f"Che, creé el archivo local '{archivo_objetivo}', pero falló el push a GitHub: {git_err}"
         else:
-            # Si la IA contestó con texto explicativo en vez de código, devolvemos eso para ver qué dijo
             return None
             
     except Exception as e:
-        print(f"⚠️ Error en autogeneración de código: {e}")
+        print(f"⚠️ Error en autogeneración de código alternativo: {e}")
         
     return None
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    # Intentamos primero ver si la orden implica autogeneración de código
     respuesta_codigo = intentar_autogenerar_codigo(prompt_usuario)
     if respuesta_codigo:
         return respuesta_codigo
@@ -255,7 +258,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con contexto de archivo adjunto y autogeneración multi-archivo.")
+    await update.message.reply_text("¡Buenas che! Bot activo con contexto de archivo adjunto y autogeneración segura de archivos alternativos.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -349,6 +352,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if os.path.exists(archivo):
                     try:
                         os.remove(archivo)
+                    export_ex = None
                     except:
                         pass
 
@@ -364,7 +368,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con adjunto de conversaciones.txt y autogeneración...")
+    print("🚀 Iniciando bot con adjunto de conversaciones.txt y autogeneración segura...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
