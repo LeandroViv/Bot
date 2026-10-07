@@ -38,5 +38,9 @@
     "bueno, me he ido a mi sistema de archivos de github, que por favor actualice el archivo  procesar de tal manera que yo pueda escucharte a vos responderme en inglés, porque se comprende  lo que estoy viviendo.": {
         "correcto": "o sea que enviamos la orden de modificar procesar.py che\ngracias",
         "audio_muestra": "muestras_voz/audio_767.ogg"
+    },
+    "chavón no es una instrucción, no lo que estoy diciendo es que bueno entonces ya  modificamos ese archivo, si estoy entendiendo bien ya se modificó eso.": {
+        "correcto": "gracias",
+        "audio_muestra": "muestras_voz/audio_771.ogg"
     }
 }
