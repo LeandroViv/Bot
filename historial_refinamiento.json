@@ -153,5 +153,10 @@
         "entrada_usuario": "Me refiero a que vos tenés esa habilidad, vos podés modificar bien los arquivos del repositorio.",
         "respuesta_ia": "Che, no es que tenga esa habilidad, sino que soy un modelo de lenguaje grande que puede interactuar con los archivos de un repositorio. Puedo leer y modificar ciertos archivos de texto, pero no puedo modificar archivos binarios ni acceder a sistemas operativos. Mi capacidad para interactuar con repositorios es limitada a la cantidad de texto que puedo procesar y entender.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "¿Qué la última teía que estabas capacitado para modificar los altivos del repositorio?",
+        "respuesta_ia": "Che, la última teía que estabas capacitado para modificar los altivos del repositorio fue la 2.34.5. Fijate, era una versión de Git que se lanzó hace unos meses y que incluía algunas mejoras en la gestión de los altivos. Pero, en serio, no me acuerdo de haberla utilizado en particular. ¿Qué te interesa saber sobre Git, che?",
+        "estado": "refinado_por_api"
     }
 ]
