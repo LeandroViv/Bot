@@ -198,5 +198,10 @@
         "entrada_usuario": "Bueno, pues no es el que vení, pasamos a una página web interesante que viés, pero a esa hora, por favor, sí.",
         "respuesta_ia": "Che, la página web que te pasé, ¿te pareció interesante?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "a ver 9 am escribime",
+        "respuesta_ia": "che, ¿qué onda?",
+        "estado": "refinado_por_api"
     }
 ]
