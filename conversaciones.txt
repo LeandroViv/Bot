@@ -510,3 +510,5 @@ El significante de lo que vas incorporando
 ---
 [LEANDRO_BOT]: Che, me acuerdo! Tú habías mencionado que querías que modificara tus archivos de Git, ¿verdad? Pero no tengo esa función, fijate. Soy un chatbot de texto, no tengo acceso a tus archivos de repositorio. Mi función es ayudarte con preguntas, explicaciones y conversaciones, pero no puedo modificar archivos físicos. ¿Hay algo más en lo que pueda ayudarte?
 ---
+[USUARIO]: Bueno, me he ido a mi sistema de archivos de GitHub, que por favor actualice el archivo  procesar de tal manera que yo pueda escucharte a vos responderme en inglés, porque se comprende  lo que estoy viviendo.
+---
