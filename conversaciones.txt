@@ -539,3 +539,6 @@ Ahora, si me envías un mensaje en inglés, puedo entenderlo mejor y responder d
 ---
 [LEANDRO_BOT]: ¿qué onda?
 ---
+[USUARIO]: yo al archivo procesar.py lo veo igual che amigo
+modificamelo para que me respondas en ingles che amigo
+---
