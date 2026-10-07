@@ -208,5 +208,10 @@
         "entrada_usuario": "gracias",
         "respuesta_ia": "De nada, che. ¿Qué onda?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "9 am escribime",
+        "respuesta_ia": "Che, ¿qué onda?",
+        "estado": "refinado_por_api"
     }
 ]
