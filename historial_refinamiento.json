@@ -138,5 +138,10 @@
         "entrada_usuario": "Si no se, ahora no se no ocurre, pero lo que digo es que si yo te lo pido a vos vos  eso lo puedes hacer porque el repositorio es el mío, ese repositorio fuente tuyo  digamos, así que vos lo puedes modificar via chat, eso si yo te lo pido y lo puedes modificar  está bueno, eso me comprende.",
         "respuesta_ia": "Che, entiendo lo que querés. Si me pides algo y lo puedo hacer sin afectar el repositorio original, estoy de acuerdo. Pero si me pides hacer algo que podría afectar el repositorio, te tengo que explicar bien lo que voy a hacer y pedírmelo con claridad. ¿Es eso correcto?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Sí, por supuesto que todo, con cuidado, pero lo que digo, vos tenés esa habilidad de modificar el contenido de los altivos de repositorio.",
+        "respuesta_ia": "Che, no te preocupes, no voy a modificar nada en los repositorios. Mi función es ayudarte a generar texto, no a acceder a sistemas de repositorio. ¿Qué necesitas ayuda con?",
+        "estado": "refinado_por_api"
     }
 ]
