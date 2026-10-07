@@ -500,3 +500,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: Me refiero a que vos tenés esa habilidad, vos podés modificar bien los arquivos del repositorio.
 ---
+[LEANDRO_BOT]: Che, no es que tenga esa habilidad, sino que soy un modelo de lenguaje grande que puede interactuar con los archivos de un repositorio. Puedo leer y modificar ciertos archivos de texto, pero no puedo modificar archivos binarios ni acceder a sistemas operativos. Mi capacidad para interactuar con repositorios es limitada a la cantidad de texto que puedo procesar y entender.
+---
