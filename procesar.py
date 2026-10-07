@@ -44,22 +44,18 @@ lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 
-def sincronizar_con_github():
+def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de código"):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         
-        archivos = [TXT_FILE, REGISTRO_INDUCCION, REGISTRO_REFINAMIENTO, "procesar.py"]
-        for arq in archivos:
-            if os.path.exists(arq):
-                subprocess.run(["git", "add", arq], check=True)
-                
-        subprocess.run(["git", "add", f"{CARPETA_MUESTRAS}/"], check=True)
+        # Agregamos todo el directorio para atrapar cualquier archivo modificado al vuelo
+        subprocess.run(["git", "add", "."], check=True)
         
-        resultado = subprocess.run(["git", "commit", "-m", "🤖 Sincronización evolutiva y de código"], capture_output=True, text=True)
+        resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ Sincronizado con éxito en GitHub.")
+            print("☁️ Sincronizado y pusheado con éxito en GitHub.")
     except Exception as e:
         print(f"⚠️ Aviso de git (no crítico): {e}")
 
@@ -71,7 +67,7 @@ def guardar_en_txt(rol, texto):
 
 
 # ==========================================
-# GESTIÓN DE HISTORIALES Y AUTOGENERACIÓN
+# GESTIÓN DE HISTORIALES Y AUTOGENERACIÓN MULTI-ARCHIVO
 # ==========================================
 def cargar_json(path, tipo_defecto):
     if os.path.exists(path):
@@ -130,22 +126,37 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 
 def intentar_autogenerar_codigo(prompt_usuario):
-    """Detecta si la charla pide modificar código y le ordena a la IA parchar procesar.py en caliente."""
-    if not any(k in prompt_usuario.lower() for k in ["modificame", "agregame", "creame un script", "cambiame la función", "programate"]):
+    """Detecta si la charla pide modificar código y busca qué archivo del repo debe parchar en caliente."""
+    if not any(k in prompt_usuario.lower() for k in ["modificame", "agregame", "creame un script", "cambiame", "programate", "actualizame"]):
         return None
 
-    print("🛠️ [Autogeneración detectada]: Analizando solicitud de código...")
-    
-    codigo_actual = ""
-    if os.path.exists("procesar.py"):
-        with open("procesar.py", "r", encoding="utf-8") as f:
-            codigo_actual = f.read()
+    print("🛠️ [Autogeneración detectada]: Analizando archivo y solicitud...")
+
+    # Buscamos qué archivo existente en el directorio actual nombra el usuario (ej: bot.py, exportar_dataset.py, etc.)
+    archivos_en_repo = [f for f in os.listdir(".") if os.path.isfile(f)]
+    archivo_objetivo = "procesar.py"  # Default por si no especifica otro
+
+    for arch in archivos_en_repo:
+        if arch.lower() in prompt_usuario.lower():
+            archivo_objetivo = arch
+            break
+
+    print(f"📂 Archivo detectado para modificar: {archivo_objetivo}")
+
+    contenido_actual = ""
+    if os.path.exists(archivo_objetivo):
+        with open(archivo_objetivo, "r", encoding="utf-8") as f:
+            contenido_actual = f.read()
+
+    # Determinamos el lenguaje en base a la extensión para guiar a la IA
+    extension = os.path.splitext(archivo_objetivo)[1].lstrip('.')
+    lang_tag = extension if extension else "python"
 
     prompt_codigo = (
-        f"Sos un motor experto de programación en Python. Tu tarea es modificar o reescribir el archivo 'procesar.py' "
+        f"Sos un motor experto de programación. Tu tarea es modificar o reescribir el archivo '{archivo_objetivo}' "
         f"en base a esta directiva de tu colega: '{prompt_usuario}'.\n"
-        f"CÓDIGO ACTUAL DE PROCESAR.PY:\n```python\n{codigo_actual}\n```\n\n"
-        f"DEVUELVE EXCLUSIVAMENTE EL CÓDIGO PYTHON COMPLETO MODIFICADO, encerrado en bloques de código markdown ```python ... ```, sin explicaciones ni texto extra."
+        f"CONTENIDO ACTUAL DE {archivo_objetivo}:\n```{lang_tag}\n{contenido_actual}\n```\n\n"
+        f"DEVUELVE EXCLUSIVAMENTE EL CÓDIGO COMPLETO MODIFICADO, encerrado en bloques de código markdown ```{lang_tag} ... ```, sin explicaciones ni texto extra."
     )
 
     try:
@@ -153,14 +164,15 @@ def intentar_autogenerar_codigo(prompt_usuario):
         res = model.generate_content(prompt_codigo)
         texto_generado = res.text.strip()
         
-        match = re.search(r"```python\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        # Extraemos el bloque de código limpio independientemente de la etiqueta
+        match = re.search(r"```(?:\w+)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         if match:
-            nuevo_codigo = match.group(1)
-            with open("procesar.py", "w", encoding="utf-8") as f:
-                f.write(nuevo_codigo)
-            print("✅ [Autogeneración Exitosa]: procesar.py modificado en caliente.")
-            sincronizar_con_github()
-            return "Che, ahí modifiqué el código del bot en base a lo que me pediste y ya lo subí al repo."
+            nuevo_contenido = match.group(1)
+            with open(archivo_objetivo, "w", encoding="utf-8") as f:
+                f.write(nuevo_contenido)
+            print(f"✅ [Autogeneración Exitosa]: {archivo_objetivo} modificado en caliente.")
+            sincronizar_con_github(f"🛠️ Modificación autónoma de {archivo_objetivo} por IA")
+            return f"Che, ahí modifiqué el archivo '{archivo_objetivo}' en base a lo que me pediste y ya lo subí al repo."
     except Exception as e:
         print(f"⚠️ Error en autogeneración de código: {e}")
     
@@ -168,7 +180,7 @@ def intentar_autogenerar_codigo(prompt_usuario):
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    # Primero chequeamos si pide modificar código
+    # Primero chequeamos si pide modificar código o scripts
     respuesta_codigo = intentar_autogenerar_codigo(prompt_usuario)
     if respuesta_codigo:
         return respuesta_codigo
@@ -230,7 +242,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con inducción, refinamiento y autogeneración de código.")
+    await update.message.reply_text("¡Buenas che! Bot activo con capacidad multi-archivo y autogeneración en caliente.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -339,7 +351,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con memoria y autogeneración de código...")
+    print("🚀 Iniciando bot con capacidad multi-archivo y autogeneración...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
