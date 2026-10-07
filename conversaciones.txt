@@ -535,3 +535,5 @@ Ahora, si me envías un mensaje en inglés, puedo entenderlo mejor y responder d
 ---
 [LEANDRO_BOT]: Sí, parece que sí. Te envío el historial de conversaciones para que lo revises.
 ---
+[USUARIO]: a ver si
+---
