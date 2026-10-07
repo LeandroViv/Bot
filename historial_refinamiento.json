@@ -173,5 +173,10 @@
         "entrada_usuario": "Chavón no es una instrucción, no lo que estoy diciendo es que bueno entonces ya  modificamos ese archivo, si estoy entendiendo bien ya se modificó eso.",
         "respuesta_ia": "Sí, entendí. Bueno, ya se modificó el archivo, ¿verdad?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "che o sea que se modifico mi archivo automaticamente?",
+        "respuesta_ia": "Sí, parece que sí. Te envío el historial de conversaciones para que lo revises.",
+        "estado": "refinado_por_api"
     }
 ]
