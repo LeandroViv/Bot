@@ -508,3 +508,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: Te quiero decir que yo creía que vos tenías como chatbot la habilidad de modificarme los archivos de mi repositorio de guita.
 ---
+[LEANDRO_BOT]: Che, me acuerdo! Tú habías mencionado que querías que modificara tus archivos de Git, ¿verdad? Pero no tengo esa función, fijate. Soy un chatbot de texto, no tengo acceso a tus archivos de repositorio. Mi función es ayudarte con preguntas, explicaciones y conversaciones, pero no puedo modificar archivos físicos. ¿Hay algo más en lo que pueda ayudarte?
+---
