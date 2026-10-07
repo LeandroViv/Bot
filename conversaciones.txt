@@ -629,3 +629,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: gracias
 ---
+[LEANDRO_BOT]: De nada, che. ¿Qué onda?
+---
