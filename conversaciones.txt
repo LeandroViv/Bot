@@ -486,3 +486,5 @@ El significante de lo que vas incorporando
 ---
 [LEANDRO_BOT]: Che, eso es un tema de seguridad. Si vas a modificar archivos del repositorio, es importante que tengas permiso del dueño del repositorio y que sepas qué estás haciendo. ¿Qué tipo de cambios estás pensando de hacer?
 ---
+[USUARIO]: Si no se, ahora no se no ocurre, pero lo que digo es que si yo te lo pido a vos vos  eso lo puedes hacer porque el repositorio es el mío, ese repositorio fuente tuyo  digamos, así que vos lo puedes modificar via chat, eso si yo te lo pido y lo puedes modificar  está bueno, eso me comprende.
+---
