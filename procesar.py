@@ -4,7 +4,6 @@ import os
 import re
 import difflib
 import subprocess
-from ddgs import DDGS
 import requests
 from telegram import Update
 from telegram.ext import (
@@ -45,19 +44,17 @@ lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 
-def sincronizar_con_github():
+def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva automática"):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         
-        archivos = [TXT_FILE, REGISTRO_INDUCCION, REGISTRO_REFINAMIENTO]
-        subprocess.run(["git", "add"] + archivos, check=True)
-        subprocess.run(["git", "add", f"{CARPETA_MUESTRAS}/"], check=True)
+        subprocess.run(["git", "add", "."], check=True)
         
-        resultado = subprocess.run(["git", "commit", "-m", "🤖 Sincronización de inducción y refinamiento de IA"], capture_output=True, text=True)
+        resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ Sincronizado con éxito en GitHub.")
+            print("☁️ Código e historiales sincronizados con éxito en GitHub.")
     except Exception as e:
         print(f"⚠️ Aviso de git (no crítico): {e}")
 
@@ -65,12 +62,20 @@ def sincronizar_con_github():
 def guardar_en_txt(rol, texto):
     with open(TXT_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{rol.upper()}]: {texto}\n---\n")
-    sincronizar_con_github()
+    sincronizar_con_github("🤖 Actualización de conversaciones.txt")
 
 
-# ==========================================
-# GESTIÓN DE HISTORIALES (INDUCCIÓN Y REFINAMIENTO)
-# ==========================================
+def cargar_historial_completo():
+    """Lee el archivo de texto ENTERO para darle memoria absoluta a la IA."""
+    if not os.path.exists(TXT_FILE):
+        return ""
+    try:
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except:
+        return ""
+
+
 def cargar_json(path, tipo_defecto):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -90,57 +95,95 @@ def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
     with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
         json_lib.dump(historial, f, indent=4, ensure_ascii=False)
     print(f"🧠 [Inducción Registrada]: '{error_whisper}' -> '{correccion_real}'")
-    sincronizar_con_github()
+    sincronizar_con_github("🧠 Sincronización de inducción")
 
 
 def registrar_refinamiento_ia(prompt_usuario, respuesta_generada):
-    """Guarda en un JSON separado cómo procesó y refinó la IA cada interacción para aprendizaje continuo."""
     refinamientos = cargar_json(REGISTRO_REFINAMIENTO, [])
-    registro_nuevo = {
-        "entrada_usuario": prompt_usuario,
-        "respuesta_ia": respuesta_generada,
-        "estado": "refinado_por_api"
-    }
-    refinamientos.append(registro_nuevo)
-    # Mantenemos un historial razonable de las últimas 100 interacciones refinadas
-    if len(refinamientos) > 100:
-        refinamientos = refinamientos[-100:]
-        
+    refinamientos.append({"entrada_usuario": prompt_usuario, "respuesta_ia": respuesta_generada})
+    if len(refinamientos) > 150:
+        refinamientos = refinamientos[-150:]
     with open(REGISTRO_REFINAMIENTO, "w", encoding="utf-8") as f:
         json_lib.dump(refinamientos, f, indent=4, ensure_ascii=False)
-    print("💡 [Refinamiento IA Registrado en historial_refinamiento.json]")
-    sincronizar_con_github()
+    sincronizar_con_github("💡 Sincronización de refinamiento")
 
 
 def cotejar_y_corregir_induccion(texto_crudo):
     historial = cargar_json(REGISTRO_INDUCCION, {})
     if not historial:
         return texto_crudo
-    
     texto_lower = texto_crudo.lower().strip()
     if texto_lower in historial:
         return historial[texto_lower]["correcto"]
-
     frases_conocidas = list(historial.keys())
     coincidencias = difflib.get_close_matches(texto_lower, frases_conocidas, n=1, cutoff=0.70)
     if coincidencias:
-        mejor_match = coincidencias[0]
-        return historial[mejor_match]["correcto"]
-
+        return historial[coincidencias[0]]["correcto"]
     return texto_crudo
 
 
+# ==========================================
+# MOTOR DE AUTOGENERACIÓN Y MODIFICACIÓN DE CÓDIGO
+# ==========================================
+def intentar_autogenerar_codigo(prompt_usuario):
+    """Detecta si la charla pide modificar código y le ordena a la IA parchar los scripts en caliente."""
+    if not any(k in prompt_usuario.lower() for k in ["modificame", "agregame", "creame un script", "cambiame la función", "programate"]):
+        return None
+
+    print("🛠️ [Autogeneración detectada]: Analizando solicitud de código...")
+    
+    codigo_actual = ""
+    if os.path.exists("procesar.py"):
+        with open("procesar.py", "r", encoding="utf-8") as f:
+            codigo_actual = f.read()
+
+    prompt_codigo = (
+        f"Sos un motor experto de programación en Python. Tu tarea es modificar o reescribir el archivo 'procesar.py' "
+        f"en base a esta directiva de tu colega: '{prompt_usuario}'.\n"
+        f"CÓDIGO ACTUAL DE PROCESAR.PY:\n```python\n{codigo_actual}\n```\n\n"
+        f"DEVUELVE EXCLUSIVAMENTE EL CÓDIGO PYTHON COMPLETO MODIFICADO, encerrado en bloques de código markdown ```python ... ```, sin explicaciones ni texto extra."
+    )
+
+    try:
+        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+        res = model.generate_content(prompt_codigo)
+        texto_generado = res.text.strip()
+        
+        match = re.search(r"```python\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        if match:
+            nuevo_codigo = match.group(1)
+            with open("procesar.py", "w", encoding="utf-8") as f:
+                f.write(nuevo_codigo)
+            print("✅ [Autogeneración Exitosa]: procesar.py modificado en caliente.")
+            sincronizar_con_github("🛠️ Autogeneración de código en caliente por IA")
+            return "Che, ahí modifiqué el código del bot en base a lo que me pediste y ya lo subí al repo."
+    except Exception as e:
+        print(f"⚠️ Error en autogeneración de código: {e}")
+    
+    return None
+
+
 def llamar_ia_externa_o_local(prompt_usuario):
+    respuesta_codigo = intentar_autogenerar_codigo(prompt_usuario)
+    if respuesta_codigo:
+        return respuesta_codigo
+
     system_prompt = (
         "Sos Leandro hablando con un colega por Telegram.\n"
         "REGLAS ABSOLUTAS:\n"
         "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', 'Claro que sí', ni explicaciones técnicas.\n"
-        "2. CONTEXTO DE CHARLA: Te están pasando una consulta o comentario directo de voz. Analizalo y respondé como un par.\n"
+        "2. HILO CONTINUO Y MEMORIA TOTAL: Tenés acceso a todo el historial previo de la charla. Mantené coherencia absoluta con lo que vienen discutiendo.\n"
         "3. TONO PORTEÑO NATURAL: Hablá al pie, directo, usando 'vos', 'che', 'fijate'.\n"
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
 
-    prompt_final = f"Acá mi colega me está diciendo lo siguiente:\n\"{prompt_usuario}\"\n\nRespondé al contenido de forma directa."
+    historial_entero = cargar_historial_completo()
+
+    prompt_final = ""
+    if historial_entero:
+        prompt_final += f"[HISTORIAL COMPLETO DE LA CHARLA HASTA EL MOMENTO]:\n{historial_entero}\n\n"
+    
+    prompt_final += f"Acá mi colega me está diciendo lo siguiente:\n\"{prompt_usuario}\"\n\nRespondé al contenido hilvanándolo con toda la charla de forma directa, sin leyendas extra."
 
     respuesta_final = ""
     if GEMINI_API_KEY:
@@ -173,7 +216,6 @@ def llamar_ia_externa_o_local(prompt_usuario):
     if not respuesta_final:
         respuesta_final = "Che, me quedé sin conexión, tirámela de nuevo."
     else:
-        # Guardamos el refinamiento de la respuesta obtenida
         registrar_refinamiento_ia(prompt_usuario, respuesta_final)
 
     return respuesta_final
@@ -189,13 +231,13 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con inducción fonética y registro de refinamiento de IA.")
+    await update.message.reply_text("¡Buenas che! Bot activo con memoria total y autogeneración de código.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE
     texto_usuario = update.message.text
-    print(f"📩 Mensaje de texto recibido (corrección): {texto_usuario}")
+    print(f"📩 Mensaje recibido: {texto_usuario}")
     
     if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"]:
         audio_p = ULTIMO_AUDIO_PENDIENTE["path"]
@@ -260,19 +302,13 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ruta_respuesta_ogg
             ], check=True)
 
-            caption_estructurado = (
-                f"-Lo que interpretaste: {texto_crudo}\n"
-                f"-Lo que dije: (Respondé con la corrección si difiere)\n"
-                f"*(Procesado: \"{texto_reconocido}\")*"
-            )
-
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(
                     voice=voice_file, 
-                    caption=caption_estructurado
+                    caption=f'*(Entendido: "{texto_reconocido}")*'
                 )
 
-            print("✅ Nota de voz procesada con éxito y refinamiento registrado.")
+            print("✅ Nota de voz procesada con éxito.")
 
         except Exception as e:
             print(f"⚠️ Error en audio: {e}")
@@ -298,7 +334,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con inducción y registro de refinamiento de IA...")
+    print("🚀 Iniciando bot con memoria total y autogeneración de código...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
