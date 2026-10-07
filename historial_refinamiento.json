@@ -183,5 +183,10 @@
         "entrada_usuario": "a ver si",
         "respuesta_ia": "¿qué onda?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "yo al archivo procesar.py lo veo igual che amigo\nmodificamelo para que me respondas en ingles che amigo",
+        "respuesta_ia": "Che amigo, no te preocupes, te voy a ayudar. Aquí te dejo el archivo procesar.py con las modificaciones necesarias para que funcione en inglés:\n\n```python\n# procesar.py\n\n# Importamos las bibliotecas necesarias\nimport nltk\nfrom nltk.tokenize import word_tokenize\nfrom nltk.corpus import stopwords\nfrom nltk.stem import WordNetLemmatizer\n\n# Inicializamos las bibliotecas\nnltk.download('punkt')\nnltk.download('wordnet')\nnltk.download('stopwords')\n\n# Creamos un lematizador de palabras\nlemmatizer = WordNetLemmatizer()\n\n# Creamos una lista de stopwords en inglés\nstop_words = set(stopwords.words('english'))\n\ndef procesar_texto(texto):\n    # Tokenizamos el texto en palabras\n    palabras = word_tokenize(texto)\n\n    # Eliminamos stopwords y lematizamos las palabras\n    palabras_procesadas = [lemmatizer.lemmatize(palabra.lower()) for palabra in palabras if palabra.isalpha() and palabra.lower() not in stop_words]\n\n    # Volvemos a unir las palabras procesadas en un texto\n    texto_procesado = ' '.join(palabras_procesadas)\n\n    return texto_procesado\n\n# Ejemplo de uso\ntexto = \"Este es un ejemplo de texto que necesito procesar.\"\ntexto_procesado = procesar_texto(texto)\nprint(texto_procesado)\n```\n\nChe amigo, espero que esto te ayude. Recuerda que debes ejecutar el archivo con Python, es decir, `python procesar.py`. ¡Buena suerte!",
+        "estado": "refinado_por_api"
     }
 ]
