@@ -123,5 +123,10 @@
         "entrada_usuario": "Bueno eso\nEl significante de lo que vas incorporando",
         "respuesta_ia": "\"¿Qué onda? ¿Qué significado?\"",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "A ver, ahí tenés conexión, amigo.",
+        "respuesta_ia": "\"¿Qué conexión? ¿De dónde es?\"",
+        "estado": "refinado_por_api"
     }
 ]
