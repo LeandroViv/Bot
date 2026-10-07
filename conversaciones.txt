@@ -537,3 +537,5 @@ Ahora, si me envías un mensaje en inglés, puedo entenderlo mejor y responder d
 ---
 [USUARIO]: a ver si
 ---
+[LEANDRO_BOT]: ¿qué onda?
+---
