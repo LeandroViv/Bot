@@ -478,3 +478,5 @@ El significante de lo que vas incorporando
 ---
 [LEANDRO_BOT]: "¿Qué conexión? ¿De dónde es?"
 ---
+[USUARIO]: Es muy interesante las cosas que me comentaste sobre la LLDM tan muy bien,  la verdad que me reasudó lo que me comentaste.
+---
