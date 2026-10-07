@@ -14,7 +14,7 @@ from telegram.ext import (
     filters,
 )
 from faster_whisper import WhisperModel
-import google.generativeai as genai
+from google import genai
 from gtts import gTTS
 
 TXT_FILE = "conversaciones.txt"
@@ -37,8 +37,8 @@ for archivo_base, contenido_inicial in [
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+# Inicialización con el cliente oficial google.genai
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
@@ -66,7 +66,7 @@ def guardar_en_txt(rol, texto):
 
 
 # ==========================================
-# GESTIÓN DE HISTORIALES Y AUTOGENERACIÓN MULTI-ARCHIVO
+# GESTIÓN DE HISTORIALES Y EVOLUCIÓN AUTÓNOMA
 # ==========================================
 def cargar_json(path, tipo_defecto):
     if os.path.exists(path):
@@ -124,69 +124,71 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
-def intentar_autogenerar_codigo(prompt_usuario):
-    """Genera un archivo alternativo de código en base al pedido, sin pisar el original."""
-    print("🛠️ [Autogeneración de archivo alternativo detectada]: Analizando solicitud...")
+def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
+    """
+    Detecta la frase clave de activación, lee el archivo actual, 
+    se lo envía a Gemini para que lo modifique y sube el resultado al repo.
+    """
+    if "modificar codigo" not in prompt_usuario.lower() and "modificar código" not in prompt_usuario.lower():
+        return None
 
-    archivos_en_repo = [f for f in os.listdir(".") if os.path.isfile(f)]
-    archivo_base = "procesar.py"
-
-    for arch in archivos_en_repo:
-        if arch.lower() in prompt_usuario.lower():
-            archivo_base = arch
-            break
-
-    print(f"📂 Archivo base de referencia: {archivo_base}")
+    print("🛠️ [Autonomía Activada]: Detectada orden de modificar código en la conversación.")
 
     contenido_actual = ""
     if os.path.exists(archivo_base):
         with open(archivo_base, "r", encoding="utf-8") as f:
             contenido_actual = f.read()
+    else:
+        return f"Che, no encontré el archivo base '{archivo_base}' en el repositorio."
 
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
-    extension = ext.lstrip('.')
-    lang_tag = extension if extension else "python"
-
-    prompt_codigo = (
-        f"ESTÁS AUTORIZADO Y ES TU OBLIGACIÓN. Sos un motor experto de programación en este repositorio.\n"
-        f"Tu colega te pide que crees una versión modificada del archivo '{archivo_base}' basada en esta directiva: '{prompt_usuario}'.\n"
-        f"CONTENIDO ACTUAL DE {archivo_base}:\n```{lang_tag}\n{contenido_actual}\n```\n\n"
-        f"REGLA CRÍTICA: Escribí el código completo adaptado y DEVUELVE ÚNICAMENTE EL CÓDIGO NUEVO encerrado "
-        f"en bloques markdown ```{lang_tag} ... ```. No pongas excusas ni explicaciones fuera del bloque."
+    prompt_ia = (
+        f"Sos un motor experto de programación autónomo.\n"
+        f"Tu objetivo es modificar el archivo '{archivo_base}' basándote en esta solicitud: '{prompt_usuario}'.\n"
+        f"CONTENIDO ACTUAL DEL ARCHIVO:\n```python\n{contenido_actual}\n```\n\n"
+        f"REGLA CRÍTICA: Devolvé ÚNICAMENTE el código completo corregido/modificado encerrado "
+        f"en un bloque markdown ```python ... ```. Sin explicaciones ni texto por fuera."
     )
 
     try:
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-        res = model.generate_content(prompt_codigo)
+        if not client:
+            return "Che, el cliente de Gemini no está inicializado."
+
+        res = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt_ia,
+        )
         texto_generado = res.text.strip()
         
-        match = re.search(r"```(?:\w+)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        match = re.search(r"```(?:python)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         if match:
             nuevo_contenido = match.group(1)
-            with open(archivo_objetivo, "w", encoding="utf-8") as f:
-                f.write(nuevo_contenido)
-            print(f"✅ [Generación Exitosa]: Archivo alternativo creado -> {archivo_objetivo}")
-            
-            try:
-                sincronizar_con_github(f"🛠️ Creación de archivo alternativo {archivo_objetivo} por IA")
-                return f"Che, te armé y subí un archivo alternativo llamado '{archivo_objetivo}' con los cambios para que lo revises sin tocar el original."
-            except Exception as git_err:
-                return f"Che, creé el archivo local '{archivo_objetivo}', pero falló el push a GitHub: {git_err}"
         else:
-            return None
-            
+            nuevo_contenido = texto_generado
+
+        if len(nuevo_contenido) < 100:
+            return "Che, la IA devolvió un código demasiado corto o vacío, aborté la modificación."
+
+        with open(archivo_objetivo, "w", encoding="utf-8") as f:
+            f.write(nuevo_contenido)
+        print(f"✅ Archivo corregido guardado localmente: {archivo_objetivo}")
+
+        sincronizar_con_github(f"🤖 Evolución autónoma: modificación de {archivo_base} generada por IA")
+
+        return f"Listo, che. Analicé el archivo, apliqué la modificación y ya subí el archivo '{archivo_objetivo}' al repositorio."
+
     except Exception as e:
-        print(f"⚠️ Error en autogeneración de código alternativo: {e}")
-        
-    return None
+        print(f"⚠️ Error en la evolución de código: {e}")
+        return f"Che, falló el proceso de modificación autónoma: {e}"
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    respuesta_codigo = intentar_autogenerar_codigo(prompt_usuario)
-    if respuesta_codigo:
-        return respuesta_codigo
+    # Intentamos primero si hay orden de modificar código vía palabras clave
+    respuesta_evolucion = procesar_evolucion_codigo(prompt_usuario)
+    if respuesta_evolucion:
+        return respuesta_evolucion
 
     system_prompt = (
         "Sos Leandro hablando con un colega por Telegram.\n"
@@ -198,27 +200,31 @@ def llamar_ia_externa_o_local(prompt_usuario):
     )
 
     respuesta_final = ""
-    if GEMINI_API_KEY:
+    if client:
         try:
-            archivo_adjunto = None
+            archivo_subido = None
             if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
-                archivo_adjunto = genai.upload_file(TXT_FILE, mime_type="text/plain")
+                archivo_subido = client.files.upload(file=TXT_FILE)
 
-            model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
-            
-            contenido_request = [archivo_adjunto, f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."] if archivo_adjunto else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
-            
-            response = model.generate_content(contenido_request)
+            contents_param = [archivo_subido, f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."] if archivo_subido else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
+
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=contents_param,
+                config=genai.types.GenerateContentConfig(
+                    system_instruction=system_prompt
+                )
+            )
             if response and response.text:
                 respuesta_final = response.text.strip()
                 
-            if archivo_adjunto:
+            if archivo_subido:
                 try:
-                    genai.delete_file(archivo_adjunto.name)
+                    client.files.delete(name=archivo_subido.name)
                 except:
                     pass
         except Exception as e:
-            print(f"⚠️ Gemini con archivo adjunto falló: {e}")
+            print(f"⚠️ Gemini falló: {e}")
 
     if not respuesta_final:
         url = "http://127.0.0.1:11434/api/chat"
@@ -256,7 +262,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con contexto de archivo adjunto y autogeneración segura de archivos alternativos.")
+    await update.message.reply_text("¡Buenas che! Bot activo con activación por frase clave 'modificar código'.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -370,7 +376,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con autogeneración segura de archivos alternativos...")
+    print("🚀 Iniciando bot autónomo con lectura de archivo y push a GitHub...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
