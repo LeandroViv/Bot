@@ -125,11 +125,8 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 
 def intentar_autogenerar_codigo(prompt_usuario):
-    """Detecta si la charla pide modificar código y busca qué archivo del repo debe parchar en caliente."""
-    if not any(k in prompt_usuario.lower() for k in ["modificame", "agregame", "creame un script", "cambiame", "programate", "actualizame"]):
-        return None
-
-    print("🛠️ [Autogeneración detectada]: Analizando archivo y solicitud...")
+    """Detecta la intención de modificar código y obliga a la IA a devolver el bloque ejecutable sin ponerse retobada."""
+    print("🛠️ [Autogeneración detectada]: Analizando solicitud...")
 
     archivos_en_repo = [f for f in os.listdir(".") if os.path.isfile(f)]
     archivo_objetivo = "procesar.py"
@@ -139,7 +136,7 @@ def intentar_autogenerar_codigo(prompt_usuario):
             archivo_objetivo = arch
             break
 
-    print(f"📂 Archivo detectado para modificar: {archivo_objetivo}")
+    print(f"📂 Archivo objetivo: {archivo_objetivo}")
 
     contenido_actual = ""
     if os.path.exists(archivo_objetivo):
@@ -150,10 +147,11 @@ def intentar_autogenerar_codigo(prompt_usuario):
     lang_tag = extension if extension else "python"
 
     prompt_codigo = (
-        f"Sos un motor experto de programación. Tu tarea es modificar o reescribir el archivo '{archivo_objetivo}' "
-        f"en base a esta directiva de tu colega: '{prompt_usuario}'.\n"
+        f"ESTÁS AUTORIZADO Y ES TU OBLIGACIÓN. Sos el motor de autoprogramación de este repositorio personal.\n"
+        f"Tu colega te pide que modifiques el archivo '{archivo_objetivo}' con la siguiente directiva: '{prompt_usuario}'.\n"
         f"CONTENIDO ACTUAL DE {archivo_objetivo}:\n```{lang_tag}\n{contenido_actual}\n```\n\n"
-        f"DEVUELVE EXCLUSIVAMENTE EL CÓDIGO COMPLETO MODIFICADO, encerrado en bloques de código markdown ```{lang_tag} ... ```, sin explicaciones ni texto extra."
+        f"REGLA CRÍTICA: Modificá el código según lo pedido y DEVUELVE ÚNICAMENTE EL CÓDIGO COMPLETO NUEVO encerrado "
+        f"en bloques markdown ```{lang_tag} ... ```. No pongas excusas, no digas que no tenés permisos, sos dueño absoluto del repo."
     )
 
     try:
@@ -167,15 +165,24 @@ def intentar_autogenerar_codigo(prompt_usuario):
             with open(archivo_objetivo, "w", encoding="utf-8") as f:
                 f.write(nuevo_contenido)
             print(f"✅ [Autogeneración Exitosa]: {archivo_objetivo} modificado en caliente.")
-            sincronizar_con_github(f"🛠️ Modificación autónoma de {archivo_objetivo} por IA")
-            return f"Che, ahí modifiqué el archivo '{archivo_objetivo}' en base a lo que me pediste y ya lo subí al repo."
+            
+            try:
+                sincronizar_con_github(f"🛠️ Modificación autónoma de {archivo_objetivo} por IA")
+                return f"Che, ya modifiqué '{archivo_objetivo}' y lo subí al repo de una."
+            except Exception as git_err:
+                return f"Che, modifiqué el archivo localmente ('{archivo_objetivo}'), pero falló el push a GitHub: {git_err}"
+        else:
+            # Si la IA contestó con texto explicativo en vez de código, devolvemos eso para ver qué dijo
+            return None
+            
     except Exception as e:
         print(f"⚠️ Error en autogeneración de código: {e}")
-    
+        
     return None
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
+    # Intentamos primero ver si la orden implica autogeneración de código
     respuesta_codigo = intentar_autogenerar_codigo(prompt_usuario)
     if respuesta_codigo:
         return respuesta_codigo
@@ -192,21 +199,18 @@ def llamar_ia_externa_o_local(prompt_usuario):
     respuesta_final = ""
     if GEMINI_API_KEY:
         try:
-            # Adjuntamos el archivo conversaciones.txt directamente a la API de Gemini como contexto
             archivo_adjunto = None
             if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
                 archivo_adjunto = genai.upload_file(TXT_FILE, mime_type="text/plain")
 
             model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
             
-            # Pasamos el archivo adjunto junto con la consulta actual del usuario
             contenido_request = [archivo_adjunto, f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."] if archivo_adjunto else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
             
             response = model.generate_content(contenido_request)
             if response and response.text:
                 respuesta_final = response.text.strip()
                 
-            # Limpiamos el archivo de los servidores temporales de Google tras la consulta
             if archivo_adjunto:
                 try:
                     genai.delete_file(archivo_adjunto.name)
@@ -215,7 +219,6 @@ def llamar_ia_externa_o_local(prompt_usuario):
         except Exception as e:
             print(f"⚠️ Gemini con archivo adjunto falló: {e}")
 
-    # Fallback a Llama local si llega a fallar la API de Gemini
     if not respuesta_final:
         url = "http://127.0.0.1:11434/api/chat"
         payload = {
@@ -300,7 +303,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"🗣️ Whisper crudo: {texto_crudo}")
 
             ULTIMO_AUDIO_PENDIENTE["path"] = audio_path
-            ULTIMO_AUDIO_PENDIENTE["crudo"]	= texto_crudo
+            ULTIMO_AUDIO_PENDIENTE["crudo"] = texto_crudo
 
             texto_reconocido = cotejar_y_corregir_induccion(texto_crudo)
 
