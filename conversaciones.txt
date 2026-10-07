@@ -633,3 +633,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: 9 am escribime
 ---
+[LEANDRO_BOT]: Che, ¿qué onda?
+---
