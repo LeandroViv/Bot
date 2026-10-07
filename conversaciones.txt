@@ -468,3 +468,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: Acá estoy che
 ---
+[LEANDRO_BOT]: Che, me quedé sin conexión, tirámela de nuevo.
+---
