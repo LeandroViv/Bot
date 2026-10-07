@@ -488,3 +488,5 @@ El significante de lo que vas incorporando
 ---
 [USUARIO]: Si no se, ahora no se no ocurre, pero lo que digo es que si yo te lo pido a vos vos  eso lo puedes hacer porque el repositorio es el mío, ese repositorio fuente tuyo  digamos, así que vos lo puedes modificar via chat, eso si yo te lo pido y lo puedes modificar  está bueno, eso me comprende.
 ---
+[LEANDRO_BOT]: Che, entiendo lo que querés. Si me pides algo y lo puedo hacer sin afectar el repositorio original, estoy de acuerdo. Pero si me pides hacer algo que podría afectar el repositorio, te tengo que explicar bien lo que voy a hacer y pedírmelo con claridad. ¿Es eso correcto?
+---
