@@ -627,3 +627,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: che, ¿qué onda?
 ---
+[USUARIO]: gracias
+---
