@@ -143,7 +143,6 @@ def intentar_autogenerar_codigo(prompt_usuario):
         with open(archivo_base, "r", encoding="utf-8") as f:
             contenido_actual = f.read()
 
-    # Generamos un nombre alternativo para no pisar el original (ej: procesar_modificado.py)
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
@@ -166,7 +165,6 @@ def intentar_autogenerar_codigo(prompt_usuario):
         match = re.search(r"```(?:\w+)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         if match:
             nuevo_contenido = match.group(1)
-            # Guardamos en el archivo alternativo, dejando el original intacto
             with open(archivo_objetivo, "w", encoding="utf-8") as f:
                 f.write(nuevo_contenido)
             print(f"✅ [Generación Exitosa]: Archivo alternativo creado -> {archivo_objetivo}")
@@ -266,15 +264,20 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
     print(f"📩 Mensaje recibido: {texto_usuario}")
     
-    if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"]:
+    if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"] and texto_usuario.lower().startswith(("corregir:", "corrección:")):
         audio_p = ULTIMO_AUDIO_PENDIENTE["path"]
         crudo_p = ULTIMO_AUDIO_PENDIENTE["crudo"]
         
-        registrar_correccion_inductiva(audio_p, crudo_p, texto_usuario)
+        correccion_real = re.sub(r'^(corregir:|corrección:)\s*', '', texto_usuario, flags=re.I).strip()
+        
+        registrar_correccion_inductiva(audio_p, crudo_p, correccion_real)
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
         
         await update.message.reply_text("Listo, che. Inducción guardada y asociada al archivo .ogg físico.")
         return
+
+    if ULTIMO_AUDIO_PENDIENTE["path"]:
+        ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
     await update.message.chat.send_action(action="typing")
     respuesta = responder_usuario(texto_usuario)
@@ -331,7 +334,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             caption_estructurado = (
                 f"-Lo que interpretaste: {texto_crudo}\n"
-                f"-Lo que dije: (Respondé con la corrección si difiere)\n"
+                f"-Lo que dije: (Respondé con 'corregir: [texto]' si difiere)\n"
                 f"*(Procesado: \"{texto_reconocido}\")*"
             )
 
@@ -352,7 +355,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if os.path.exists(archivo):
                     try:
                         os.remove(archivo)
-                    export_ex = None
                     except:
                         pass
 
@@ -368,7 +370,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con adjunto de conversaciones.txt y autogeneración segura...")
+    print("🚀 Iniciando bot con autogeneración segura de archivos alternativos...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
