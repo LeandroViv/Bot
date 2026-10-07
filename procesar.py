@@ -49,7 +49,6 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         
-        # Agregamos todo el directorio para atrapar cualquier archivo modificado al vuelo
         subprocess.run(["git", "add", "."], check=True)
         
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
@@ -132,9 +131,8 @@ def intentar_autogenerar_codigo(prompt_usuario):
 
     print("🛠️ [Autogeneración detectada]: Analizando archivo y solicitud...")
 
-    # Buscamos qué archivo existente en el directorio actual nombra el usuario (ej: bot.py, exportar_dataset.py, etc.)
     archivos_en_repo = [f for f in os.listdir(".") if os.path.isfile(f)]
-    archivo_objetivo = "procesar.py"  # Default por si no especifica otro
+    archivo_objetivo = "procesar.py"
 
     for arch in archivos_en_repo:
         if arch.lower() in prompt_usuario.lower():
@@ -148,7 +146,6 @@ def intentar_autogenerar_codigo(prompt_usuario):
         with open(archivo_objetivo, "r", encoding="utf-8") as f:
             contenido_actual = f.read()
 
-    # Determinamos el lenguaje en base a la extensión para guiar a la IA
     extension = os.path.splitext(archivo_objetivo)[1].lstrip('.')
     lang_tag = extension if extension else "python"
 
@@ -164,7 +161,6 @@ def intentar_autogenerar_codigo(prompt_usuario):
         res = model.generate_content(prompt_codigo)
         texto_generado = res.text.strip()
         
-        # Extraemos el bloque de código limpio independientemente de la etiqueta
         match = re.search(r"```(?:\w+)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         if match:
             nuevo_contenido = match.group(1)
@@ -180,7 +176,6 @@ def intentar_autogenerar_codigo(prompt_usuario):
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    # Primero chequeamos si pide modificar código o scripts
     respuesta_codigo = intentar_autogenerar_codigo(prompt_usuario)
     if respuesta_codigo:
         return respuesta_codigo
@@ -189,30 +184,45 @@ def llamar_ia_externa_o_local(prompt_usuario):
         "Sos Leandro hablando con un colega por Telegram.\n"
         "REGLAS ABSOLUTAS:\n"
         "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', 'Claro que sí', ni explicaciones técnicas.\n"
-        "2. CONTEXTO DE CHARLA: Te están pasando una consulta o comentario directo. Analizalo y respondé como un par.\n"
+        "2. CONTEXTO DE CHARLA ABSOLUTO: Tenés adjunto el historial completo de conversaciones. Analizalo para mantener coherencia total.\n"
         "3. TONO PORTEÑO NATURAL: Hablá al pie, directo, usando 'vos', 'che', 'fijate'.\n"
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
 
-    prompt_final = f"Acá mi colega me está diciendo lo siguiente:\n\"{prompt_usuario}\"\n\nRespondé al contenido de forma directa."
-
     respuesta_final = ""
     if GEMINI_API_KEY:
         try:
+            # Adjuntamos el archivo conversaciones.txt directamente a la API de Gemini como contexto
+            archivo_adjunto = None
+            if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
+                archivo_adjunto = genai.upload_file(TXT_FILE, mime_type="text/plain")
+
             model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
-            response = model.generate_content(prompt_final)
+            
+            # Pasamos el archivo adjunto junto con la consulta actual del usuario
+            contenido_request = [archivo_adjunto, f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."] if archivo_adjunto else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
+            
+            response = model.generate_content(contenido_request)
             if response and response.text:
                 respuesta_final = response.text.strip()
+                
+            # Limpiamos el archivo de los servidores temporales de Google tras la consulta
+            if archivo_adjunto:
+                try:
+                    genai.delete_file(archivo_adjunto.name)
+                except:
+                    pass
         except Exception as e:
-            print(f"⚠️ Gemini falló: {e}")
+            print(f"⚠️ Gemini con archivo adjunto falló: {e}")
 
+    # Fallback a Llama local si llega a fallar la API de Gemini
     if not respuesta_final:
         url = "http://127.0.0.1:11434/api/chat"
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt_final}
+                {"role": "user", "content": prompt_usuario}
             ],
             "options": {"num_ctx": 16384, "temperature": 0.2},
             "stream": False,
@@ -242,7 +252,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con capacidad multi-archivo y autogeneración en caliente.")
+    await update.message.reply_text("¡Buenas che! Bot activo con contexto de archivo adjunto y autogeneración multi-archivo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -290,7 +300,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"🗣️ Whisper crudo: {texto_crudo}")
 
             ULTIMO_AUDIO_PENDIENTE["path"] = audio_path
-            ULTIMO_AUDIO_PENDIENTE["crudo"] = texto_crudo
+            ULTIMO_AUDIO_PENDIENTE["crudo"]	= texto_crudo
 
             texto_reconocido = cotejar_y_corregir_induccion(texto_crudo)
 
@@ -351,7 +361,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con capacidad multi-archivo y autogeneración...")
+    print("🚀 Iniciando bot con adjunto de conversaciones.txt y autogeneración...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
