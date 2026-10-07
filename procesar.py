@@ -126,10 +126,13 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     """
-    Detecta la frase clave de activación, lee el archivo actual, 
-    se lo envía a Gemini para que lo modifique y sube el resultado al repo.
+    Detecta de forma flexible si le pedís modificar código, lee el archivo actual, 
+    se lo envía a Gemini (3.5-flash) y sube el resultado al repo.
     """
-    if "modificar codigo" not in prompt_usuario.lower() and "modificar código" not in prompt_usuario.lower():
+    prompt_lower = prompt_usuario.lower()
+    tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "funcion", "función"])
+    
+    if not tiene_intencion:
         return None
 
     print("🛠️ [Autonomía Activada]: Detectada orden de modificar código en la conversación.")
@@ -157,7 +160,7 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
             return "Che, el cliente de Gemini no está inicializado."
 
         res = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-3.5-flash",
             contents=prompt_ia,
         )
         texto_generado = res.text.strip()
@@ -185,6 +188,7 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
+    # 1. Chequeo prioritario de evolución de código
     respuesta_evolucion = procesar_evolucion_codigo(prompt_usuario)
     if respuesta_evolucion:
         return respuesta_evolucion
@@ -192,23 +196,27 @@ def llamar_ia_externa_o_local(prompt_usuario):
     system_prompt = (
         "Sos Leandro hablando con un colega por Telegram.\n"
         "REGLAS ABSOLUTAS:\n"
-        "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', 'Claro que sí', ni explicaciones técnicas.\n"
-        "2. CONTEXTO DE CHARLA ABSOLUTO: Tenés adjunto el historial completo de conversaciones. Analizalo para mantener coherencia total.\n"
+        "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', ni explicaciones técnicas.\n"
+        "2. CERO REPETICIONES AUTOMÁTICAS: No uses latiguillos vacíos ni repitas '¿qué onda?' si te tiran una orden o comentario puntual.\n"
         "3. TONO PORTEÑO NATURAL: Hablá al pie, directo, usando 'vos', 'che', 'fijate'.\n"
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
+
+    # 2. Decisión inteligente: interpretar directo con la API y solo adjuntar el TXT si el mensaje requiere contexto histórico
+    necesita_historial = any(k in prompt_usuario.lower() for k in ["anterior", "acordás", "historial", "charla", "conversación", "visto", "habíamos"])
 
     respuesta_final = ""
     if client:
         try:
             archivo_subido = None
-            if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
+            if necesita_historial and os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
+                print("📁 [Contexto]: Adjuntando historial de conversaciones porque fue requerido.")
                 archivo_subido = client.files.upload(file=TXT_FILE)
 
             contents_param = [archivo_subido, f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."] if archivo_subido else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
 
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-3.5-flash",
                 contents=contents_param,
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_prompt
@@ -225,6 +233,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
         except Exception as e:
             print(f"⚠️ Gemini falló: {e}")
 
+    # Fallback local con Ollama si la API de Gemini no responde
     if not respuesta_final:
         url = "http://127.0.0.1:11434/api/chat"
         payload = {
@@ -261,7 +270,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con cliente google.genai y evolución por 'modificar código'.")
+    await update.message.reply_text("¡Buenas che! Bot activo con modelo gemini-3.5-flash y evolución autónoma optimizada.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -375,7 +384,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con google.genai y evolución autónoma...")
+    print("🚀 Iniciando bot con gemini-3.5-flash y lógica optimizada...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
