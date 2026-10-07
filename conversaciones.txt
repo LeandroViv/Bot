@@ -529,3 +529,5 @@ Ahora, si me envías un mensaje en inglés, puedo entenderlo mejor y responder d
 ---
 [USUARIO]: Chavón no es una instrucción, no lo que estoy diciendo es que bueno entonces ya  modificamos ese archivo, si estoy entendiendo bien ya se modificó eso.
 ---
+[LEANDRO_BOT]: Sí, entendí. Bueno, ya se modificó el archivo, ¿verdad?
+---
