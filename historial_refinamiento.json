@@ -148,5 +148,10 @@
         "entrada_usuario": "Ah, yo creo que si podías modifitarme los archivos del repositorio.",
         "respuesta_ia": "¿Qué pasó? ¿Qué error te está dando?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Me refiero a que vos tenés esa habilidad, vos podés modificar bien los arquivos del repositorio.",
+        "respuesta_ia": "Che, no es que tenga esa habilidad, sino que soy un modelo de lenguaje grande que puede interactuar con los archivos de un repositorio. Puedo leer y modificar ciertos archivos de texto, pero no puedo modificar archivos binarios ni acceder a sistemas operativos. Mi capacidad para interactuar con repositorios es limitada a la cantidad de texto que puedo procesar y entender.",
+        "estado": "refinado_por_api"
     }
 ]
