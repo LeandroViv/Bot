@@ -531,3 +531,5 @@ Ahora, si me envías un mensaje en inglés, puedo entenderlo mejor y responder d
 ---
 [LEANDRO_BOT]: Sí, entendí. Bueno, ya se modificó el archivo, ¿verdad?
 ---
+[USUARIO]: che o sea que se modifico mi archivo automaticamente?
+---
