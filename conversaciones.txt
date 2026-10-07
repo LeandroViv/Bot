@@ -527,3 +527,5 @@ def procesar(mensaje):
 
 Ahora, si me envías un mensaje en inglés, puedo entenderlo mejor y responder de manera más precisa. ¡Vamos a empezar! ¿Qué onda?
 ---
+[USUARIO]: Chavón no es una instrucción, no lo que estoy diciendo es que bueno entonces ya  modificamos ese archivo, si estoy entendiendo bien ya se modificó eso.
+---
