@@ -584,3 +584,5 @@ print(texto_procesado)
 
 Che amigo, espero que esto te ayude. Recuerda que debes ejecutar el archivo con Python, es decir, `python procesar.py`. ¡Buena suerte!
 ---
+[USUARIO]: Che, modificame el archivo procesar.py para que en la función gTTS el idioma sea inglés (lang='en') y el tld sea com.us
+---
