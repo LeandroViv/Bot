@@ -730,3 +730,5 @@ REGLAS ABSOLUTAS:
 ---
 [USUARIO]: ahí tincorporé algunas funciones que son interesantes, a ver, bueno empecemos  ponen amigos de hombre por favor
 ---
+[LEANDRO_BOT]: Listo, che. Interpreté tu pedido, me automodifiqué y ya dejé actualizado el archivo 'procesar_modificado.py' en el repo.
+---
