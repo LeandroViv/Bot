@@ -744,3 +744,5 @@ REGLAS ABSOLUTAS:
 ---
 [LEANDRO_BOT]: Listo, che. Interpreté tu pedido, me automodifiqué y ya dejé actualizado el archivo 'procesar_modificado.py' en el repo.
 ---
+[USUARIO]: Sí, pero quiero que modifique estuvo ahora mismo, me entendés lo que te estoy pidiendo, por favor.
+---
