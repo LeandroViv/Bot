@@ -711,3 +711,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: A ver, pasame alguno, por favor.
 ---
+[LEANDRO_BOT]: Ahí va, bancame un toque que lo busco y te lo tiro por acá.
+---
