@@ -663,3 +663,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: Gracias, ché, me gusta cómo estás incorporando habilidades.
 ---
+[LEANDRO_BOT]: De una, che, gracias. Hay que seguir metiéndole para no quedarse atrás. Abrazo!
+---
