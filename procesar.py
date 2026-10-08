@@ -53,7 +53,7 @@ ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 def inicializar_directorios_control(archivo_actual="procesar.py"):
     """
     1. 'originales/': Guarda el snapshot inalterable del script base (se hace una sola vez).
-    2. 'evolucion_recursiva/': Mantiene y actualiza la última versión mutada del script.
+    2. 'evolucion_recursiva/': Mantiene una copia evolutiva de respaldo.
     """
     try:
         path_original = os.path.join(CARPETA_ORIGINALES, archivo_actual)
@@ -64,7 +64,6 @@ def inicializar_directorios_control(archivo_actual="procesar.py"):
         path_recursivo = os.path.join(CARPETA_RECURSIVA, archivo_actual)
         if os.path.exists(archivo_actual):
             shutil.copy(archivo_actual, path_recursivo)
-            print(f"🔄 [Directorio Recursivo]: Versión evolutiva actualizada en {path_recursivo}")
     except Exception as e:
         print(f"⚠️ Error en control de directorios: {e}")
 
@@ -149,56 +148,37 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
-def obtener_historial_completo():
-    """Lee la totalidad del archivo de conversaciones para tener contexto profundo e ilimitado hacia atrás."""
-    if not os.path.exists(TXT_FILE):
-        return ""
-    try:
-        with open(TXT_FILE, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except:
-        return ""
-
-
-def procesar_evolucion_autonoma(prompt_usuario, archivo_por_defecto="procesar.py"):
+def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
     """
-    Vibe coding con contexto profundo: La IA lee todo el historial necesario y el script
-    para ejecutar cambios orgánicos, actualizando la carpeta recursiva.
+    Vibe coding con contexto profundo: Sobrescribe directamente procesar.py sin archivos paralelos.
     """
     if not client:
         return None
 
-    match_archivo = re.search(r'\b([\w-]+\.(?:py|json|txt|env|yml|yaml))\b', prompt_usuario, re.I)
-    archivo_base = match_archivo.group(1) if match_archivo else archivo_por_defecto
+    print(f"🧠 [Vibe Coding Directo]: Analizando contexto profundo para -> {archivo_objetivo}")
 
-    print(f"🧠 [Vibe Coding con Contexto Profundo]: Analizando -> {archivo_base}")
-
-    if not os.path.exists(archivo_base):
+    if not os.path.exists(archivo_objetivo):
         return None
 
-    # Aseguramos directorios de control
-    inicializar_directorios_control(archivo_base)
-
-    nombre, ext = os.path.splitext(archivo_base)
-    archivo_objetivo = f"{nombre}_modificado{ext}"
+    inicializar_directorios_control(archivo_objetivo)
 
     archivo_subido_ia = None
     archivo_historial_ia = None
     try:
-        archivo_subido_ia = client.files.upload(file=archivo_base)
+        archivo_subido_ia = client.files.upload(file=archivo_objetivo)
         
-        # Subimos también todo el historial de charlas para que la IA tenga memoria infinita hacia atrás
         if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
             archivo_historial_ia = client.files.upload(file=TXT_FILE)
 
         prompt_ia = (
             f"Sos el núcleo de un agente autónomo de vibe coding con memoria contextual profunda.\n"
-            f"Se adjunta el archivo de código fuente actual y el historial completo de la conversación previa.\n"
+            f"Se adjunta el código fuente actual ('{archivo_objetivo}') y el historial completo de la charla.\n"
             f"La orden actual de tu colega es: '{prompt_usuario}'.\n"
             f"INSTRUCCIONES CRÍTICAS:\n"
-            f"1. Analizá todo el historial y el contexto hacia atrás para entender exactamente qué se venía Charlando y qué se espera.\n"
+            f"1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o lógica pedidos.\n"
             f"2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.\n"
-            f"3. Si es solo charla o continuidad de la conversación, respondé al hueso en tono porteño natural."
+            f"3. Sobrescribí directamente el script principal ('{archivo_objetivo}'). Prohibido crear archivos paralelos como '_modificado.py'.\n"
+            f"4. Si es solo charla, respondé al hueso en tono porteño natural."
         )
 
         contents_param = [archivo_subido_ia, archivo_historial_ia, prompt_ia] if archivo_historial_ia else [archivo_subido_ia, prompt_ia]
@@ -221,13 +201,13 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_por_defecto="procesar.py
                     f.write(nuevo_contenido)
                 
                 inicializar_directorios_control(archivo_objetivo)
-                sincronizar_con_github(f"🤖 Vibe coding autónomo con contexto profundo: modificación de {archivo_base}")
-                return f"Listo, che. Leí todo el contexto hacia atrás, interpreté el vibe, me automodifiqué y dejé actualizada la versión en '{CARPETA_RECURSIVA}/'."
+                sincronizar_con_github(f"🤖 Vibe coding autónomo: actualización directa de {archivo_objetivo}")
+                return f"Listo, che. Leí todo el contexto hacia atrás, apliqué los cambios directamente sobre '{archivo_objetivo}' y ya quedó sincronizado en el repo."
 
         return texto_generado
 
     except Exception as e:
-        print(f"⚠️ Error en vibe coding contextual: {e}")
+        print(f"⚠️ Error en vibe coding directo: {e}")
         return None
         
     finally:
@@ -316,7 +296,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con memoria contextual profunda y directorios duales (originales / recursiva).")
+    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding directo sobre procesar.py y memoria profunda.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -382,19 +362,21 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
+            # Lógica de pitch y tempo dinámicos según el contexto profundo de la charla
             prompt_lower = texto_reconocido.lower()
-            pitch_factor = 0.85
+            pitch_factor = 0.80  # Base grave
+            tempo_factor = 1.02  # Base natural
             
-            if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave"]):
-                pitch_factor = 0.76
-            elif any(k in prompt_lower for k in ["más agudo", "mas agudo", "agudo"]):
-                pitch_factor = 0.95
+            if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "más grave"]):
+                pitch_factor = 0.72  # Más profundo
+            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "ritmo más rápido"]):
+                tempo_factor = 1.12  # Más ágil
 
-            print(f"🎚️ [Pitch Dinámico FFmpeg]: Factor aplicado -> {pitch_factor}")
+            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", f"atempo=1.02,asetrate=24000*{pitch_factor},dynaudnorm=f=150:g=15",
+                "-filter:a", f"atempo={tempo_factor},asetrate=24000*{pitch_factor},dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -439,7 +421,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con memoria contextual profunda y directorios de control duales...")
+    print("🚀 Iniciando bot con Vibe Coding directo sobre procesar.py y contexto profundo...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
