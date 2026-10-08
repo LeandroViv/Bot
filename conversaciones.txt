@@ -715,3 +715,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: ¿Dónde lo tenés que buscar?
 ---
+[LEANDRO_BOT]: En el repo, che. Bancame que me fijo si ya lo subieron y te aviso.
+---
