@@ -3,6 +3,7 @@ json_lib = __import__('json')
 import os
 import re
 import glob
+import shutil
 import difflib
 import subprocess
 import requests
@@ -22,9 +23,14 @@ TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
 REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
 CARPETA_MUESTRAS = "muestras_voz"
+CARPETA_ORIGINALES = "originales"
+CARPETA_RECURSIVA = "evolucion_recursiva"
 
-# Aseguramos directorios y archivos base
+# Aseguramos directorios base
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
+os.makedirs(CARPETA_ORIGINALES, exist_ok=True)
+os.makedirs(CARPETA_RECURSIVA, exist_ok=True)
+
 for archivo_base, contenido_inicial in [
     (REGISTRO_INDUCCION, {}),
     (REGISTRO_REFINAMIENTO, []),
@@ -38,11 +44,29 @@ for archivo_base, contenido_inicial in [
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# Inicialización con el cliente oficial google.genai
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
+
+
+def inicializar_directorios_control(archivo_actual="procesar.py"):
+    """
+    1. 'originales/': Guarda el snapshot inalterable del script base (se hace una sola vez).
+    2. 'evolucion_recursiva/': Mantiene y actualiza la última versión mutada del script.
+    """
+    try:
+        path_original = os.path.join(CARPETA_ORIGINALES, archivo_actual)
+        if os.path.exists(archivo_actual) and not os.path.exists(path_original):
+            shutil.copy(archivo_actual, path_original)
+            print(f"🛡️ [Directorio Originales]: Snapshot base sellado en {path_original}")
+
+        path_recursivo = os.path.join(CARPETA_RECURSIVA, archivo_actual)
+        if os.path.exists(archivo_actual):
+            shutil.copy(archivo_actual, path_recursivo)
+            print(f"🔄 [Directorio Recursivo]: Versión evolutiva actualizada en {path_recursivo}")
+    except Exception as e:
+        print(f"⚠️ Error en control de directorios: {e}")
 
 
 def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de código"):
@@ -125,43 +149,63 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
+def obtener_historial_completo():
+    """Lee la totalidad del archivo de conversaciones para tener contexto profundo e ilimitado hacia atrás."""
+    if not os.path.exists(TXT_FILE):
+        return ""
+    try:
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except:
+        return ""
+
+
 def procesar_evolucion_autonoma(prompt_usuario, archivo_por_defecto="procesar.py"):
     """
-    Motor autónomo sin hardcodeo: La IA analiza el prompt mediante la File API,
-    detecta por contexto si debe automodificar el código del repo y aplica los cambios.
+    Vibe coding con contexto profundo: La IA lee todo el historial necesario y el script
+    para ejecutar cambios orgánicos, actualizando la carpeta recursiva.
     """
     if not client:
         return None
 
-    # Detección dinámica de archivo si se nombra explícitamente, sino usa procesar.py
     match_archivo = re.search(r'\b([\w-]+\.(?:py|json|txt|env|yml|yaml))\b', prompt_usuario, re.I)
     archivo_base = match_archivo.group(1) if match_archivo else archivo_por_defecto
 
-    print(f"🧠 [Autonomía Pura]: Analizando contexto para archivo objetivo -> {archivo_base}")
+    print(f"🧠 [Vibe Coding con Contexto Profundo]: Analizando -> {archivo_base}")
 
     if not os.path.exists(archivo_base):
         return None
+
+    # Aseguramos directorios de control
+    inicializar_directorios_control(archivo_base)
 
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
     archivo_subido_ia = None
+    archivo_historial_ia = None
     try:
         archivo_subido_ia = client.files.upload(file=archivo_base)
+        
+        # Subimos también todo el historial de charlas para que la IA tenga memoria infinita hacia atrás
+        if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
+            archivo_historial_ia = client.files.upload(file=TXT_FILE)
 
         prompt_ia = (
-            f"Sos el núcleo de un agente autónomo autoprogramable.\n"
-            f"La orden de tu colega es: '{prompt_usuario}'.\n"
+            f"Sos el núcleo de un agente autónomo de vibe coding con memoria contextual profunda.\n"
+            f"Se adjunta el archivo de código fuente actual y el historial completo de la conversación previa.\n"
+            f"La orden actual de tu colega es: '{prompt_usuario}'.\n"
             f"INSTRUCCIONES CRÍTICAS:\n"
-            f"1. Analizá por contexto si esta orden implica modificar el archivo adjunto (por ejemplo, ajustar parámetros de audio, lógica, etc.).\n"
-            f"2. Si requiere modificación de código, devolvé estrictamente el bloque de código completo modificado dentro de ```python ... ``` para actualizar el archivo.\n"
-            f"3. Si es solo charla o un pedido que no modifica código, respondé con texto plano en tono porteño natural, al hueso y sin explicar reglas.\n"
-            f"4. Prohibido citar manuales o normas técnicas."
+            f"1. Analizá todo el historial y el contexto hacia atrás para entender exactamente qué se venía Charlando y qué se espera.\n"
+            f"2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.\n"
+            f"3. Si es solo charla o continuidad de la conversación, respondé al hueso en tono porteño natural."
         )
+
+        contents_param = [archivo_subido_ia, archivo_historial_ia, prompt_ia] if archivo_historial_ia else [archivo_subido_ia, prompt_ia]
 
         res = client.models.generate_content(
             model="gemini-3.5-flash",
-            contents=[archivo_subido_ia, prompt_ia],
+            contents=contents_param,
             config=genai.types.GenerateContentConfig(
                 temperature=0.3
             )
@@ -175,25 +219,27 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_por_defecto="procesar.py
             if len(nuevo_contenido) > 50:
                 with open(archivo_objetivo, "w", encoding="utf-8") as f:
                     f.write(nuevo_contenido)
-                sincronizar_con_github(f"🤖 Auto-evolución autónoma por contexto: {prompt_usuario}")
-                return f"Listo, che. Interpreté tu pedido, me automodifiqué y ya dejé actualizado el archivo '{archivo_objetivo}' en el repo."
+                
+                inicializar_directorios_control(archivo_objetivo)
+                sincronizar_con_github(f"🤖 Vibe coding autónomo con contexto profundo: modificación de {archivo_base}")
+                return f"Listo, che. Leí todo el contexto hacia atrás, interpreté el vibe, me automodifiqué y dejé actualizada la versión en '{CARPETA_RECURSIVA}/'."
 
         return texto_generado
 
     except Exception as e:
-        print(f"⚠️ Error en autonomía pura: {e}")
+        print(f"⚠️ Error en vibe coding contextual: {e}")
         return None
         
     finally:
-        if archivo_subido_ia:
-            try:
-                client.files.delete(name=archivo_subido_ia.name)
-            except:
-                pass
+        for arch in [archivo_subido_ia, archivo_historial_ia]:
+            if arch:
+                try:
+                    client.files.delete(name=arch.name)
+                except:
+                    pass
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    # Primero intentamos que el motor autónomo resuelva si hay que modificar código o actuar por contexto
     respuesta_evolucion = procesar_evolucion_autonoma(prompt_usuario)
     if respuesta_evolucion:
         return respuesta_evolucion
@@ -207,17 +253,14 @@ def llamar_ia_externa_o_local(prompt_usuario):
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
 
-    necesita_historial = any(k in prompt_usuario.lower() for k in ["anterior", "acordás", "historial", "charla", "conversación", "visto", "habíamos"])
-
     respuesta_final = ""
     if client:
         try:
-            archivo_subido = None
-            if necesita_historial and os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
-                print("📁 [Contexto]: Adjuntando historial de conversaciones porque fue requerido.")
-                archivo_subido = client.files.upload(file=TXT_FILE)
+            archivo_historial = None
+            if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
+                archivo_historial = client.files.upload(file=TXT_FILE)
 
-            contents_param = [archivo_subido, f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."] if archivo_subido else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
+            contents_param = [archivo_historial, f"Historial completo de nuestra charla adjunto.\nMi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa considerando todo el contexto."] if archivo_historial else f"Mi colega me dice:\n\"{prompt_usuario}\"\n\nRespondé de forma directa."
 
             response = client.models.generate_content(
                 model="gemini-3.5-flash",
@@ -229,9 +272,9 @@ def llamar_ia_externa_o_local(prompt_usuario):
             if response and response.text:
                 respuesta_final = response.text.strip()
                 
-            if archivo_subido:
+            if archivo_historial:
                 try:
-                    client.files.delete(name=archivo_subido.name)
+                    client.files.delete(name=archivo_historial.name)
                 except:
                     pass
         except Exception as e:
@@ -273,7 +316,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con autonomía contextual pura y gestión de repo.")
+    await update.message.reply_text("¡Buenas che! Bot activo con memoria contextual profunda y directorios duales (originales / recursiva).")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -284,12 +327,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"] and texto_usuario.lower().startswith(("corregir:", "corrección:")):
         audio_p = ULTIMO_AUDIO_PENDIENTE["path"]
         crudo_p = ULTIMO_AUDIO_PENDIENTE["crudo"]
-        
         correccion_real = re.sub(r'^(corregir:|corrección:)\s*', '', texto_usuario, flags=re.I).strip()
-        
         registrar_correccion_inductiva(audio_p, crudo_p, correccion_real)
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
-        
         await update.message.reply_text("Listo, che. Inducción guardada y asociada al archivo .ogg físico.")
         return
 
@@ -342,10 +382,19 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Filtros base estándar para voz de hombre clara y directa
+            prompt_lower = texto_reconocido.lower()
+            pitch_factor = 0.85
+            
+            if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave"]):
+                pitch_factor = 0.76
+            elif any(k in prompt_lower for k in ["más agudo", "mas agudo", "agudo"]):
+                pitch_factor = 0.95
+
+            print(f"🎚️ [Pitch Dinámico FFmpeg]: Factor aplicado -> {pitch_factor}")
+
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", "atempo=1.02,asetrate=24000*0.90,dynaudnorm=f=150:g=15",
+                "-filter:a", f"atempo=1.02,asetrate=24000*{pitch_factor},dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -378,6 +427,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    inicializar_directorios_control("procesar.py")
+
     if not TOKEN:
         print("❌ ERROR: Falta token.")
         return
@@ -388,7 +439,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con autonomía contextual pura...")
+    print("🚀 Iniciando bot con memoria contextual profunda y directorios de control duales...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
