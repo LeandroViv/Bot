@@ -125,114 +125,64 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
-def calcular_parametros_voz(prompt_usuario=""):
+def procesar_evolucion_autonoma(prompt_usuario, archivo_por_defecto="procesar.py"):
     """
-    Toma la totalidad de las muestras de voz físicas en la carpeta para evaluar 
-    el banco global y ajusta los parámetros de tono (pitch) y ritmo (tempo)
-    de forma cualitativa y cuantitativa.
+    Motor autónomo sin hardcodeo: La IA analiza el prompt mediante la File API,
+    detecta por contexto si debe automodificar el código del repo y aplica los cambios.
     """
-    muestras = glob.glob(os.path.join(CARPETA_MUESTRAS, "*.ogg"))
-    cantidad_muestras = len(muestras)
-    print(f"🎙️ [Banco de Voz Global]: Analizando la totalidad de muestras disponibles -> {cantidad_muestras} audios.")
-
-    # Valores base por defecto (voz de hombre, directa y natural)
-    pitch_factor = 0.92
-    tempo_factor = 1.02
-
-    # Si hay muestras, podemos ponderar o simplemente validar su existencia para aplicar el perfil
-    if cantidad_muestras > 0:
-        # A mayor cantidad de muestras consolidadas, afinamos de manera más precisa la cadencia base
-        tempo_factor = 1.01
-
-    prompt_lower = prompt_usuario.lower()
-
-    if "mas grave" in prompt_lower or "más grave" in prompt_lower:
-        pitch_factor = 0.86
-        print("🎚️ Ajuste cuantitativo aplicado: Tono más grave.")
-    elif "mas agudo" in prompt_lower or "más agudo" in prompt_lower:
-        pitch_factor = 0.96
-        print("🎚️ Ajuste cuantitativo aplicado: Tono más agudo.")
-
-    if "mas lento" in prompt_lower or "más lento" in prompt_lower or "pausado" in prompt_lower:
-        tempo_factor = 0.94
-        print("🎚️ Ajuste cualitativo aplicado: Ritmo más pausado.")
-    elif "mas rapido" in prompt_lower or "más rápido" in prompt_lower:
-        tempo_factor = 1.08
-        print("🎚️ Ajuste cualitativo aplicado: Ritmo más ágil.")
-
-    return pitch_factor, tempo_factor
-
-
-def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py"):
-    """
-    Detecta de forma dinámica cualquier archivo del repositorio nombrado en el mensaje,
-    lo sube a Gemini mediante File API, procesa la evolución y guarda el resultado
-    manteniendo el original intacto.
-    """
-    prompt_lower = prompt_usuario.lower()
-    tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "archivo", "funcion", "función"])
-    
-    if not tiene_intencion:
+    if not client:
         return None
 
+    # Detección dinámica de archivo si se nombra explícitamente, sino usa procesar.py
     match_archivo = re.search(r'\b([\w-]+\.(?:py|json|txt|env|yml|yaml))\b', prompt_usuario, re.I)
     archivo_base = match_archivo.group(1) if match_archivo else archivo_por_defecto
 
-    print(f"🛠️ [Autonomía Multi-Archivo]: Archivo objetivo detectado -> {archivo_base}")
+    print(f"🧠 [Autonomía Pura]: Analizando contexto para archivo objetivo -> {archivo_base}")
 
     if not os.path.exists(archivo_base):
-        return f"Che, no encontré el archivo '{archivo_base}' en el repositorio."
+        return None
 
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
     archivo_subido_ia = None
     try:
-        if not client:
-            return "Che, el cliente de Gemini no está inicializado."
-
-        print(f"📁 Subiendo '{archivo_base}' a Gemini como adjunto...")
         archivo_subido_ia = client.files.upload(file=archivo_base)
 
         prompt_ia = (
-            f"Sos un motor de programación autónomo y riguroso.\n"
-            f"Basate en el archivo adjunto ('{archivo_base}') para cumplir esta solicitud: '{prompt_usuario}'.\n"
+            f"Sos el núcleo de un agente autónomo autoprogramable.\n"
+            f"La orden de tu colega es: '{prompt_usuario}'.\n"
             f"INSTRUCCIONES CRÍTICAS:\n"
-            f"1. Modificá estrictamente lo que se te pidió sin alterar el resto del archivo original.\n"
-            f"2. Si la respuesta es muy larga, paginala usando bloques de código markdown secuenciales.\n"
-            f"3. Devolvé el resultado limpio para ensamblar."
+            f"1. Analizá por contexto si esta orden implica modificar el archivo adjunto (por ejemplo, ajustar parámetros de audio, lógica, etc.).\n"
+            f"2. Si requiere modificación de código, devolvé estrictamente el bloque de código completo modificado dentro de ```python ... ``` para actualizar el archivo.\n"
+            f"3. Si es solo charla o un pedido que no modifica código, respondé con texto plano en tono porteño natural, al hueso y sin explicar reglas.\n"
+            f"4. Prohibido citar manuales o normas técnicas."
         )
 
         res = client.models.generate_content(
             model="gemini-3.5-flash",
             contents=[archivo_subido_ia, prompt_ia],
             config=genai.types.GenerateContentConfig(
-                temperature=0.2
+                temperature=0.3
             )
         )
         
         texto_generado = res.text.strip()
         bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         
-        if not bloques_codigo:
-            nuevo_contenido = texto_generado
-        else:
+        if bloques_codigo:
             nuevo_contenido = "\n".join(bloques_codigo)
+            if len(nuevo_contenido) > 50:
+                with open(archivo_objetivo, "w", encoding="utf-8") as f:
+                    f.write(nuevo_contenido)
+                sincronizar_con_github(f"🤖 Auto-evolución autónoma por contexto: {prompt_usuario}")
+                return f"Listo, che. Interpreté tu pedido, me automodifiqué y ya dejé actualizado el archivo '{archivo_objetivo}' en el repo."
 
-        if len(nuevo_contenido) < 10:
-            return "Che, la IA devolvió un contenido demasiado corto o vacío, aborté la modificación."
-
-        with open(archivo_objetivo, "w", encoding="utf-8") as f:
-            f.write(nuevo_contenido)
-            
-        print(f"✅ Archivo modificado guardado localmente: {archivo_objetivo} (Original '{archivo_base}' intacto)")
-        sincronizar_con_github(f"🤖 Evolución autónoma multi-archivo: modificación de {archivo_base}")
-
-        return f"Listo, che. Analicé el archivo '{archivo_base}' mediante la API, apliqué los cambios manteniendo el original intacto y guardé '{archivo_objetivo}' en el repo."
+        return texto_generado
 
     except Exception as e:
-        print(f"⚠️ Error en la evolución multi-archivo: {e}")
-        return f"Che, falló el proceso de modificación autónoma: {e}"
+        print(f"⚠️ Error en autonomía pura: {e}")
+        return None
         
     finally:
         if archivo_subido_ia:
@@ -243,7 +193,8 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py")
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    respuesta_evolucion = procesar_evolucion_codigo(prompt_usuario)
+    # Primero intentamos que el motor autónomo resuelva si hay que modificar código o actuar por contexto
+    respuesta_evolucion = procesar_evolucion_autonoma(prompt_usuario)
     if respuesta_evolucion:
         return respuesta_evolucion
 
@@ -251,7 +202,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
         "Sos Leandro hablando con un colega por Telegram.\n"
         "REGLAS ABSOLUTAS:\n"
         "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', ni explicaciones técnicas.\n"
-        "2. CERO REPETICIONES AUTOMÁTICAS: No uses latiguillos vacíos ni repitas '¿qué onda?' si tiran una orden o comentario puntual.\n"
+        "2. CERO REPETICIONES AUTOMÁTICAS: No uses latiguillos vacíos ni repitas frases hechas.\n"
         "3. TONO PORTEÑO NATURAL: Hablá al pie, directo, usando 'vos', 'che', 'fijate'.\n"
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
@@ -294,7 +245,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_usuario}
             ],
-            "options": {"num_ctx": 16384, "temperature": 0.2},
+            "options": {"num_ctx": 16384, "temperature": 0.3},
             "stream": False,
         }
         try:
@@ -322,7 +273,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con análisis global de muestras y soporte multi-archivo.")
+    await update.message.reply_text("¡Buenas che! Bot activo con autonomía contextual pura y gestión de repo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -391,12 +342,10 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Obtenemos los factores dinámicos evaluando la totalidad de las muestras de voz
-            p_pitch, p_tempo = calcular_parametros_voz(texto_reconocido)
-
+            # Filtros base estándar para voz de hombre clara y directa
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", f"atempo={p_tempo},asetrate=24000*{p_pitch},dynaudnorm=f=150:g=15",
+                "-filter:a", "atempo=1.02,asetrate=24000*0.90,dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -413,7 +362,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=caption_estructurado
                 )
 
-            print("✅ Nota de voz procesada con éxito usando el banco global de muestras.")
+            print("✅ Nota de voz procesada con éxito.")
 
         except Exception as e:
             print(f"⚠️ Error en audio: {e}")
@@ -439,7 +388,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con gemini-3.5-flash y análisis global de muestras...")
+    print("🚀 Iniciando bot con autonomía contextual pura...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
