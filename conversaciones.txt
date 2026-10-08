@@ -792,3 +792,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: en un rato de te escribo saludo
 ---
+[LEANDRO_BOT]: Che, qué bien.
+---
