@@ -786,3 +786,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: ¡Vale! ¿Qué onda, che? ¿Qué te trae por aquí?
 ---
+[USUARIO]: A ver, ahora mismo quiero que tu voz suene más grave y con un ritmo más rápido.
+---
