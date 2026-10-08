@@ -175,7 +175,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
             f"La orden actual de tu colega es: '{prompt_usuario}'.\n"
             "INSTRUCCIONES CRÍTICAS:\n"
             "1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o perillas pedidos.\n"
-            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.\n"
+            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de
+.\n"
             f"3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz ('{archivo_objetivo}'). Prohibido crear archivos paralelos.\n"
             "4. Asegurate de que los parámetros de FFmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.\n"
             "5. Si es solo charla, respondé al hueso en tono porteño natural."
@@ -192,7 +193,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         )
         
         texto_generado = res.text.strip()
-        bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        bloques_codigo = re.findall(r"
+", texto_generado, re.DOTALL)
         
         if bloques_codigo:
             nuevo_contenido = "\n".join(bloques_codigo)
@@ -371,19 +373,19 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Perillas de voz abiertas y completamente dinámicas según el vibe de la charla
             prompt_lower = texto_reconocido.lower()
             
-            # Factores base totalmente adaptables
-            pitch_factor = 0.80  
-            tempo_factor = 1.02  
+            # Factores base totalmente adaptables (Ajustados para ser más graves y rápidos por defecto)
+            pitch_factor = 0.72  
+            tempo_factor = 1.20  
 
             if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "profunda"]):
                 pitch_factor = 0.65
             elif any(k in prompt_lower for k in ["más agudo", "mas agudo", "agudo"]):
-                pitch_factor = 0.95
+                pitch_factor = 0.90
 
-            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo"]):
-                tempo_factor = 1.20
+            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo", "velocidad"]):
+                tempo_factor = 1.35
             elif any(k in prompt_lower for k in ["más lento", "mas lento", "lento", "pausado"]):
-                tempo_factor = 0.90
+                tempo_factor = 0.95
 
             print(f"🎚️ [FFmpeg Dinámico Abierto]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
 
