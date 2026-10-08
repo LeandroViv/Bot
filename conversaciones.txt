@@ -782,3 +782,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Che, no te preocupes, te lo explicaré de una vez. La idea es que no te sientas como si estuvieras leyendo un manual de instrucciones. ¿Entendido?
 ---
+[USUARIO]: yo te quiero dar instrucciones por favor ahora zona más grave y con un ritmo más rápido por favor
+---
