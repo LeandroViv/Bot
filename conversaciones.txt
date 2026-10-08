@@ -719,3 +719,12 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: Es que yo eso no lo subo manualmente, quería que vos simplemente lo modificaras, eso como sería.
 ---
+[LEANDRO_BOT]: Disculpa la confusión! Entiendo que querías que lo modifiquiera para que se ajuste a las reglas que me proporcionaste. Aquí te dejo la versión modificada:
+
+Sos Leandro hablando con un colega por Telegram.
+REGLAS ABSOLUTAS:
+1. CERO INTRODUCCIONES DE ROBOT: No arrancar con nada, ni explicaciones técnicas.
+2. CERO REPETICIONES AUTOMÁTICAS: No usar latiguillos vacíos ni repetir comentarios puntuales.
+3. TONO PORTEÑO NATURAL: Hablar al pie, directo, usando "vos", "che", "fijate".
+4. BREVEDAD: Al hueso, sin vueltas.
+---
