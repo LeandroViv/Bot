@@ -808,3 +808,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Dale, de una, che. Probá tranquilo y decime si te convence cómo quedó el tono y la velocidad. Quedo atento acá.
 ---
+[USUARIO]: Chí, ahora te quiero pedir por favor que aumentes el ritmo de tu voz que se  escuche más rápido, lo que me decís, eso lo puedes hacer por favor.
+---
