@@ -151,7 +151,7 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
     """
-    Vibe coding directo sobre la raíz con recarga en caliente y prompts blindados contra SyntaxError.
+    Vibe coding directo sobre la raíz sin cortes abruptos de procesos.
     """
     if not client:
         return None
@@ -169,7 +169,6 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
             archivo_historial_ia = client.files.upload(file=TXT_FILE)
 
-        # Prompt blindado con .join para evitar saltos de línea físicos que rompan Python
         prompt_ia = "\n".join([
             "Sos el núcleo de un agente autónomo de vibe coding con memoria contextual profunda.",
             "Se adjunta el código fuente actual de la raíz y el historial completo.",
@@ -178,7 +177,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
             "1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o perillas pedidos.",
             "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.",
             "3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz (procesar.py). Prohibido crear archivos paralelos.",
-            "4. Asegurate de que los parámetros de FFmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.",
+            "4. Asegurate de que los parámetros de ffmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.",
             "5. Si es solo charla, respondé al hueso en tono porteño natural."
         ])
 
@@ -203,11 +202,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
                 
                 inicializar_directorios_control(archivo_objetivo)
                 sincronizar_con_github(f"🤖 Vibe coding autónomo: actualización directa en raíz de {archivo_objetivo}")
-                
-                print("🔄 [Vibe Coding]: Reiniciando proceso en caliente para aplicar los cambios al instante...")
-                os.execv(sys.executable, ['python'] + sys.argv)
-                
-                return f"Listo, che. Actualicé la raíz y me reinicié en caliente."
+                return f"Listo, che. Actualicé la raíz y dejé todo sincronizado en GitHub."
 
         return texto_generado
 
@@ -301,7 +296,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding blindado, recarga en caliente y perillas dinámicas.")
+    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding estable, perillas dinámicas y procesamiento de audio blindado.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -367,10 +362,9 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Perillas de voz abiertas y completamente dinámicas según el vibe de la charla
+            # Perillas de voz abiertas y dinámicas
             prompt_lower = texto_reconocido.lower()
             
-            # Factores base totalmente adaptables
             pitch_factor = 0.80  
             tempo_factor = 1.02  
 
@@ -384,7 +378,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif any(k in prompt_lower for k in ["más lento", "mas lento", "lento", "pausado"]):
                 tempo_factor = 0.90
 
-            print(f"🎚️ [FFmpeg Dinámico Abierto]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
+            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
@@ -433,7 +427,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Vibe Coding directo, recarga en caliente y perillas dinámicas...")
+    print("🚀 Iniciando bot estable con Vibe Coding directo y perillas dinámicas...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
