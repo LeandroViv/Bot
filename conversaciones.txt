@@ -728,3 +728,5 @@ REGLAS ABSOLUTAS:
 3. TONO PORTEÑO NATURAL: Hablar al pie, directo, usando "vos", "che", "fijate".
 4. BREVEDAD: Al hueso, sin vueltas.
 ---
+[USUARIO]: ahí tincorporé algunas funciones que son interesantes, a ver, bueno empecemos  ponen amigos de hombre por favor
+---
