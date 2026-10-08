@@ -641,3 +641,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: Che, modificar código: cambiá en la función tts el idioma predeterminado de 'es' a 'en'
 ---
+[USUARIO]: Che, modificar código: cambiá en la función tts el idioma predeterminado de 'es' a 'en'
+---
