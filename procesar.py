@@ -127,7 +127,7 @@ def cotejar_y_corregir_induccion(texto_crudo):
 def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     """
     Detecta de forma flexible si le pedís modificar código, lee el archivo actual, 
-    se lo envía a Gemini (3.5-flash) y sube el resultado al repo.
+    se lo envía a Gemini (3.5-flash) exigiendo el código completo y sube el resultado al repo.
     """
     prompt_lower = prompt_usuario.lower()
     tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "funcion", "función"])
@@ -147,12 +147,16 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
+    # Prompt estricto anti-poda para que devuelva todo el archivo entero
     prompt_ia = (
-        f"Sos un motor experto de programación autónomo.\n"
+        f"Sos un motor experto de programación autónomo y riguroso.\n"
         f"Tu objetivo es modificar el archivo '{archivo_base}' basándote en esta solicitud: '{prompt_usuario}'.\n"
         f"CONTENIDO ACTUAL DEL ARCHIVO:\n```python\n{contenido_actual}\n```\n\n"
-        f"REGLA CRÍTICA: Devolvé ÚNICAMENTE el código completo corregido/modificado encerrado "
-        f"en un bloque markdown ```python ... ```. Sin explicaciones ni texto por fuera."
+        f"REGLAS CRÍTICAS ABSOLUTAS:\n"
+        f"1. Devolvé el script de Python **COMPLETO**, desde la primera línea hasta la última.\n"
+        f"2. Queda terminantemente PROHIBIDO usar puntos suspensivos (...), abreviaciones o truncar partes del código diciendo 'resto del código igual'.\n"
+        f"3. Si una función o sección no se modifica, igual tenés que incluirla completa en la respuesta.\n"
+        f"4. Encerrá el resultado estrictamente en un bloque markdown ```python ... ```. Sin explicaciones ni texto por fuera."
     )
 
     try:
@@ -270,7 +274,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con modelo gemini-3.5-flash y evolución autónoma optimizada.")
+    await update.message.reply_text("¡Buenas che! Bot activo con gemini-3.5-flash y protección anti-poda de código.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -384,7 +388,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con gemini-3.5-flash y lógica optimizada...")
+    print("🚀 Iniciando bot con gemini-3.5-flash y protección anti-poda...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
