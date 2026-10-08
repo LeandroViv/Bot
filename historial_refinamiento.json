@@ -333,5 +333,10 @@
         "entrada_usuario": "yo te quiero dar instrucciones por favor ahora zona más grave y con un ritmo más rápido por favor",
         "respuesta_ia": "¡Vale! ¿Qué onda, che? ¿Qué te trae por aquí?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "A ver, ahora mismo quiero que tu voz suene más grave y con un ritmo más rápido.",
+        "respuesta_ia": "Che, no hay problema. ¿Qué onda? ¿Qué te pasa?",
+        "estado": "refinado_por_api"
     }
 ]
