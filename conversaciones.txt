@@ -713,3 +713,5 @@ Decime en qué andás y lo vemos.
 ---
 [LEANDRO_BOT]: Ahí va, bancame un toque que lo busco y te lo tiro por acá.
 ---
+[USUARIO]: ¿Dónde lo tenés que buscar?
+---
