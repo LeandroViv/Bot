@@ -685,3 +685,7 @@ Decime qué tenemos que resolver hoy y lo liquidamos.
 ---
 [USUARIO]: Me refiero al tono de tu voz que sea una voz de hombre y que imites la cadencia  los tonos, la dinámica de lo que amigos.
 ---
+[LEANDRO_BOT]: Olvidate, che. Te capto al toque. De acá en más te hablo así, bien de entrecasa, como si estuviéramos tomando una birra con los pibes. 
+
+Decime en qué andás y lo vemos.
+---
