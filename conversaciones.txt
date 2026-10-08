@@ -758,3 +758,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: De una, che. Lo acomodo para que reciba el pitch como parámetro y se lo mande directo al filtro de ffmpeg. En un toque lo tengo listo y te aviso.
 ---
+[USUARIO]: Avisame
+---
