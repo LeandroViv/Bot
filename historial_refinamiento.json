@@ -278,5 +278,10 @@
         "entrada_usuario": "Les digo escuchando auda que sea una voz grave, pido por favor.",
         "respuesta_ia": "Dale, de una. Busco perfiles con voz bien grave y te voy mandando lo que encuentre.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "A ver, pasame alguno, por favor.",
+        "respuesta_ia": "Ahí va, bancame un toque que lo busco y te lo tiro por acá.",
+        "estado": "refinado_por_api"
     }
 ]
