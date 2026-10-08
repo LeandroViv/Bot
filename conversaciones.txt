@@ -774,3 +774,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Leí todo el contexto hacia atrás, interpreté el vibe, me automodifiqué y dejé actualizada la versión en 'evolucion_recursiva/'.
 ---
+[USUARIO]: Bueno, ahora ponerme vos más grave, por favor, quiero escucharte una voz más grave, gracias.
+---
