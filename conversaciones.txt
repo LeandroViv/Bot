@@ -780,3 +780,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Bueno, pero sí, modificaste el tono, el tono sí modificalo que suene más grave,  aun por favor, gracias.
 ---
+[LEANDRO_BOT]: Che, no te preocupes, te lo explicaré de una vez. La idea es que no te sientas como si estuvieras leyendo un manual de instrucciones. ¿Entendido?
+---
