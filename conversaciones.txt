@@ -766,3 +766,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: De nada, che. ¿Qué onda?
 ---
+[USUARIO]: A ver ahí, poneme voz de hombre, por favor.
+---
