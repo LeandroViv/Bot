@@ -263,5 +263,10 @@
         "entrada_usuario": "Bueno, te ha visto.",
         "respuesta_ia": "Dale, de una, che. Quedo atento, avisame cualquier cosa.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Ya te incorporé algunas habilidades en cuanto a que vos puedas modificar la voz.  A ver, intentemos pasarte a una voz que sea masculina, por favor.",
+        "respuesta_ia": "Dale, che, a ver ahí. ¿Me escuchás con más cuerpo? Decime si te va este tono o si lo tocamos un toque más.",
+        "estado": "refinado_por_api"
     }
 ]
