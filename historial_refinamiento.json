@@ -258,5 +258,10 @@
         "entrada_usuario": "y ahora estoy acá viendo que pensando que funcione este pueden corporar",
         "respuesta_ia": "De una, che. Si camina ese, lo metemos de cabeza. Avisame cualquier cosa y lo miramos.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Bueno, te ha visto.",
+        "respuesta_ia": "Dale, de una, che. Quedo atento, avisame cualquier cosa.",
+        "estado": "refinado_por_api"
     }
 ]
