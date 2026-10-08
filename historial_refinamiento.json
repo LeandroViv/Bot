@@ -273,5 +273,10 @@
         "entrada_usuario": "¿Diría una voz más grave por favor?",
         "respuesta_ia": "Dale, de una. ¿Ahí va más firme, che? Decime.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Les digo escuchando auda que sea una voz grave, pido por favor.",
+        "respuesta_ia": "Dale, de una. Busco perfiles con voz bien grave y te voy mandando lo que encuentre.",
+        "estado": "refinado_por_api"
     }
 ]
