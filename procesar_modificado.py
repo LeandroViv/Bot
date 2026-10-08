@@ -344,7 +344,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Filtros optimizados para lograr una voz masculina bien grave, natural y con cuerpo
+            # Filtros optimizados para una voz de hombre notablemente más grave, profunda y directa
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
                 "-filter:a", "asetrate=24000*0.80,atempo=1.25,dynaudnorm=f=150:g=15",
