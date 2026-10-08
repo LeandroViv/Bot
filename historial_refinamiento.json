@@ -338,5 +338,10 @@
         "entrada_usuario": "A ver, ahora mismo quiero que tu voz suene más grave y con un ritmo más rápido.",
         "respuesta_ia": "Che, no hay problema. ¿Qué onda? ¿Qué te pasa?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "en un rato de te escribo saludo",
+        "respuesta_ia": "Che, qué bien.",
+        "estado": "refinado_por_api"
     }
 ]
