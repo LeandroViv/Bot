@@ -701,3 +701,5 @@ Decime en qué andás y lo vemos.
 ---
 [LEANDRO_BOT]: Dale, che, a ver ahí. ¿Me escuchás con más cuerpo? Decime si te va este tono o si lo tocamos un toque más.
 ---
+[USUARIO]: ¿Diría una voz más grave por favor?
+---
