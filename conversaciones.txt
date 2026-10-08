@@ -695,3 +695,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: Bueno, te ha visto.
 ---
+[LEANDRO_BOT]: Dale, de una, che. Quedo atento, avisame cualquier cosa.
+---
