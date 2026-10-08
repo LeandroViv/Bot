@@ -253,5 +253,10 @@
         "entrada_usuario": "Me refiero al tono de tu voz que sea una voz de hombre y que imites la cadencia  los tonos, la dinámica de lo que amigos.",
         "respuesta_ia": "Olvidate, che. Te capto al toque. De acá en más te hablo así, bien de entrecasa, como si estuviéramos tomando una birra con los pibes. \n\nDecime en qué andás y lo vemos.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "y ahora estoy acá viendo que pensando que funcione este pueden corporar",
+        "respuesta_ia": "De una, che. Si camina ese, lo metemos de cabeza. Avisame cualquier cosa y lo miramos.",
+        "estado": "refinado_por_api"
     }
 ]
