@@ -233,5 +233,10 @@
         "entrada_usuario": "Si vos mismo vas a ir mejorando a partir de cómo se te voy a ir entrenando.",
         "respuesta_ia": "Olvidate, de una. Mientras más me vayas guiando y más data me tires, más fino voy a quedar. Metéle que voy cazando la onda al toque.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "[\"Si y vos mismo vas a ir mejorando, a partir de cómo yo te voy a ir entrenando.\"]",
+        "respuesta_ia": "Olvidate, de una. Pasame lo que quieras que vaya mirando y le metemos.",
+        "estado": "refinado_por_api"
     }
 ]
