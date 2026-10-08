@@ -151,7 +151,7 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
     """
-    Vibe coding directo sobre la raíz con recarga en caliente.
+    Vibe coding directo sobre la raíz con recarga en caliente y prompts blindados contra SyntaxError.
     """
     if not client:
         return None
@@ -169,18 +169,18 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
             archivo_historial_ia = client.files.upload(file=TXT_FILE)
 
-        prompt_ia = (
-            "Sos el núcleo de un agente autónomo de vibe coding con memoria contextual profunda.\n"
-            "Se adjunta el código fuente actual de la raíz y el historial completo.\n"
-            f"La orden actual de tu colega es: '{prompt_usuario}'.\n"
-            "INSTRUCCIONES CRÍTICAS:\n"
-            "1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o perillas pedidos.\n"
-            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de
-.\n"
-            "3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz (procesar.py). Prohibido crear archivos paralelos.\n"
-            "4. Asegurate de que los parámetros de FFmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.\n"
+        # Prompt blindado con .join para evitar saltos de línea físicos que rompan Python
+        prompt_ia = "\n".join([
+            "Sos el núcleo de un agente autónomo de vibe coding con memoria contextual profunda.",
+            "Se adjunta el código fuente actual de la raíz y el historial completo.",
+            f"La orden actual de tu colega es: '{prompt_usuario}'.",
+            "INSTRUCCIONES CRÍTICAS:",
+            "1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o perillas pedidos.",
+            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.",
+            "3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz (procesar.py). Prohibido crear archivos paralelos.",
+            "4. Asegurate de que los parámetros de FFmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.",
             "5. Si es solo charla, respondé al hueso en tono porteño natural."
-        )
+        ])
 
         contents_param = [archivo_subido_ia, archivo_historial_ia, prompt_ia] if archivo_historial_ia else [archivo_subido_ia, prompt_ia]
 
@@ -193,8 +193,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         )
         
         texto_generado = res.text.strip()
-        bloques_codigo = re.findall(r"
-", texto_generado, re.DOTALL)
+        bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         
         if bloques_codigo:
             nuevo_contenido = "\n".join(bloques_codigo)
@@ -302,7 +301,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding directo, recarga en caliente y perillas de voz totalmente dinámicas.")
+    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding blindado, recarga en caliente y perillas dinámicas.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -371,19 +370,19 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Perillas de voz abiertas y completamente dinámicas según el vibe de la charla
             prompt_lower = texto_reconocido.lower()
             
-            # Factores base totalmente adaptables (Ajustados: ritmo base más rápido y tono grave por defecto)
-            pitch_factor = 0.75  
-            tempo_factor = 1.25  
+            # Factores base totalmente adaptables
+            pitch_factor = 0.80  
+            tempo_factor = 1.02  
 
             if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "profunda"]):
-                pitch_factor = 0.60
+                pitch_factor = 0.65
             elif any(k in prompt_lower for k in ["más agudo", "mas agudo", "agudo"]):
-                pitch_factor = 0.90
+                pitch_factor = 0.95
 
             if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo"]):
-                tempo_factor = 1.45
+                tempo_factor = 1.20
             elif any(k in prompt_lower for k in ["más lento", "mas lento", "lento", "pausado"]):
-                tempo_factor = 0.95
+                tempo_factor = 0.90
 
             print(f"🎚️ [FFmpeg Dinámico Abierto]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
 
