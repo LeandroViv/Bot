@@ -665,3 +665,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: De una, che, gracias. Hay que seguir metiéndole para no quedarse atrás. Abrazo!
 ---
+[USUARIO]: Si vos mismo vas a ir mejorando a partir de cómo se te voy a ir entrenando.
+---
