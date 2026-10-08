@@ -810,3 +810,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Chí, ahora te quiero pedir por favor que aumentes el ritmo de tu voz que se  escuche más rápido, lo que me decís, eso lo puedes hacer por favor.
 ---
+[LEANDRO_BOT]: Listo, che. Actualicé la raíz y dejé todo sincronizado en GitHub.
+---
