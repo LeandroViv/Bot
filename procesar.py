@@ -124,21 +124,26 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
-def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
+def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py"):
     """
-    Sube el archivo base a Gemini como adjunto (File API), procesa la orden 
-    y ensambla el código completo (incluso si viene paginado en partes).
+    Detecta de forma dinámica cualquier archivo del repositorio nombrado en el mensaje,
+    lo sube a Gemini mediante File API, procesa la evolución y guarda el resultado
+    manteniendo el original intacto.
     """
     prompt_lower = prompt_usuario.lower()
-    tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "funcion", "función"])
+    tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "archivo", "funcion", "función"])
     
     if not tiene_intencion:
         return None
 
-    print("🛠️ [Autonomía File API Multi-Parte]: Procesando orden con archivo adjunto...")
+    # Detección dinámica de archivo en el prompt (ej: config.json, utils.py, etc.)
+    match_archivo = re.search(r'\b([\w-]+\.(?:py|json|txt|env|yml|yaml))\b', prompt_usuario, re.I)
+    archivo_base = match_archivo.group(1) if match_archivo else archivo_por_defecto
+
+    print(f"🛠️ [Autonomía Multi-Archivo]: Archivo objetivo detectado -> {archivo_base}")
 
     if not os.path.exists(archivo_base):
-        return f"Che, no encontré el archivo base '{archivo_base}' en el repositorio."
+        return f"Che, no encontré el archivo '{archivo_base}' en el repositorio."
 
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
@@ -148,18 +153,18 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
         if not client:
             return "Che, el cliente de Gemini no está inicializado."
 
-        # 1. El bot le envía el archivo fuente como adjunto a la API
-        print("📁 Subiendo archivo fuente a Gemini como adjunto...")
+        # 1. Subimos el archivo específico seleccionado como adjunto a la API
+        print(f"📁 Subiendo '{archivo_base}' a Gemini como adjunto...")
         archivo_subido_ia = client.files.upload(file=archivo_base)
 
-        # 2. Prompt indicando el manejo de adjunto y soporte para respuestas paginadas si es necesario
+        # 2. Prompt indicando la modificación estricta sobre el archivo adjunto
         prompt_ia = (
             f"Sos un motor de programación autónomo y riguroso.\n"
-            f"Basate en el archivo adjunto para cumplir esta solicitud: '{prompt_usuario}'.\n"
+            f"Basate en el archivo adjunto ('{archivo_base}') para cumplir esta solicitud: '{prompt_usuario}'.\n"
             f"INSTRUCCIONES CRÍTICAS:\n"
-            f"1. Modificá estrictamente lo que se te pidió sin alterar el resto innecesariamente.\n"
-            f"2. Si la respuesta es muy larga, podés paginarla usando bloques ```python ... ``` secuenciales.\n"
-            f"3. Devolvé el resultado en bloques de código markdown limpios."
+            f"1. Modificá estrictamente lo que se te pidió sin alterar el resto del archivo original.\n"
+            f"2. Si la respuesta es muy larga, paginala usando bloques de código markdown secuenciales.\n"
+            f"3. Devolvé el resultado limpio para ensamblar."
         )
 
         res = client.models.generate_content(
@@ -172,32 +177,31 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
         
         texto_generado = res.text.strip()
         
-        # 3. Extraemos todos los bloques de código y los unimos por si vinieron paginados
-        bloques_codigo = re.findall(r"```(?:python)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        # 3. Extraemos bloques de código por si vino paginado
+        bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         
         if not bloques_codigo:
             nuevo_contenido = texto_generado
         else:
             nuevo_contenido = "\n".join(bloques_codigo)
 
-        if len(nuevo_contenido) < 50:
-            return "Che, la IA devolvió un código demasiado corto o vacío, aborté la modificación."
+        if len(nuevo_contenido) < 10:
+            return "Che, la IA devolvió un contenido demasiado corto o vacío, aborté la modificación."
 
-        # Guardamos el archivo ensamblado localmente
+        # Guardamos en el archivo modificado manteniendo el original intacto
         with open(archivo_objetivo, "w", encoding="utf-8") as f:
             f.write(nuevo_contenido)
             
-        print(f"✅ Archivo modificado y ensamblado guardado localmente: {archivo_objetivo}")
-        sincronizar_con_github(f"🤖 Evolución autónoma File API: modificación de {archivo_base}")
+        print(f"✅ Archivo modificado guardado localmente: {archivo_objetivo} (Original '{archivo_base}' intacto)")
+        sincronizar_con_github(f"🤖 Evolución autónoma multi-archivo: modificación de {archivo_base}")
 
-        return f"Listo, che. Le mandé el archivo adjunto a la API, procesó el cambio, lo ensamblé y ya subí '{archivo_objetivo}' al repositorio."
+        return f"Listo, che. Analicé el archivo '{archivo_base}' mediante la API, apliqué los cambios manteniendo el original intacto y guardé '{archivo_objetivo}' en el repo."
 
     except Exception as e:
-        print(f"⚠️ Error en la evolución con File API: {e}")
+        print(f"⚠️ Error en la evolución multi-archivo: {e}")
         return f"Che, falló el proceso de modificación autónoma: {e}"
         
     finally:
-        # Limpieza del archivo en los servidores de Google
         if archivo_subido_ia:
             try:
                 client.files.delete(name=archivo_subido_ia.name)
@@ -285,7 +289,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con gemini-3.5-flash y soporte File API para archivos adjuntos.")
+    await update.message.reply_text("¡Buenas che! Bot activo con soporte para modificar cualquier archivo del repo de forma autónoma.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -399,7 +403,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con gemini-3.5-flash y File API...")
+    print("🚀 Iniciando bot con gemini-3.5-flash y soporte multi-archivo...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
@@ -407,5 +411,5 @@ def main():
     app.run_polling(drop_pending_updates=True)
 
 
-if __name__ ==- "__main__": # pequeña corrección tipográfica defensiva por si acaso, dejalo como __main__
+if __name__ == "__main__":
     main()
