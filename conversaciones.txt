@@ -756,3 +756,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: modificá el script procesar.py para que el factor de pitch en ffmpeg sea dinámico según lo que te pida en el audio
 ---
+[LEANDRO_BOT]: De una, che. Lo acomodo para que reciba el pitch como parámetro y se lo mande directo al filtro de ffmpeg. En un toque lo tengo listo y te aviso.
+---
