@@ -1,6 +1,21 @@
 Couldn't find '/home/runner/.ollama/id_ed25519'. Generating new private key.
 Your new public key is: 
 
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEpXZAR7BdQDjrl12OfzL8UosQDlPbOxIwyrH7+pJncf
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILpIHp2H7hQev+gMCwU+7SSSE/eJMG3X3zRHx6tS3dn2
 
-Error: listen tcp 127.0.0.1:11434: bind: address already in use
+time=2026-10-08T00:49:06.000Z level=INFO source=routes.go:2369 msg="server config" env="map[CUDA_VISIBLE_DEVICES: GGML_VK_VISIBLE_DEVICES: GPU_DEVICE_ORDINAL: HIP_VISIBLE_DEVICES: HSA_OVERRIDE_GFX_VERSION: HTTPS_PROXY: HTTP_PROXY: LLAMA_ARG_FIT: LLAMA_ARG_FIT_TARGET: NO_PROXY: OLLAMA_CONTEXT_LENGTH:0 OLLAMA_CREATE_REMOTE:false OLLAMA_DEBUG:INFO OLLAMA_DEBUG_LOG_REQUESTS:false OLLAMA_EDITOR: OLLAMA_FLASH_ATTENTION:false OLLAMA_GO_TEMPLATE:true OLLAMA_GPU_OVERHEAD:0 OLLAMA_HOST:http://127.0.0.1:11434 OLLAMA_IGPU_ENABLE: OLLAMA_KEEP_ALIVE:5m0s OLLAMA_KV_CACHE_TYPE: OLLAMA_LLM_LIBRARY: OLLAMA_LOAD_TIMEOUT:5m0s OLLAMA_MAX_LOADED_MODELS:0 OLLAMA_MAX_QUEUE:512 OLLAMA_MAX_TRANSFER_STREAMS:4 OLLAMA_MODELS:/home/runner/.ollama/models OLLAMA_NOHISTORY:false OLLAMA_NOPRUNE:false OLLAMA_NO_CLOUD:false OLLAMA_NUM_PARALLEL:1 OLLAMA_ORIGINS:[http://localhost https://localhost http://localhost:* https://localhost:* http://127.0.0.1 https://127.0.0.1 http://127.0.0.1:* https://127.0.0.1:* http://0.0.0.0 https://0.0.0.0 http://0.0.0.0:* https://0.0.0.0:* app://* file://* tauri://* vscode-webview://* vscode-file://*] OLLAMA_REMOTES:[ollama.com] OLLAMA_SCHED_SPREAD:false OLLAMA_VULKAN:true ROCR_VISIBLE_DEVICES: http_proxy: https_proxy: no_proxy:]"
+time=2026-10-08T00:49:06.000Z level=INFO source=routes.go:2371 msg="Ollama cloud disabled: false"
+time=2026-10-08T00:49:06.000Z level=INFO source=images.go:989 msg="total blobs: 0"
+time=2026-10-08T00:49:06.000Z level=INFO source=images.go:998 msg="total unused blobs removed: 0"
+time=2026-10-08T00:49:06.000Z level=INFO source=routes.go:2431 msg="Listening on 127.0.0.1:11434 (version 0.40.0)"
+time=2026-10-08T00:49:06.001Z level=INFO source=runner.go:60 msg="discovering available GPUs..."
+time=2026-10-08T00:49:06.059Z level=INFO source=model_recommendations.go:177 msg="model recommendations cache sleep scheduled" wait=3h43m4.797878684s consecutive_failures=0
+time=2026-10-08T00:49:06.160Z level=INFO source=types.go:50 msg="inference compute" id=cpu library=cpu compute="" name=cpu description=cpu libdirs=ollama driver="" pci_id="" type="" total="15.6 GiB" available="14.6 GiB"
+time=2026-10-08T00:49:06.160Z level=INFO source=routes.go:2481 msg="vram-based default context" total_vram="0 B" default_num_ctx=4096
+[GIN] 2026/10/08 - 00:49:10 | 200 |      70.172µs |       127.0.0.1 | HEAD     "/"
+time=2026-10-08T00:49:11.460Z level=INFO source=download.go:182 msg="downloading dde5aa3fc5ff in 16 126 MB part(s)"
+time=2026-10-08T00:49:15.641Z level=INFO source=download.go:182 msg="downloading 966de95ca8a6 in 1 1.4 KB part(s)"
+time=2026-10-08T00:49:16.056Z level=INFO source=download.go:182 msg="downloading fcc5a6bec9da in 1 7.7 KB part(s)"
+time=2026-10-08T00:49:16.514Z level=INFO source=download.go:182 msg="downloading a70ff7e570d9 in 1 6.0 KB part(s)"
+time=2026-10-08T00:49:16.838Z level=INFO source=download.go:182 msg="downloading 56bb8bd477a5 in 1 96 B part(s)"
+[GIN] 2026/10/08 - 00:49:18 | 200 |  7.445763034s |       127.0.0.1 | POST     "/api/pull"

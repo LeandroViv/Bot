@@ -127,7 +127,7 @@ def cotejar_y_corregir_induccion(texto_crudo):
 def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     """
     Detecta de forma flexible si le pedís modificar código, lee el archivo actual, 
-    se lo envía a Gemini (3.5-flash) y sube el resultado al repo.
+    se lo envía a Gemini (3.5-flash) exigiendo el código completo y sube el resultado al repo.
     """
     prompt_lower = prompt_usuario.lower()
     tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "funcion", "función"])
@@ -147,7 +147,8 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
+    # Prompt estricto anti-poda para que devuelva todo el archivo entero
     prompt_ia = (
-        f"Sos un motor experto de programación autónomo.\n"
+        f"Sos un motor experto de programación autónomo y riguroso.\n"
         f"Tu objetivo es modificar el archivo '{archivo_base}' basándote en esta solicitud: '{prompt_usuario}'.\n"
         f"CONTENIDO ACTUAL DEL ARCHIVO:\n
