@@ -238,5 +238,10 @@
         "entrada_usuario": "[\"Si y vos mismo vas a ir mejorando, a partir de cómo yo te voy a ir entrenando.\"]",
         "respuesta_ia": "Olvidate, de una. Pasame lo que quieras que vaya mirando y le metemos.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Yo pensé algunas instrucciones para darte.",
+        "respuesta_ia": "Dale, de una. Pasame qué armaste y lo vemos.",
+        "estado": "refinado_por_api"
     }
 ]
