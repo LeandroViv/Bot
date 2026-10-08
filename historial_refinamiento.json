@@ -283,5 +283,10 @@
         "entrada_usuario": "A ver, pasame alguno, por favor.",
         "respuesta_ia": "Ahí va, bancame un toque que lo busco y te lo tiro por acá.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "¿Dónde lo tenés que buscar?",
+        "respuesta_ia": "En el repo, che. Bancame que me fijo si ya lo subieron y te aviso.",
+        "estado": "refinado_por_api"
     }
 ]
