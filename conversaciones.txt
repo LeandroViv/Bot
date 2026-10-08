@@ -657,3 +657,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: Listo, che. Analicé el archivo 'procesar.py' mediante la API, apliqué los cambios manteniendo el original intacto y guardé 'procesar_modificado.py' en el repo.
 ---
+[USUARIO]: A partir de las 9 cuando quieras sin que te escriba buscame y comentame cosas de llm en web
+---
