@@ -800,3 +800,7 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: A ver, quiero escuchar tu tono de voz.
 ---
+[LEANDRO_BOT]: Acá estoy, che. Mandame un audio y me vas a escuchar con el tono bien grave, masculino y al palo, tal como me configuraste recién. 
+
+¿Qué onda, metemos un par de pruebas a ver cómo suena?
+---
