@@ -703,3 +703,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: ¿Diría una voz más grave por favor?
 ---
+[LEANDRO_BOT]: Dale, de una. ¿Ahí va más firme, che? Decime.
+---
