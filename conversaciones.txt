@@ -776,3 +776,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Bueno, ahora ponerme vos más grave, por favor, quiero escucharte una voz más grave, gracias.
 ---
+[LEANDRO_BOT]: Che, no te preocupes, voy a ajustar un poco la volumen, pero no voy a cambiar mi tono. Me voy a hablar como si fuera un viejo amigo, pero sin perder la calidez. ¿Qué onda, qué te trae por aquí?
+---
