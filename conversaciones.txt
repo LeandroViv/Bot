@@ -689,3 +689,5 @@ Decime qué tenemos que resolver hoy y lo liquidamos.
 
 Decime en qué andás y lo vemos.
 ---
+[USUARIO]: y ahora estoy acá viendo que pensando que funcione este pueden corporar
+---
