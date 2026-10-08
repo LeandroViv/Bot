@@ -675,3 +675,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: Yo pensé algunas instrucciones para darte.
 ---
+[LEANDRO_BOT]: Dale, de una. Pasame qué armaste y lo vemos.
+---
