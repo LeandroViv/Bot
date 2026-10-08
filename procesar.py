@@ -175,7 +175,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
             f"La orden actual de tu colega es: '{prompt_usuario}'.\n"
             f"INSTRUCCIONES CRÍTICAS:\n"
             f"1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o lógica pedidos.\n"
-            f"2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.\n"
+            f"2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de
+.\n"
             f"3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz ('{archivo_objetivo}'). Prohibido crear archivos paralelos.\n"
             f"4. Si es solo charla, respondé al hueso en tono porteño natural."
         )
@@ -191,7 +192,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         )
         
         texto_generado = res.text.strip()
-        bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        bloques_codigo = re.findall(r"
+", texto_generado, re.DOTALL)
         
         if bloques_codigo:
             nuevo_contenido = "\n".join(bloques_codigo)
@@ -363,21 +365,26 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Lógica de pitch y tempo dinámicos ultrasensibles
+            # Lógica de pitch y tempo dinámicos ultrasensibles y compensados matemáticamente
             prompt_lower = texto_reconocido.lower()
-            pitch_factor = 0.80  # Base grave
-            tempo_factor = 1.02  # Base natural
+            pitch_factor = 0.80  # Base grave masculina
+            desired_speed = 1.15  # Base ágil y natural porteña
             
             if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "más profunda"]):
                 pitch_factor = 0.68  # Bien profundo para que se note al toque
-            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo"]):
-                tempo_factor = 1.15  # Bien ágil
+            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo", "acelerame", "acelerado"]):
+                desired_speed = 1.45  # Súper ágil y acelerado a pedido
 
-            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
+            # Compensamos la pérdida de velocidad producida por el cambio de sample rate (asetrate)
+            atempo_factor = round(desired_speed / pitch_factor, 2)
+            # Aseguramos límites de ffmpeg para el filtro atempo (0.5 a 2.0)
+            atempo_factor = max(0.5, min(2.0, atempo_factor))
+
+            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Velocidad Deseada -> {desired_speed} | Atempo -> {atempo_factor}")
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", f"atempo={tempo_factor},asetrate=24000*{pitch_factor},dynaudnorm=f=150:g=15",
+                "-filter:a", f"asetrate=24000*{pitch_factor},atempo={atempo_factor},dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)

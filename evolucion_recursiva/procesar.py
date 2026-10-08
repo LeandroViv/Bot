@@ -52,8 +52,8 @@ ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 def inicializar_directorios_control(archivo_actual="procesar.py"):
     """
-    1. 'originales/': Guarda el snapshot inalterable del script base (se hace una sola vez).
-    2. 'evolucion_recursiva/': Mantiene una copia evolutiva de respaldo.
+    1. 'originales/': Guarda el snapshot inalterable base (se hace una sola vez).
+    2. 'evolucion_recursiva/': Espeja y actualiza la versión viva actual de la raíz.
     """
     try:
         path_original = os.path.join(CARPETA_ORIGINALES, archivo_actual)
@@ -64,6 +64,7 @@ def inicializar_directorios_control(archivo_actual="procesar.py"):
         path_recursivo = os.path.join(CARPETA_RECURSIVA, archivo_actual)
         if os.path.exists(archivo_actual):
             shutil.copy(archivo_actual, path_recursivo)
+            print(f"🔄 [Directorio Recursivo]: Respaldo actualizado desde la raíz.")
     except Exception as e:
         print(f"⚠️ Error en control de directorios: {e}")
 
@@ -150,17 +151,15 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
     """
-    Vibe coding con contexto profundo: Sobrescribe directamente procesar.py sin archivos paralelos.
+    Vibe coding directo sobre la raíz: Modifica procesar.py y luego actualiza los respaldos.
     """
     if not client:
         return None
 
-    print(f"🧠 [Vibe Coding Directo]: Analizando contexto profundo para -> {archivo_objetivo}")
+    print(f"🧠 [Vibe Coding Directo en Raíz]: Analizando contexto profundo para -> {archivo_objetivo}")
 
     if not os.path.exists(archivo_objetivo):
         return None
-
-    inicializar_directorios_control(archivo_objetivo)
 
     archivo_subido_ia = None
     archivo_historial_ia = None
@@ -172,12 +171,13 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
 
         prompt_ia = (
             f"Sos el núcleo de un agente autónomo de vibe coding con memoria contextual profunda.\n"
-            f"Se adjunta el código fuente actual ('{archivo_objetivo}') y el historial completo de la charla.\n"
+            f"Se adjunta el código fuente actual de la raíz ('{archivo_objetivo}') y el historial completo de la charla.\n"
             f"La orden actual de tu colega es: '{prompt_usuario}'.\n"
             f"INSTRUCCIONES CRÍTICAS:\n"
             f"1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o lógica pedidos.\n"
-            f"2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.\n"
-            f"3. Sobrescribí directamente el script principal ('{archivo_objetivo}'). Prohibido crear archivos paralelos como '_modificado.py'.\n"
+            f"2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de
+.\n"
+            f"3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz ('{archivo_objetivo}'). Prohibido crear archivos paralelos.\n"
             f"4. Si es solo charla, respondé al hueso en tono porteño natural."
         )
 
@@ -192,17 +192,20 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         )
         
         texto_generado = res.text.strip()
-        bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        bloques_codigo = re.findall(r"
+", texto_generado, re.DOTALL)
         
         if bloques_codigo:
             nuevo_contenido = "\n".join(bloques_codigo)
             if len(nuevo_contenido) > 50:
+                # 1. SOBREESCRIBIMOS PRIMERO LA RAÍZ (Única fuente de verdad para el .yml y el bot)
                 with open(archivo_objetivo, "w", encoding="utf-8") as f:
                     f.write(nuevo_contenido)
                 
+                # 2. Actualizamos los respaldos tomando el estado fresco de la raíz
                 inicializar_directorios_control(archivo_objetivo)
-                sincronizar_con_github(f"🤖 Vibe coding autónomo: actualización directa de {archivo_objetivo}")
-                return f"Listo, che. Leí todo el contexto hacia atrás, apliqué los cambios directamente sobre '{archivo_objetivo}' y ya quedó sincronizado en el repo."
+                sincronizar_con_github(f"🤖 Vibe coding autónomo: actualización directa en raíz de {archivo_objetivo}")
+                return f"Listo, che. Leí todo el contexto, actualicé directamente la raíz ('{archivo_objetivo}') y dejé todo sincronizado en GitHub."
 
         return texto_generado
 
@@ -296,7 +299,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding directo sobre procesar.py y memoria profunda.")
+    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding directo en la raíz y sincronización limpia.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -362,21 +365,26 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Lógica de pitch y tempo dinámicos según el contexto profundo de la charla
+            # Lógica de pitch y tempo dinámicos ultrasensibles y compensados matemáticamente
             prompt_lower = texto_reconocido.lower()
-            pitch_factor = 0.80  # Base grave
-            tempo_factor = 1.02  # Base natural
+            pitch_factor = 0.80  # Base grave masculina
+            desired_speed = 1.15  # Base ágil y natural porteña
             
-            if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "más grave"]):
-                pitch_factor = 0.72  # Más profundo
-            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "ritmo más rápido"]):
-                tempo_factor = 1.12  # Más ágil
+            if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "más profunda"]):
+                pitch_factor = 0.68  # Bien profundo para que se note al toque
+            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo", "acelerame", "acelerado"]):
+                desired_speed = 1.45  # Súper ágil y acelerado a pedido
 
-            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
+            # Compensamos la pérdida de velocidad producida por el cambio de sample rate (asetrate)
+            atempo_factor = round(desired_speed / pitch_factor, 2)
+            # Aseguramos límites de ffmpeg para el filtro atempo (0.5 a 2.0)
+            atempo_factor = max(0.5, min(2.0, atempo_factor))
+
+            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Velocidad Deseada -> {desired_speed} | Atempo -> {atempo_factor}")
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", f"atempo={tempo_factor},asetrate=24000*{pitch_factor},dynaudnorm=f=150:g=15",
+                "-filter:a", f"asetrate=24000*{pitch_factor},atempo={atempo_factor},dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -421,7 +429,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Vibe Coding directo sobre procesar.py y contexto profundo...")
+    print("🚀 Iniciando bot con Vibe Coding directo en raíz y directorios duales...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
