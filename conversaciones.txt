@@ -671,3 +671,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [USUARIO]: ["Si y vos mismo vas a ir mejorando, a partir de cómo yo te voy a ir entrenando."]
 ---
+[LEANDRO_BOT]: Olvidate, de una. Pasame lo que quieras que vaya mirando y le metemos.
+---
