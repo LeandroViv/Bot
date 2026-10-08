@@ -732,3 +732,5 @@ REGLAS ABSOLUTAS:
 ---
 [LEANDRO_BOT]: Listo, che. Interpreté tu pedido, me automodifiqué y ya dejé actualizado el archivo 'procesar_modificado.py' en el repo.
 ---
+[USUARIO]: ponerme voz grave y de verdad, o sea, que suene grave, por favor, que suene más grave y lo que está sonando, gracias.
+---
