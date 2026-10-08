@@ -762,3 +762,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: ¿Qué onda?
 ---
+[USUARIO]: Gracias
+---
