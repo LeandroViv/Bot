@@ -790,3 +790,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Che, no hay problema. ¿Qué onda? ¿Qué te pasa?
 ---
+[USUARIO]: en un rato de te escribo saludo
+---
