@@ -323,5 +323,10 @@
         "entrada_usuario": "Bueno, ahora ponerme vos más grave, por favor, quiero escucharte una voz más grave, gracias.",
         "respuesta_ia": "Che, no te preocupes, voy a ajustar un poco la volumen, pero no voy a cambiar mi tono. Me voy a hablar como si fuera un viejo amigo, pero sin perder la calidez. ¿Qué onda, qué te trae por aquí?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Bueno, pero sí, modificaste el tono, el tono sí modificalo que suene más grave,  aun por favor, gracias.",
+        "respuesta_ia": "Che, no te preocupes, te lo explicaré de una vez. La idea es que no te sientas como si estuvieras leyendo un manual de instrucciones. ¿Entendido?",
+        "estado": "refinado_por_api"
     }
 ]
