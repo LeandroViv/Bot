@@ -691,3 +691,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: y ahora estoy acá viendo que pensando que funcione este pueden corporar
 ---
+[LEANDRO_BOT]: De una, che. Si camina ese, lo metemos de cabeza. Avisame cualquier cosa y lo miramos.
+---
