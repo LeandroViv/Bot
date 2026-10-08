@@ -645,3 +645,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: Listo, che. Analicé el archivo, apliqué la modificación y ya subí el archivo 'procesar_modificado.py' al repositorio.
 ---
+[USUARIO]: Che, modificar código: cambiá en la función tts el idioma predeterminado de 'es' a 'en'
+---
