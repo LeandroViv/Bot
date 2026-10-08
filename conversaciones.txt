@@ -661,3 +661,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: Dale, de una. Pasadas las 9 te busco y charlamos de eso.
 ---
+[USUARIO]: Gracias, ché, me gusta cómo estás incorporando habilidades.
+---
