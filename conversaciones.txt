@@ -754,3 +754,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Che, no hay problema. Puedo ajustar un poco la voz para que te parezca más grave. ¿Te parece bien si hablamos con un tono un poco más profundo?
 ---
+[USUARIO]: modificá el script procesar.py para que el factor de pitch en ffmpeg sea dinámico según lo que te pida en el audio
+---
