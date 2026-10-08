@@ -298,5 +298,10 @@
         "entrada_usuario": "bueno ahora mismo ponerme una voz más grave por favor",
         "respuesta_ia": "Che, no hay problema. Puedo ajustar un poco la voz para que te parezca más grave. ¿Te parece bien si hablamos con un tono un poco más profundo?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "modificá el script procesar.py para que el factor de pitch en ffmpeg sea dinámico según lo que te pida en el audio",
+        "respuesta_ia": "De una, che. Lo acomodo para que reciba el pitch como parámetro y se lo mande directo al filtro de ffmpeg. En un toque lo tengo listo y te aviso.",
+        "estado": "refinado_por_api"
     }
 ]
