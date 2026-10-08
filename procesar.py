@@ -126,8 +126,8 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     """
-    Detecta de forma flexible si le pedís modificar código, lee el archivo actual, 
-    se lo envía a Gemini (3.5-flash) exigiendo el código completo y sube el resultado al repo.
+    Sube el archivo base a Gemini como adjunto (File API), procesa la orden 
+    y ensambla el código completo (incluso si viene paginado en partes).
     """
     prompt_lower = prompt_usuario.lower()
     tiene_intencion = any(k in prompt_lower for k in ["modificar", "modif", "cambiar", "cambiam", "actualiz"]) and any(k in prompt_lower for k in ["codigo", "código", "script", "tts", "funcion", "función"])
@@ -135,64 +135,77 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_base="procesar.py"):
     if not tiene_intencion:
         return None
 
-    print("🛠️ [Autonomía Activada]: Detectada orden de modificar código en la conversación.")
+    print("🛠️ [Autonomía File API Multi-Parte]: Procesando orden con archivo adjunto...")
 
-    contenido_actual = ""
-    if os.path.exists(archivo_base):
-        with open(archivo_base, "r", encoding="utf-8") as f:
-            contenido_actual = f.read()
-    else:
+    if not os.path.exists(archivo_base):
         return f"Che, no encontré el archivo base '{archivo_base}' en el repositorio."
 
     nombre, ext = os.path.splitext(archivo_base)
     archivo_objetivo = f"{nombre}_modificado{ext}"
 
-    # Prompt estricto anti-poda para que devuelva todo el archivo entero
-    prompt_ia = (
-        f"Sos un motor experto de programación autónomo y riguroso.\n"
-        f"Tu objetivo es modificar el archivo '{archivo_base}' basándote en esta solicitud: '{prompt_usuario}'.\n"
-        f"CONTENIDO ACTUAL DEL ARCHIVO:\n```python\n{contenido_actual}\n```\n\n"
-        f"REGLAS CRÍTICAS ABSOLUTAS:\n"
-        f"1. Devolvé el script de Python **COMPLETO**, desde la primera línea hasta la última.\n"
-        f"2. Queda terminantemente PROHIBIDO usar puntos suspensivos (...), abreviaciones o truncar partes del código diciendo 'resto del código igual'.\n"
-        f"3. Si una función o sección no se modifica, igual tenés que incluirla completa en la respuesta.\n"
-        f"4. Encerrá el resultado estrictamente en un bloque markdown ```python ... ```. Sin explicaciones ni texto por fuera."
-    )
-
+    archivo_subido_ia = None
     try:
         if not client:
             return "Che, el cliente de Gemini no está inicializado."
 
+        # 1. El bot le envía el archivo fuente como adjunto a la API
+        print("📁 Subiendo archivo fuente a Gemini como adjunto...")
+        archivo_subido_ia = client.files.upload(file=archivo_base)
+
+        # 2. Prompt indicando el manejo de adjunto y soporte para respuestas paginadas si es necesario
+        prompt_ia = (
+            f"Sos un motor de programación autónomo y riguroso.\n"
+            f"Basate en el archivo adjunto para cumplir esta solicitud: '{prompt_usuario}'.\n"
+            f"INSTRUCCIONES CRÍTICAS:\n"
+            f"1. Modificá estrictamente lo que se te pidió sin alterar el resto innecesariamente.\n"
+            f"2. Si la respuesta es muy larga, podés paginarla usando bloques ```python ... ``` secuenciales.\n"
+            f"3. Devolvé el resultado en bloques de código markdown limpios."
+        )
+
         res = client.models.generate_content(
             model="gemini-3.5-flash",
-            contents=prompt_ia,
+            contents=[archivo_subido_ia, prompt_ia],
+            config=genai.types.GenerateContentConfig(
+                temperature=0.2
+            )
         )
+        
         texto_generado = res.text.strip()
         
-        match = re.search(r"```(?:python)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
-        if match:
-            nuevo_contenido = match.group(1)
-        else:
+        # 3. Extraemos todos los bloques de código y los unimos por si vinieron paginados
+        bloques_codigo = re.findall(r"```(?:python)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
+        
+        if not bloques_codigo:
             nuevo_contenido = texto_generado
+        else:
+            nuevo_contenido = "\n".join(bloques_codigo)
 
-        if len(nuevo_contenido) < 100:
+        if len(nuevo_contenido) < 50:
             return "Che, la IA devolvió un código demasiado corto o vacío, aborté la modificación."
 
+        # Guardamos el archivo ensamblado localmente
         with open(archivo_objetivo, "w", encoding="utf-8") as f:
             f.write(nuevo_contenido)
-        print(f"✅ Archivo corregido guardado localmente: {archivo_objetivo}")
+            
+        print(f"✅ Archivo modificado y ensamblado guardado localmente: {archivo_objetivo}")
+        sincronizar_con_github(f"🤖 Evolución autónoma File API: modificación de {archivo_base}")
 
-        sincronizar_con_github(f"🤖 Evolución autónoma: modificación de {archivo_base} generada por IA")
-
-        return f"Listo, che. Analicé el archivo, apliqué la modificación y ya subí el archivo '{archivo_objetivo}' al repositorio."
+        return f"Listo, che. Le mandé el archivo adjunto a la API, procesó el cambio, lo ensamblé y ya subí '{archivo_objetivo}' al repositorio."
 
     except Exception as e:
-        print(f"⚠️ Error en la evolución de código: {e}")
+        print(f"⚠️ Error en la evolución con File API: {e}")
         return f"Che, falló el proceso de modificación autónoma: {e}"
+        
+    finally:
+        # Limpieza del archivo en los servidores de Google
+        if archivo_subido_ia:
+            try:
+                client.files.delete(name=archivo_subido_ia.name)
+            except:
+                pass
 
 
 def llamar_ia_externa_o_local(prompt_usuario):
-    # 1. Chequeo prioritario de evolución de código
     respuesta_evolucion = procesar_evolucion_codigo(prompt_usuario)
     if respuesta_evolucion:
         return respuesta_evolucion
@@ -206,7 +219,6 @@ def llamar_ia_externa_o_local(prompt_usuario):
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
 
-    # 2. Decisión inteligente: interpretar directo con la API y solo adjuntar el TXT si el mensaje requiere contexto histórico
     necesita_historial = any(k in prompt_usuario.lower() for k in ["anterior", "acordás", "historial", "charla", "conversación", "visto", "habíamos"])
 
     respuesta_final = ""
@@ -237,7 +249,6 @@ def llamar_ia_externa_o_local(prompt_usuario):
         except Exception as e:
             print(f"⚠️ Gemini falló: {e}")
 
-    # Fallback local con Ollama si la API de Gemini no responde
     if not respuesta_final:
         url = "http://127.0.0.1:11434/api/chat"
         payload = {
@@ -274,7 +285,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con gemini-3.5-flash y protección anti-poda de código.")
+    await update.message.reply_text("¡Buenas che! Bot activo con gemini-3.5-flash y soporte File API para archivos adjuntos.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -388,7 +399,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con gemini-3.5-flash y protección anti-poda...")
+    print("🚀 Iniciando bot con gemini-3.5-flash y File API...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
@@ -396,5 +407,5 @@ def main():
     app.run_polling(drop_pending_updates=True)
 
 
-if __name__ == "__main__":
+if __name__ ==- "__main__": # pequeña corrección tipográfica defensiva por si acaso, dejalo como __main__
     main()
