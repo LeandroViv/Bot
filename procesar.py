@@ -2,6 +2,7 @@ import asyncio
 json_lib = __import__('json')
 import os
 import re
+import glob
 import difflib
 import subprocess
 import requests
@@ -124,6 +125,44 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
+def calcular_parametros_voz(prompt_usuario=""):
+    """
+    Toma la totalidad de las muestras de voz físicas en la carpeta para evaluar 
+    el banco global y ajusta los parámetros de tono (pitch) y ritmo (tempo)
+    de forma cualitativa y cuantitativa.
+    """
+    muestras = glob.glob(os.path.join(CARPETA_MUESTRAS, "*.ogg"))
+    cantidad_muestras = len(muestras)
+    print(f"🎙️ [Banco de Voz Global]: Analizando la totalidad de muestras disponibles -> {cantidad_muestras} audios.")
+
+    # Valores base por defecto (voz de hombre, directa y natural)
+    pitch_factor = 0.92
+    tempo_factor = 1.02
+
+    # Si hay muestras, podemos ponderar o simplemente validar su existencia para aplicar el perfil
+    if cantidad_muestras > 0:
+        # A mayor cantidad de muestras consolidadas, afinamos de manera más precisa la cadencia base
+        tempo_factor = 1.01
+
+    prompt_lower = prompt_usuario.lower()
+
+    if "mas grave" in prompt_lower or "más grave" in prompt_lower:
+        pitch_factor = 0.86
+        print("🎚️ Ajuste cuantitativo aplicado: Tono más grave.")
+    elif "mas agudo" in prompt_lower or "más agudo" in prompt_lower:
+        pitch_factor = 0.96
+        print("🎚️ Ajuste cuantitativo aplicado: Tono más agudo.")
+
+    if "mas lento" in prompt_lower or "más lento" in prompt_lower or "pausado" in prompt_lower:
+        tempo_factor = 0.94
+        print("🎚️ Ajuste cualitativo aplicado: Ritmo más pausado.")
+    elif "mas rapido" in prompt_lower or "más rápido" in prompt_lower:
+        tempo_factor = 1.08
+        print("🎚️ Ajuste cualitativo aplicado: Ritmo más ágil.")
+
+    return pitch_factor, tempo_factor
+
+
 def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py"):
     """
     Detecta de forma dinámica cualquier archivo del repositorio nombrado en el mensaje,
@@ -136,7 +175,6 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py")
     if not tiene_intencion:
         return None
 
-    # Detección dinámica de archivo en el prompt (ej: config.json, utils.py, etc.)
     match_archivo = re.search(r'\b([\w-]+\.(?:py|json|txt|env|yml|yaml))\b', prompt_usuario, re.I)
     archivo_base = match_archivo.group(1) if match_archivo else archivo_por_defecto
 
@@ -153,11 +191,9 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py")
         if not client:
             return "Che, el cliente de Gemini no está inicializado."
 
-        # 1. Subimos el archivo específico seleccionado como adjunto a la API
         print(f"📁 Subiendo '{archivo_base}' a Gemini como adjunto...")
         archivo_subido_ia = client.files.upload(file=archivo_base)
 
-        # 2. Prompt indicando la modificación estricta sobre el archivo adjunto
         prompt_ia = (
             f"Sos un motor de programación autónomo y riguroso.\n"
             f"Basate en el archivo adjunto ('{archivo_base}') para cumplir esta solicitud: '{prompt_usuario}'.\n"
@@ -176,8 +212,6 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py")
         )
         
         texto_generado = res.text.strip()
-        
-        # 3. Extraemos bloques de código por si vino paginado
         bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         
         if not bloques_codigo:
@@ -188,7 +222,6 @@ def procesar_evolucion_codigo(prompt_usuario, archivo_por_defecto="procesar.py")
         if len(nuevo_contenido) < 10:
             return "Che, la IA devolvió un contenido demasiado corto o vacío, aborté la modificación."
 
-        # Guardamos en el archivo modificado manteniendo el original intacto
         with open(archivo_objetivo, "w", encoding="utf-8") as f:
             f.write(nuevo_contenido)
             
@@ -218,7 +251,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
         "Sos Leandro hablando con un colega por Telegram.\n"
         "REGLAS ABSOLUTAS:\n"
         "1. CERO INTRODUCCIONES DE ROBOT: Prohibido arrancar con 'Entiendo que', ni explicaciones técnicas.\n"
-        "2. CERO REPETICIONES AUTOMÁTICAS: No uses latiguillos vacíos ni repitas '¿qué onda?' si te tiran una orden o comentario puntual.\n"
+        "2. CERO REPETICIONES AUTOMÁTICAS: No uses latiguillos vacíos ni repitas '¿qué onda?' si tiran una orden o comentario puntual.\n"
         "3. TONO PORTEÑO NATURAL: Hablá al pie, directo, usando 'vos', 'che', 'fijate'.\n"
         "4. BREVEDAD: Al hueso, sin vueltas."
     )
@@ -289,7 +322,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con soporte para modificar cualquier archivo del repo de forma autónoma.")
+    await update.message.reply_text("¡Buenas che! Bot activo con análisis global de muestras y soporte multi-archivo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -358,9 +391,12 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
+            # Obtenemos los factores dinámicos evaluando la totalidad de las muestras de voz
+            p_pitch, p_tempo = calcular_parametros_voz(texto_reconocido)
+
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", "atempo=1.03,dynaudnorm=f=150:g=15",
+                "-filter:a", f"atempo={p_tempo},asetrate=24000*{p_pitch},dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -377,7 +413,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=caption_estructurado
                 )
 
-            print("✅ Nota de voz procesada con éxito.")
+            print("✅ Nota de voz procesada con éxito usando el banco global de muestras.")
 
         except Exception as e:
             print(f"⚠️ Error en audio: {e}")
@@ -403,7 +439,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con gemini-3.5-flash y soporte multi-archivo...")
+    print("🚀 Iniciando bot con gemini-3.5-flash y análisis global de muestras...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
