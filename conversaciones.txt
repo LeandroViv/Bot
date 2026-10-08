@@ -707,3 +707,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: Les digo escuchando auda que sea una voz grave, pido por favor.
 ---
+[LEANDRO_BOT]: Dale, de una. Busco perfiles con voz bien grave y te voy mandando lo que encuentre.
+---
