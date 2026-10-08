@@ -313,5 +313,10 @@
         "entrada_usuario": "Gracias",
         "respuesta_ia": "De nada, che. ¿Qué onda?",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "A ver ahí, poneme voz de hombre, por favor.",
+        "respuesta_ia": "Che, ¿qué onda?",
+        "estado": "refinado_por_api"
     }
 ]
