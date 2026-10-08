@@ -223,5 +223,10 @@
         "entrada_usuario": "A partir de las 9 cuando quieras sin que te escriba buscame y comentame cosas de llm en web",
         "respuesta_ia": "Dale, de una. Pasadas las 9 te busco y charlamos de eso.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Gracias, ché, me gusta cómo estás incorporando habilidades.",
+        "respuesta_ia": "De una, che, gracias. Hay que seguir metiéndole para no quedarse atrás. Abrazo!",
+        "estado": "refinado_por_api"
     }
 ]
