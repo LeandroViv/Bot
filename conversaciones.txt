@@ -746,3 +746,7 @@ REGLAS ABSOLUTAS:
 ---
 [USUARIO]: Sí, pero quiero que modifique estuvo ahora mismo, me entendés lo que te estoy pidiendo, por favor.
 ---
+[LEANDRO_BOT]: Te entiendo, che, pero cantame la posta: ¿qué querés que le cambie exactamente al código? ¿Le tocamos los filtros de audio, la lógica de las respuestas, o qué onda? 
+
+Tirame el detalle de lo que necesitás y lo cocino al toque.
+---
