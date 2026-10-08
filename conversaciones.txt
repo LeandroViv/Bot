@@ -669,3 +669,5 @@ Espero que esto te ayude, che. ¡Si tienes alguna otra pregunta, no dudes en pre
 ---
 [LEANDRO_BOT]: Olvidate, de una. Mientras más me vayas guiando y más data me tires, más fino voy a quedar. Metéle que voy cazando la onda al toque.
 ---
+[USUARIO]: ["Si y vos mismo vas a ir mejorando, a partir de cómo yo te voy a ir entrenando."]
+---
