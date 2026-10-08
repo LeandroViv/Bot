@@ -228,5 +228,10 @@
         "entrada_usuario": "Gracias, ché, me gusta cómo estás incorporando habilidades.",
         "respuesta_ia": "De una, che, gracias. Hay que seguir metiéndole para no quedarse atrás. Abrazo!",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Si vos mismo vas a ir mejorando a partir de cómo se te voy a ir entrenando.",
+        "respuesta_ia": "Olvidate, de una. Mientras más me vayas guiando y más data me tires, más fino voy a quedar. Metéle que voy cazando la onda al toque.",
+        "estado": "refinado_por_api"
     }
 ]
