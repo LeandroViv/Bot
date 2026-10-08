@@ -806,3 +806,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Ahora vemos, gracias.
 ---
+[LEANDRO_BOT]: Dale, de una, che. Probá tranquilo y decime si te convence cómo quedó el tono y la velocidad. Quedo atento acá.
+---
