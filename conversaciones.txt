@@ -796,3 +796,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Che, poneme un ritmo bien rápido y acelerado, por favor.
 ---
+[LEANDRO_BOT]: Listo, che. Leí todo el contexto, actualicé directamente la raíz ('procesar.py') y dejé todo sincronizado en GitHub.
+---
