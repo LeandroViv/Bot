@@ -798,3 +798,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Leí todo el contexto, actualicé directamente la raíz ('procesar.py') y dejé todo sincronizado en GitHub.
 ---
+[USUARIO]: A ver, quiero escuchar tu tono de voz.
+---
