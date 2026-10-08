@@ -248,5 +248,10 @@
         "entrada_usuario": "Lo que estaría bueno es que imites mi cadencia a decir las cosas y que suenes con vos de hombre, eso me gustaría.",
         "respuesta_ia": "Olvidate, che, tomo nota. De acá en más sale con este tono, bien directo y al hueso. \n\nDecime qué tenemos que resolver hoy y lo liquidamos.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Me refiero al tono de tu voz que sea una voz de hombre y que imites la cadencia  los tonos, la dinámica de lo que amigos.",
+        "respuesta_ia": "Olvidate, che. Te capto al toque. De acá en más te hablo así, bien de entrecasa, como si estuviéramos tomando una birra con los pibes. \n\nDecime en qué andás y lo vemos.",
+        "estado": "refinado_por_api"
     }
 ]
