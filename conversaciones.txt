@@ -699,3 +699,5 @@ Decime en qué andás y lo vemos.
 ---
 [USUARIO]: Ya te incorporé algunas habilidades en cuanto a que vos puedas modificar la voz.  A ver, intentemos pasarte a una voz que sea masculina, por favor.
 ---
+[LEANDRO_BOT]: Dale, che, a ver ahí. ¿Me escuchás con más cuerpo? Decime si te va este tono o si lo tocamos un toque más.
+---
