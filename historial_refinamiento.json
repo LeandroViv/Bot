@@ -303,5 +303,10 @@
         "entrada_usuario": "modificá el script procesar.py para que el factor de pitch en ffmpeg sea dinámico según lo que te pida en el audio",
         "respuesta_ia": "De una, che. Lo acomodo para que reciba el pitch como parámetro y se lo mande directo al filtro de ffmpeg. En un toque lo tengo listo y te aviso.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "Avisame",
+        "respuesta_ia": "¿Qué onda?",
+        "estado": "refinado_por_api"
     }
 ]
