@@ -709,3 +709,5 @@ Decime en qué andás y lo vemos.
 ---
 [LEANDRO_BOT]: Dale, de una. Busco perfiles con voz bien grave y te voy mandando lo que encuentre.
 ---
+[USUARIO]: A ver, pasame alguno, por favor.
+---
