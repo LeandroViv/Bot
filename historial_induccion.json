@@ -42,5 +42,9 @@
     "chavón no es una instrucción, no lo que estoy diciendo es que bueno entonces ya  modificamos ese archivo, si estoy entendiendo bien ya se modificó eso.": {
         "correcto": "gracias",
         "audio_muestra": "muestras_voz/audio_771.ogg"
+    },
+    "si vos mismo vas a ir mejorando a partir de cómo se te voy a ir entrenando.": {
+        "correcto": "[\"Si y vos mismo vas a ir mejorando, a partir de cómo yo te voy a ir entrenando.\"]",
+        "audio_muestra": "muestras_voz/audio_807.ogg"
     }
 }
