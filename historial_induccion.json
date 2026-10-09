@@ -54,5 +54,9 @@
     "te quiero pedir por favor que suenes más rápido, un ritmo más rápido y que bueno ese cambio lo mantengas por favor, gracias.": {
         "correcto": "[ \"Te quiero pedir, por favor, que suenes más rápido, a un ritmo más rápido, y que bueno ese cambio lo mantengas, por favor. Gracias.\"]",
         "audio_muestra": "muestras_voz/audio_888.ogg"
+    },
+    "a ver, ahora ponenme vos como de un niño, por favor, ponete vos de niños, gracias.": {
+        "correcto": "[\"A ver, ahora poneme voz como de un niño, por favor, ponete voz de niño, gracias.\"]",
+        "audio_muestra": "muestras_voz/audio_896.ogg"
     }
 }
