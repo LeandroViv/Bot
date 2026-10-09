@@ -241,7 +241,6 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
     prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
     
-    # Detección inteligente de pedidos de imitación para buscar muestras en la web autónomamente
     if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como"]):
         print(f"🌐 Detectado pedido de imitación. Buscando muestra autónoma en la web para: '{prompt_usuario}'")
         audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
@@ -249,7 +248,6 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
             perillas_actuales["modo_voz"] = "xtts"
             guardar_json_seguro(ARCHIVO_PERILLAS, perillas_actuales, "🎙️ Modo XTTS activado por muestra web autónoma")
 
-    # Prompt maestro del Director de Orquesta Acústica
     prompt_director_orquesta = (
         "Sos el director acústico y de síntesis vocal de este agente autónomo.\n"
         "Tenés dos motores de voz disponibles:\n"
@@ -302,7 +300,6 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                 except:
                     pass
 
-    # Motor local Ollama (Llama 3.2) con búsqueda web y XTTS
     print(f"🦙 [Motor Local Llama con Web & XTTS]: Analizando solicitud -> '{prompt_usuario}'")
     info_web = ""
     if any(k in prompt_usuario.lower() for k in ["busca", "imitá", "como", "estilo", "orador", "periodista", "persona", "arquetipo"]):
@@ -416,13 +413,13 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con Director Acústico, XTTS y búsqueda web autónoma.")
+    await update.message.reply_text("¡Buenas che! Bot activo con Director Acústico, XTTS y búsqueda web autónoma de audio.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global ULTIMO_AUDIO_PENDIENTE
+    global ULTIMO_AUDIO_PENDIENTE, xtts_model
     texto_usuario = update.message.text
-    print(f"📩 Mensaje recibido: {texto_usuario}")
+    print(f"📩 Mensaje recibido (Texto): {texto_usuario}")
     
     if ULTIMO_AUDIO_PENDIENTE["path"] and ULTIMO_AUDIO_PENDIENTE["crudo"] and texto_usuario.lower().startswith(("corregir:", "corrección:")):
         audio_p = ULTIMO_AUDIO_PENDIENTE["path"]
@@ -436,9 +433,130 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ULTIMO_AUDIO_PENDIENTE["path"]:
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
-    await update.message.chat.send_action(action="typing")
-    respuesta = responder_usuario(texto_usuario)
-    await update.message.reply_text(respuesta)
+    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate"])
+
+    if quiere_voz:
+        await update.message.chat.send_action(action="record_voice")
+        respuesta = responder_usuario(texto_usuario)
+        
+        texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
+        texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
+
+        p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+        prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
+        
+        modo_voz = p.get("modo_voz", "gtts")
+        pitch_factor = float(p.get("pitch_factor", 0.80))
+        tempo_base = float(p.get("tempo_factor", 1.20))
+        tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
+        
+        fund = float(p.get("fundamental_hz", 130))
+        serie_armonica = p.get("serie_armonica", [])
+        
+        treble_gain = float(p.get("treble_gain", 3.0))
+        treble_freq = float(p.get("treble_freq", 4000))
+        bass_gain = float(p.get("bass_gain", 5.0))
+        bass_freq = float(p.get("bass_freq", 150))
+        volume_mult = float(p.get("volume_mult", 1.1))
+
+        audio_speaker_wav = None
+        for arch_m in os.listdir(CARPETA_MUESTRAS):
+            if arch_m.startswith("web_auto_"):
+                audio_speaker_wav = os.path.join(CARPETA_MUESTRAS, arch_m)
+                modo_voz = "xtts"
+                break
+
+        ruta_respuesta_wav = "respuesta.wav"
+        ruta_respuesta_ogg = "respuesta.ogg"
+        audio_generado_ok = False
+
+        if modo_voz == "xtts" and XTTS_DISPONIBLE and audio_speaker_wav:
+            try:
+                print(f"🧬 Generando clonación XTTS por texto con referencia: {audio_speaker_wav}")
+                if xtts_model is None:
+                    xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+                
+                xtts_model.tts_to_file(
+                    text=texto_limpio,
+                    file_path=ruta_respuesta_wav,
+                    speaker_wav=audio_speaker_wav,
+                    language="es"
+                )
+                audio_generado_ok = True
+            except Exception as ex_xtts:
+                print(f"⚠️ XTTS falló en texto, usando gTTS: {ex_xtts}")
+
+        if not audio_generado_ok:
+            ruta_respuesta_mp3 = "respuesta.mp3"
+            tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
+            tts.save(ruta_respuesta_mp3)
+            subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, ruta_respuesta_wav], check=True)
+            if os.path.exists(ruta_respuesta_mp3):
+                os.remove(ruta_respuesta_mp3)
+
+        filtros_lista = [
+            f"atempo={max(0.5, min(2.0, tempo_factor))}",
+            f"asetrate=24000*{max(0.4, min(2.0, pitch_factor))}"
+        ]
+
+        for item in serie_armonica:
+            try:
+                mult = 1.0
+                db = 0.0
+                if isinstance(item, dict):
+                    mult = float(item.get("multiplicador", item.get("mult", 1.0)))
+                    db = float(item.get("gain_db", item.get("gain", item.get("db", 0.0))))
+                elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                    mult = float(item[0])
+                    db = float(item[1])
+                elif isinstance(item, (int, float)):
+                    mult = float(item)
+                    db = 0.0
+
+                freq_armonica = fund * mult
+                if 20.0 <= freq_armonica <= 11000.0:
+                    w_val = max(15, int(freq_armonica * 0.08))
+                    filtros_lista.append(f"equalizer=f={freq_armonica:.2f}:t=h:w={w_val}:g={db}")
+            except:
+                pass
+
+        filtros_lista.extend([
+            f"equalizer=f={treble_freq}:t=h:w=200:g={treble_gain}",
+            f"equalizer=f={bass_freq}:t=h:w=100:g={bass_gain}",
+            f"volume={volume_mult}",
+            "dynaudnorm=f=150:g=15"
+        ])
+
+        filtro_audio = ",".join(filtros_lista)
+
+        try:
+            subprocess.run([
+                "ffmpeg", "-y", "-i", ruta_respuesta_wav,
+                "-filter:a", filtro_audio,
+                "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+                ruta_respuesta_ogg
+            ], check=True)
+        except:
+            subprocess.run([
+                "ffmpeg", "-y", "-i", ruta_respuesta_wav,
+                "-filter:a", f"atempo={tempo_factor},volume={volume_mult}",
+                "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+                ruta_respuesta_ogg
+            ], check=True)
+
+        with open(ruta_respuesta_ogg, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=f"*(Modo: {modo_voz.upper()} + XTTS)*")
+
+        for archivo in [ruta_respuesta_wav, ruta_respuesta_ogg]:
+            if os.path.exists(archivo):
+                try:
+                    os.remove(archivo)
+                except:
+                    pass
+    else:
+        await update.message.chat.send_action(action="typing")
+        respuesta = responder_usuario(texto_usuario)
+        await update.message.reply_text(respuesta)
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -501,7 +619,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     modo_voz = "xtts"
                     break
 
-            # GENERACIÓN DE AUDIO: XTTS (Clonación real) o gTTS (Sintético)
             audio_generado_ok = False
             if modo_voz == "xtts" and XTTS_DISPONIBLE:
                 try:
@@ -528,7 +645,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if os.path.exists(ruta_respuesta_mp3):
                     os.remove(ruta_respuesta_mp3)
 
-            # APLICACIÓN DE SERIE ARMÓNICA Y PERILLAS EN FFMEGP
             filtros_lista = [
                 f"atempo={max(0.5, min(2.0, tempo_factor))}",
                 f"asetrate=24000*{max(0.4, min(2.0, pitch_factor))}"
