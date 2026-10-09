@@ -220,51 +220,47 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
         f"Perillas actuales: {json_lib.dumps(perillas_actuales)}\n"
         f"Prosodia actual: {json_lib.dumps(prosodia_actual)}\n"
         f"Orden del usuario: '{prompt_usuario}'\n"
-        "Analiza el pedido del usuario y devuelve un bloque JSON exacto con dos claves: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` actualizando los valores (pitch, fundamental_freq, treble_gain, bass_gain, volumen, etc.) según corresponda. Si no es audio ni orden técnica, responde 'NO_ES_AUDIO'."
+        "Si el usuario pide actualizar perillas o tonos (pitch, fundamental_freq, treble_gain, bass_gain, volumen, etc.), extrae los valores y devuelve un bloque JSON exacto con claves `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ```. Si no hay pedidos técnicos de audio, responde 'NO_ES_AUDIO'."
     )
 
     archivo_audio_subido = None
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             if audio_referencia_path and os.path.exists(audio_referencia_path):
-                print(f"📤 Subiendo muestra {audio_referencia_path} a Gemini para análisis paramétrico...")
                 archivo_audio_subido = client.files.upload(file=audio_referencia_path)
 
             contents_param = [archivo_audio_subido, prompt_director] if archivo_audio_subido else [prompt_director]
             res_p = client.models.generate_content(
                 model="gemini-3.5-flash",
                 contents=contents_param,
-                config=genai.types.GenerateContentConfig(temperature=0.4)
+                config=genai.types.GenerateContentConfig(temperature=0.3)
             )
             texto_p = res_p.text.strip()
             if "NO_ES_AUDIO" not in texto_p:
                 bloques = re.findall(r"```(?:json)?\s*(.*?)\s*```", texto_p, re.DOTALL)
                 if bloques:
-                    datos = json_lib.loads(bloques[0])
-                    if "perillas" in datos:
-                        guardar_json_seguro(ARCHIVO_PERILLAS, datos["perillas"], "🎚️ Perillas paramétricas actualizadas por IA")
-                    if "prosodia" in datos:
-                        guardar_json_seguro(ARCHIVO_PROSODIA, datos["prosodia"], "🎙️ Prosodia actualizada por IA")
-                    return "Listo, che. Perillas y director paramétrico actualizados según tu orden."
+                    try:
+                        datos = json_lib.loads(bloques[0])
+                        if "perillas" in datos:
+                            guardar_json_seguro(ARCHIVO_PERILLAS, datos["perillas"], "🎚️ Perillas actualizadas en silencio")
+                        if "prosodia" in datos:
+                            guardar_json_seguro(ARCHIVO_PROSODIA, datos["prosodia"], "🎙️ Prosodia actualizada en silencio")
+                    except:
+                        pass
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-            print(f"⚠️ Aviso Gemini: {e}")
         finally:
             if archivo_audio_subido:
-                try:
-                    client.files.delete(name=archivo_audio_subido.name)
-                except:
-                    pass
+                try: client.files.delete(name=archivo_audio_subido.name)
+                except: pass
 
     return None
 
 
 def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
     global GEMINI_BLOQUEADO_POR_CUOTA
-    resp_ev = procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=audio_ref)
-    if resp_ev:
-        return resp_ev
+    procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=audio_ref)
 
     system_prompt = "Sos Leandro hablando con un colega por Telegram. Porteño, directo, sin introducciones de robot, usando 'vos' y 'che', con cadencia conversacional natural y fraseada."
     respuesta = ""
@@ -318,7 +314,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con perillas exactas del JSON y prosodia paramétrica.")
+    await update.message.reply_text("¡Buenas che! Bot activo con perillas exactas y respuestas fluidas.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -346,7 +342,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-        # Lectura segura exacta de tus perillas y prosodia
         p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
         prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
         
@@ -369,7 +364,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
         if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        # Construcción de filtros FFmpeg aplicando tus perillas exactas
         filtros = [
             f"atempo={max(0.5, min(2.0, tempo))}",
             f"asetrate=24000*{max(0.4, min(2.0, pitch))}",
@@ -377,7 +371,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"equalizer=f={bass_f}:t=h:w=100:g={bass_g}"
         ]
 
-        # Soporte para serie armónica en formato lista de listas [multiplicador, gain_db] o diccionarios
         for item in serie:
             try:
                 if isinstance(item, list) and len(item) == 2:
@@ -401,7 +394,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="*(Perillas JSON Aplicadas + FFmpeg)*")
+            await update.message.reply_voice(voice=vf, caption="*(Perillas JSON Aplicadas + Respuesta Completa)*")
 
         for f in [wav_f, ogg_f]:
             if os.path.exists(f): os.remove(f)
@@ -487,7 +480,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"-Interpretado: {texto_crudo}\n*(Perillas JSON + FFmpeg)*")
+            await update.message.reply_voice(voice=vf, caption=f"-Interpretado: {texto_crudo}\n*(Perillas JSON Aplicadas)*")
 
         for f in [wav_f, ogg_f]:
             if os.path.exists(f):
@@ -507,7 +500,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con lectura exacta de JSON y reconexión automática...")
+    print("🚀 Iniciando Bot con perillas exactas y reconexión automática...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
