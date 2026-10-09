@@ -16,8 +16,14 @@ from telegram.ext import (
     filters,
 )
 from faster_whisper import WhisperModel
-from google import genai
 from gtts import gTTS
+
+# Importación segura de la API de Google GenAI para evitar crashes en GitHub Actions
+try:
+    from google import genai
+    GENAI_DISPONIBLE = True
+except ImportError:
+    GENAI_DISPONIBLE = False
 
 # Importación segura de XTTS (Coqui TTS) para clonación real por muestra
 try:
@@ -87,7 +93,7 @@ for archivo_base, contenido_inicial in [
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
 xtts_model = None
 
@@ -243,25 +249,30 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
             perillas_actuales["modo_voz"] = "xtts"
             guardar_json_seguro(ARCHIVO_PERILLAS, perillas_actuales, "🎙️ Modo XTTS activado por muestra web autónoma")
 
+    # Prompt maestro del Director de Orquesta Acústica
+    prompt_director_orquesta = (
+        "Sos el director acústico y de síntesis vocal de este agente autónomo.\n"
+        "Tenés dos motores de voz disponibles:\n"
+        "1. 'xtts': Motor Open Source de clonación de voz hiperrealista por muestra (Zero-Shot). Usalo OBLIGATORIAMENTE si el usuario pide explícitamente imitar a una persona, un personaje, un acento, un orador, o si hay una muestra de audio/archivo de referencia descargado de la web.\n"
+        "2. 'gtts': Motor sintético base combinado con perillas cuantitativas, ecualización y serie armónica decimal en FFmpeg. Usalo para charlas generales, modulación abstracta de arquetipos (ej: 'más grave', 'más rápido') o cuando no haya muestras de clonación.\n\n"
+        f"Perillas cuantitativas y serie armónica actual (JSON): {json_lib.dumps(perillas_actuales)}\n"
+        f"Parámetros de prosodia actuales (JSON): {json_lib.dumps(prosodia_actual)}\n"
+        f"Orden del usuario: '{prompt_usuario}'\n\n"
+        "INSTRUCCIONES CRÍTICAS:\n"
+        "1. Evaluá si la orden requiere cambiar el `modo_voz` a 'xtts' o mantenerlo en 'gtts'.\n"
+        "2. Ajustá los valores numéricos, fundamental en Hz y multiplicadores decimales de la 'serie_armonica' según el vibe pedido.\n"
+        "3. Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'.\n"
+        "4. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves exactas: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
+    )
+
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
-        print(f"🧠 [Gemini Vibe Coding]: Analizando -> '{prompt_usuario}'")
+        print(f"🧠 [Gemini Director Acústico]: Analizando -> '{prompt_usuario}'")
         archivo_audio_subido = None
         try:
             if audio_referencia_path and os.path.exists(audio_referencia_path):
                 archivo_audio_subido = client.files.upload(file=audio_referencia_path)
 
-            prompt_perillas = "\n".join([
-                "Sos el ingeniero acústico y director de prosodia de este agente autónomo.",
-                f"Perillas cuantitativas y serie armónica actual (JSON): {json_lib.dumps(perillas_actuales)}",
-                f"Parámetros de prosodia actuales (JSON): {json_lib.dumps(prosodia_actual)}",
-                f"La orden de tu colega es: '{prompt_usuario}'.",
-                "INSTRUCCIONES:",
-                "1. Si el pedido afecta al audio, voz, fundamental Hz, serie armónica, modo de voz ('gtts' o 'xtts') o prosodia, actualizalos.",
-                "2. Si NO es sobre audio, respondé exactamente 'NO_ES_AUDIO'.",
-                "3. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
-            ])
-
-            contents_param = [archivo_audio_subido, prompt_perillas] if archivo_audio_subido else [prompt_perillas]
+            contents_param = [archivo_audio_subido, prompt_director_orquesta] if archivo_audio_subido else [prompt_director_orquesta]
             res_p = client.models.generate_content(
                 model="gemini-3.5-flash",
                 contents=contents_param,
@@ -274,10 +285,10 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                 if bloques_json:
                     datos_nuevos = json_lib.loads(bloques_json[0])
                     if "perillas" in datos_nuevos:
-                        guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Gemini")
+                        guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Gemini (Director Acústico)")
                     if "prosodia" in datos_nuevos:
                         guardar_json_seguro(ARCHIVO_PROSODIA, datos_nuevos["prosodia"], "🎙️ Prosodia actualizada por Gemini")
-                    return "Listo, che. Calibré perillas y prosodia por Gemini."
+                    return "Listo, che. Calibré el director acústico por Gemini."
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 print("⚠️ Cuota Gemini 429. Activando motor local con web y XTTS.")
@@ -297,17 +308,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
     if any(k in prompt_usuario.lower() for k in ["busca", "imitá", "como", "estilo", "orador", "periodista", "persona", "arquetipo"]):
         info_web = buscar_en_web_duckduckgo(prompt_usuario)
 
-    system_local = (
-        "Sos el ingeniero de sonido, acústica y prosodia de este agente autónomo.\n"
-        f"Perillas actuales JSON: {json_lib.dumps(perillas_actuales)}\n"
-        f"Prosodia actual JSON: {json_lib.dumps(prosodia_actual)}\n"
-        f"Contexto de búsqueda web sobre la muestra o arquetipo pedido: {info_web}\n"
-        "INSTRUCCIONES:\n"
-        "1. Si la orden es sobre audio, voz, timbre, modo_voz ('gtts' o 'xtts') o imitación de muestras, adaptá inteligentemente los valores.\n"
-        "2. Devolvé OBLIGATORIAMENTE un JSON válido con perillas y prosodia en este formato exacto:\n"
-        "```json\n{\"perillas\": {...}, \"prosodia\": {...}}\n```\n"
-        "Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'."
-    )
+    system_local = prompt_director_orquesta + f"\n[Contexto web adicional: {info_web}]"
 
     payload = {
         "model": "llama3.2",
@@ -330,7 +331,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                         guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Llama local")
                     if "prosodia" in datos_nuevos:
                         guardar_json_seguro(ARCHIVO_PROSODIA, datos_nuevos["prosodia"], "🎙️ Prosodia actualizada por Llama local")
-                    return "Listo, che. Analicé la muestra por motor local, ajustando perillas y prosodia."
+                    return "Listo, che. Analicé el director acústico por motor local, ajustando perillas."
     except Exception as e:
         print(f"⚠️ Error en motor local para perillas: {e}")
 
@@ -415,7 +416,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con búsqueda web autónoma de muestras, XTTS y perillas armónicas.")
+    await update.message.reply_text("¡Buenas che! Bot activo con Director Acústico, XTTS y búsqueda web autónoma.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -443,7 +444,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE, xtts_model
     async with lock_voz:
-        print("🎤 Procesando audio, web autónoma y serie armónica...")
+        print("🎤 Procesando audio, director acústico y serie armónica...")
         await update.message.chat.send_action(action="record_voice")
 
         message_id = update.message.message_id
@@ -493,7 +494,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             bass_freq = float(p.get("bass_freq", 150))
             volume_mult = float(p.get("volume_mult", 1.1))
 
-            # Verificar si se descargó una muestra autónoma de la web para XTTS
             audio_speaker_wav = audio_path_referencia
             for arch_m in os.listdir(CARPETA_MUESTRAS):
                 if arch_m.startswith("web_auto_"):
@@ -501,7 +501,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     modo_voz = "xtts"
                     break
 
-            # GENERACIÓN DE AUDIO: XTTS (Clonación real por muestra) o gTTS (Sintético)
+            # GENERACIÓN DE AUDIO: XTTS (Clonación real) o gTTS (Sintético)
             audio_generado_ok = False
             if modo_voz == "xtts" and XTTS_DISPONIBLE:
                 try:
@@ -579,7 +579,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     ruta_respuesta_ogg
                 ], check=True)
 
-            caption_est = f"-Interpretado: {texto_crudo}\n*(Modo: {modo_voz.upper()} + Búsqueda Web Autónoma)*"
+            caption_est = f"-Interpretado: {texto_crudo}\n*(Modo: {modo_voz.upper()} + Director Acústico)*"
 
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(voice=voice_file, caption=caption_est)
@@ -612,7 +612,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Búsqueda Web Autónoma de Muestras + XTTS + Perillas...")
+    print("🚀 Iniciando bot con Director Acústico + XTTS + Búsqueda Web Autónoma...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
