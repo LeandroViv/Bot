@@ -23,6 +23,7 @@ TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
 REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
 ARCHIVO_PERILLAS = "perillas_voz.json"
+ARCHIVO_PROSODIA = "prosodia_cadencia.json"
 CARPETA_MUESTRAS = "muestras_voz"
 CARPETA_ORIGINALES = "originales"
 CARPETA_RECURSIVA = "evolucion_recursiva"
@@ -32,23 +33,38 @@ os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 os.makedirs(CARPETA_ORIGINALES, exist_ok=True)
 os.makedirs(CARPETA_RECURSIVA, exist_ok=True)
 
-# Perillas de voz base iniciales (Persistentes)
+# Perillas de voz con serie armónica decimal abierta y dinámica (Persistentes)
 PERILLAS_DEFAULT = {
-    "pitch_factor": 0.80,      # Gravedad de la voz
-    "tempo_factor": 1.20,      # Velocidad / Ritmo rápido por defecto
-    "treble_gain": 3.0,        # Brillo / Agudos (dB)
-    "treble_freq": 4000,       # Frecuencia de corte para agudos (Hz)
-    "bass_gain": 5.0,          # Cuerpo / Graves (dB)
-    "bass_freq": 150,          # Frecuencia de corte para graves (Hz)
-    "harmonic_drive": 0.15,    # Saturación armónica / Calor analógico (0.0 a 0.5)
-    "harmonic_freq": 2500,     # Frecuencia central de enfoque armónico (Hz)
-    "crusher_bits": 16,        # Profundidad de bits para textura armónica (8 a 16)
-    "volume_mult": 1.1         # Ganancia general
+    "pitch_factor": 0.80,        # Gravedad de la voz
+    "tempo_factor": 1.20,        # Velocidad base
+    "fundamental_hz": 130,       # Frecuencia fundamental base (Hz)
+    "serie_armonica": [          # Multiplicadores libres (enteros o decimales) y ganancia en dB
+        {"multiplicador": 1.0, "gain_db": 0.0},
+        {"multiplicador": 2.0, "gain_db": -3.0},
+        {"multiplicador": 3.0, "gain_db": -6.0}
+    ],
+    "treble_gain": 3.0,          # Brillo / Agudos (dB)
+    "treble_freq": 4000,         # Frecuencia de corte para agudos (Hz)
+    "bass_gain": 5.0,            # Cuerpo / Graves (dB)
+    "bass_freq": 150,            # Frecuencia de corte para graves (Hz)
+    "volume_mult": 1.1           # Ganancia general
+}
+
+# Perfil de prosodia y cadencia inductiva por muestras y arquetipos
+PROSODIA_DEFAULT = {
+    "modo_imitacion": "activo",
+    "patron_pausas": "natural_humano",
+    "factor_ritmo_variable": 1.0,
+    "referencia_activa": "libre_y_arquetipos"
 }
 
 if not os.path.exists(ARCHIVO_PERILLAS):
     with open(ARCHIVO_PERILLAS, "w", encoding="utf-8") as f:
         json_lib.dump(PERILLAS_DEFAULT, f, indent=4, ensure_ascii=False)
+
+if not os.path.exists(ARCHIVO_PROSODIA):
+    with open(ARCHIVO_PROSODIA, "w", encoding="utf-8") as f:
+        json_lib.dump(PROSODIA_DEFAULT, f, indent=4, ensure_ascii=False)
 
 for archivo_base, contenido_inicial in [
     (REGISTRO_INDUCCION, {}),
@@ -69,20 +85,20 @@ lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 
-def cargar_perillas():
-    if os.path.exists(ARCHIVO_PERILLAS):
+def cargar_json_seguro(path, defecto):
+    if os.path.exists(path):
         try:
-            with open(ARCHIVO_PERILLAS, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json_lib.load(f)
         except:
-            return PERILLAS_DEFAULT
-    return PERILLAS_DEFAULT
+            return defecto
+    return defecto
 
 
-def guardar_perillas(perillas):
-    with open(ARCHIVO_PERILLAS, "w", encoding="utf-8") as f:
-        json_lib.dump(perillas, f, indent=4, ensure_ascii=False)
-    sincronizar_con_github("🎚️ Actualización universal de perillas y audio")
+def guardar_json_seguro(path, datos, mensaje_git):
+    with open(path, "w", encoding="utf-8") as f:
+        json_lib.dump(datos, f, indent=4, ensure_ascii=False)
+    sincronizar_con_github(mensaje_git)
 
 
 def inicializar_directorios_control(archivo_actual="procesar.py"):
@@ -117,39 +133,25 @@ def guardar_en_txt(rol, texto):
     sincronizar_con_github()
 
 
-def cargar_json(path, tipo_defecto):
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            try:
-                return json_lib.load(f)
-            except:
-                return tipo_defecto
-    return tipo_defecto
-
-
 def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
-    historial = cargar_json(REGISTRO_INDUCCION, {})
+    historial = cargar_json_seguro(REGISTRO_INDUCCION, {})
     historial[error_whisper.lower().strip()] = {
         "correcto": correccion_real.strip(),
         "audio_muestra": audio_path
     }
-    with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
-        json_lib.dump(historial, f, indent=4, ensure_ascii=False)
-    sincronizar_con_github()
+    guardar_json_seguro(REGISTRO_INDUCCION, historial, "🧠 Inducción de texto actualizada")
 
 
 def registrar_refinamiento_ia(prompt_usuario, respuesta_generada):
-    refinamientos = cargar_json(REGISTRO_REFINAMIENTO, [])
+    refinamientos = cargar_json_seguro(REGISTRO_REFINAMIENTO, [])
     refinamientos.append({"entrada_usuario": prompt_usuario, "respuesta_ia": respuesta_generada})
     if len(refinamientos) > 100:
         refinamientos = refinamientos[-100:]
-    with open(REGISTRO_REFINAMIENTO, "w", encoding="utf-8") as f:
-        json_lib.dump(refinamientos, f, indent=4, ensure_ascii=False)
-    sincronizar_con_github()
+    guardar_json_seguro(REGISTRO_REFINAMIENTO, refinamientos, "📝 Refinamiento de IA guardado")
 
 
 def cotejar_y_corregir_induccion(texto_crudo):
-    historial = cargar_json(REGISTRO_INDUCCION, {})
+    historial = cargar_json_seguro(REGISTRO_INDUCCION, {})
     if not historial:
         return texto_crudo
     texto_lower = texto_crudo.lower().strip()
@@ -161,41 +163,60 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
-def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
+def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", audio_referencia_path=None):
     if not client:
         return None
 
-    print(f"🧠 [Vibe Coding Universal]: Analizando solicitud libre -> '{prompt_usuario}'")
+    print(f"🧠 [Vibe Coding Universal & Serie Armónica Libre]: Analizando solicitud -> '{prompt_usuario}'")
 
-    # 1. Intentamos primero interpretar si el pedido apunta a modificar parámetros de audio/perillas mediante IA libre
-    perillas_actuales = cargar_json(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+    perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+    prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
+    
+    archivo_audio_subido = None
     try:
-        prompt_perillas = "\njson\n".join([
-            "Sos un ingeniero de sonido y productor musical experto trabajando codo a codo con tu colega.",
-            f"Estado actual de las perillas de audio (JSON): {json_lib.dumps(perillas_actuales)}",
-            f"La orden o vibe de audio que te tiró tu colega es: '{prompt_usuario}'.",
-            "INSTRUCCIONES:",
-            "1. Analizá si el pedido de tu colega está relacionado con cambiar la voz, timbre, tono, velocidad, frecuencias, armónicos, volumen o estética sonora.",
+        if audio_referencia_path and os.path.exists(audio_referencia_path):
+            archivo_audio_subido = client.files.upload(file=audio_referencia_path)
+
+        prompt_perillas = "\n".join([
+            "Sos el ingeniero acústico y director de prosodia de este agente autónomo.",
+            f"Perillas cuantitativas y serie armónica actual (JSON): {json_lib.dumps(perillas_actuales)}",
+            f"Parámetros de prosodia actuales (JSON): {json_lib.dumps(prosodia_actual)}",
+            f"La orden de tu colega es: '{prompt_usuario}'.",
+            "INSTRUCCIONES CRÍTICAS DE VIBE CODING Y SERIE ARMÓNICA LIBRE:",
+            "1. Determiná si el pedido afecta al audio, la voz, la fundamental en Hz, la lista abierta 'serie_armonica' (con multiplicadores enteros o decimales arbitrarios y ganancias en dB), perillas o cadencia prosódica.",
             "2. Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'.",
-            "3. Si SÍ es sobre audio, interpretá libre y creativamente el pedido actualizando las variables del JSON (pitch_factor, tempo_factor, treble_gain, treble_freq, bass_gain, bass_freq, harmonic_drive, harmonic_freq, crusher_bits, volume_mult).",
-            "4. Devolvé OBLIGATORIAMENTE un bloque JSON válido con el diccionario actualizado entre ```json ... ``` y nada más."
+            "3. Si SÍ es sobre audio, interpretá libremente el pedido por vibe coding. Modificá, agregá o ajustá los multiplicadores (pueden ser decimales como 1.5, 2.33, etc.) y las ganancias en la lista 'serie_armonica', además de adaptar la prosodia o arquetipo si corresponde.",
+            "4. Actualizá inteligentemente ambos JSONs (`perillas` y `prosodia`).",
+            "5. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves exactas: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
         ])
+
+        contents_param = [archivo_audio_subido, prompt_perillas] if archivo_audio_subido else [prompt_perillas]
+
         res_p = client.models.generate_content(
             model="gemini-3.5-flash",
-            contents=prompt_perillas,
-            config=genai.types.GenerateContentConfig(temperature=0.3)
+            contents=contents_param,
+            config=genai.types.GenerateContentConfig(temperature=0.4)
         )
         texto_p = res_p.text.strip()
+        
         if "NO_ES_AUDIO" not in texto_p:
             bloques_json = re.findall(r"```(?:json)?\s*(.*?)\s*```", texto_p, re.DOTALL)
             if bloques_json:
-                nuevo_dict = json_lib.loads(bloques_json[0])
-                guardar_perillas(nuevo_dict)
-                return "Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas."
+                datos_nuevos = json_lib.loads(bloques_json[0])
+                if "perillas" in datos_nuevos:
+                    guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Actualización libre de serie armónica y perillas")
+                if "prosodia" in datos_nuevos:
+                    guardar_json_seguro(ARCHIVO_PROSODIA, datos_nuevos["prosodia"], "🎙️ Actualización de prosodia y flujo discursivo")
+                return "Listo, che. Interpreté tu vibe armónico con enteros o decimales, ajusté la serie y el flujo prosódico al vuelo."
     except Exception as e:
-        print(f"⚠️ Aviso en análisis de perillas de audio (continuando a código si corresponde): {e}")
+        print(f"⚠️ Aviso en análisis de vibe armónico/prosodia: {e}")
+    finally:
+        if archivo_audio_subido:
+            try:
+                client.files.delete(name=archivo_audio_subido.name)
+            except:
+                pass
 
-    # 2. Si no era solo de perillas o requiere modificar la lógica de código general, ejecutamos el vibe coding sobre el script principal
     if not os.path.exists(archivo_objetivo):
         return None
 
@@ -234,8 +255,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
                 with open(archivo_objetivo, "w", encoding="utf-8") as f:
                     f.write(nuevo_contenido)
                 inicializar_directorios_control(archivo_objetivo)
-                sincronizar_con_github(f"🤖 Vibe coding autónomo universal: actualización en raíz de {archivo_objetivo}")
-                return f"Listo, che. Actualicé la raíz con tu vibe, apliqué los cambios y dejé todo sincronizado en GitHub."
+                sincronizar_con_github(f"🤖 Vibe coding autónomo con serie armónica libre: actualización en raíz de {archivo_objetivo}")
+                return f"Listo, che. Actualicé la raíz con los cambios estructurales y dejé todo sincronizado en GitHub."
 
         return texto_generado
 
@@ -252,8 +273,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
                     pass
 
 
-def llamar_ia_externa_o_local(prompt_usuario):
-    respuesta_evolucion = procesar_evolucion_autonoma(prompt_usuario)
+def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
+    respuesta_evolucion = procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=audio_ref)
     if respuesta_evolucion:
         return respuesta_evolucion
 
@@ -316,17 +337,17 @@ def llamar_ia_externa_o_local(prompt_usuario):
     return respuesta_final
 
 
-def responder_usuario(orden):
+def responder_usuario(orden, audio_ref=None):
     if not orden or not orden.strip():
         return "Che, no te entendí nada, tirámela de nuevo."
-    respuesta = llamar_ia_externa_o_local(orden)
+    respuesta = llamar_ia_externa_o_local(orden, audio_ref=audio_ref)
     guardar_en_txt("usuario", orden)
     guardar_en_txt("leandro_bot", respuesta)
     return respuesta
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding universal, perillas persistentes y control de audio libre por IA.")
+    await update.message.reply_text("¡Buenas che! Bot activo con serie armónica libre (enteros/decimales) por Vibe Coding y prosodia inductiva.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -354,7 +375,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE
     async with lock_voz:
-        print("🎤 Procesando audio...")
+        print("🎤 Procesando audio y serie armónica libre...")
         await update.message.chat.send_action(action="record_voice")
 
         message_id = update.message.message_id
@@ -384,7 +405,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Che, no te capté bien el audio, ¿me lo repetís?")
                 return
 
-            respuesta = responder_usuario(texto_reconocido)
+            respuesta = responder_usuario(texto_reconocido, audio_ref=audio_path)
 
             texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
             texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
@@ -392,32 +413,47 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Cargamos las perillas persistentes actualizadas
-            p = cargar_perillas()
+            # Cargamos perillas y serie armónica abierta
+            p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+            prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
+            
             pitch_factor = p.get("pitch_factor", 0.80)
-            tempo_factor = p.get("tempo_factor", 1.20)
+            tempo_base = p.get("tempo_factor", 1.20)
+            tempo_factor = tempo_base * prosodia.get("factor_ritmo_variable", 1.0)
+            
+            fund = p.get("fundamental_hz", 130)
+            serie_armonica = p.get("serie_armonica", [])
+            
             treble_gain = p.get("treble_gain", 3.0)
             treble_freq = p.get("treble_freq", 4000)
             bass_gain = p.get("bass_gain", 5.0)
             bass_freq = p.get("bass_freq", 150)
-            harmonic_drive = p.get("harmonic_drive", 0.15)
-            harmonic_freq = p.get("harmonic_freq", 2500)
-            crusher_bits = p.get("crusher_bits", 16)
             volume_mult = p.get("volume_mult", 1.1)
 
-            print(f"🎚️ [Audio Aplicado]: Pitch={pitch_factor} | Tempo={tempo_factor} | Agudos={treble_gain}dB@{treble_freq}Hz | Armónicos={harmonic_drive}@{harmonic_freq}Hz")
+            print(f"🎚️ [Serie Armónica Dinámica]: Fundamental={fund}Hz | Cantidad de armónicos={len(serie_armonica)}")
 
-            # Cadena de FFmpeg profesional aplicando ecualización paramétrica y armónicos quirúrgicos
-            filtro_audio = (
-                f"atempo={tempo_factor},"
-                f"asetrate=24000*{pitch_factor},"
-                f"equalizer=f={treble_freq}:t=h:w=200:g={treble_gain},"
-                f"equalizer=f={bass_freq}:t=h:w=100:g={bass_gain},"
-                f"equalizer=f={harmonic_freq}:t=h:w=300:g={harmonic_drive * 15},"
-                f"acrusher=bits={crusher_bits}:mix={harmonic_drive},"
-                f"volume={volume_mult},"
-                f"dynaudnorm=f=150:g=15"
-            )
+            # Construcción dinámica y abierta de filtros FFmpeg para enteros y decimales
+            filtros_lista = [
+                f"atempo={tempo_factor}",
+                f"asetrate=24000*{pitch_factor}"
+            ]
+
+            for item in serie_armonica:
+                mult = float(item.get("multiplicador", 1.0))
+                db = float(item.get("gain_db", 0.0))
+                freq_armonica = fund * mult
+                if 20 <= freq_armonica <= 18000:
+                    w_val = max(15, int(freq_armonica * 0.08))
+                    filtros_lista.append(f"equalizer=f={freq_armonica:.2f}:t=h:w={w_val}:g={db}")
+
+            filtros_lista.extend([
+                f"equalizer=f={treble_freq}:t=h:w=200:g={treble_gain}",
+                f"equalizer=f={bass_freq}:t=h:w=100:g={bass_gain}",
+                f"volume={volume_mult}",
+                "dynaudnorm=f=150:g=15"
+            ])
+
+            filtro_audio = ",".join(filtros_lista)
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
@@ -429,7 +465,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             caption_estructurado = (
                 f"-Lo que interpretaste: {texto_crudo}\n"
                 f"-Lo que dije: (Respondé con 'corregir: [texto]' si difiere)\n"
-                f"*(Procesado: \"{texto_reconocido}\")*"
+                f"*(Procesado con serie armónica dinámica libre)*"
             )
 
             with open(ruta_respuesta_ogg, "rb") as voice_file:
@@ -438,7 +474,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=caption_estructurado
                 )
 
-            print("✅ Nota de voz procesada con éxito.")
+            print("✅ Nota de voz procesada con serie armónica abierta.")
 
         except Exception as e:
             print(f"⚠️ Error en audio: {e}")
@@ -466,7 +502,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Vibe Coding universal y perillas persistentes...")
+    print("🚀 Iniciando bot con Vibe Coding + Serie Armónica Dinámica (Enteros/Decimales) y Prosodia...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
