@@ -1,12 +1,12 @@
 {
-    "pitch_factor": 0.92,
-    "tempo_factor": 0.95,
-    "treble_gain": 0.8,
-    "treble_freq": 3500,
-    "bass_gain": 1.3,
-    "bass_freq": 120,
-    "harmonic_drive": 0.35,
-    "harmonic_freq": 700,
+    "pitch_factor": 0.9,
+    "tempo_factor": 0.9,
+    "treble_gain": 0.7,
+    "treble_freq": 3200,
+    "bass_gain": 1.4,
+    "bass_freq": 110,
+    "harmonic_drive": 0.4,
+    "harmonic_freq": 650,
     "crusher_bits": 16,
     "volume_mult": 0.98,
     "serie_armonica": [
@@ -16,19 +16,19 @@
         ],
         [
             1.5,
-            -5.0
+            -4.0
         ],
         [
             2.0,
-            -9.0
+            -8.0
         ],
         [
             2.5,
-            -14.0
+            -12.0
         ],
         [
             3.0,
-            -18.0
+            -16.0
         ]
     ]
 }
