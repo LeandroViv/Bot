@@ -380,11 +380,23 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif any(k in prompt_lower for k in ["más lento", "mas lento", "lento", "pausado", "despacio"]):
                 tempo_factor = 0.85
 
-            print(f"🎚️ [FFmpeg Dinámico]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor}")
+            # Compensación matemática de tempo para desacoplar pitch y velocidad
+            tempo_interno = tempo_factor / pitch_factor
+            if tempo_interno > 2.0:
+                filtro_tempo = f"atempo=2.0,atempo={tempo_interno / 2.0:.2f}"
+            elif tempo_interno < 0.5:
+                filtro_tempo = f"atempo=0.5,atempo={tempo_interno / 0.5:.2f}"
+            else:
+                filtro_tempo = f"atempo={tempo_interno:.2f}"
+
+            # Ecualización para dar calidez humana (refuerzo de graves en 180Hz y atenuación de agudos metálicos en 3.2kHz)
+            filtro_humanizar = "equalizer=f=180:width_type=h:width=120:g=5,equalizer=f=3200:width_type=h:width=800:g=-6"
+
+            print(f"🎚️ [FFmpeg Dinámico Humanizado]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor} | Tempo Interno -> {tempo_interno:.2f}")
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", f"atempo={tempo_factor},asetrate=24000*{pitch_factor},dynaudnorm=f=150:g=15",
+                "-filter:a", f"asetrate=24000*{pitch_factor},aresample=24000,{filtro_tempo},{filtro_humanizar},dynaudnorm=f=150:g=15",
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
