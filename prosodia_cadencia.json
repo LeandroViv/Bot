@@ -1,6 +1,6 @@
 {
     "modo_imitacion": "activo",
-    "patron_pausas": "porteño_tachero_improvisado",
-    "factor_ritmo_variable": 1.35,
-    "referencia_activa": "porteño_callejero_taxi"
+    "patron_pausas": "porteño_charla_de_cafe_birra",
+    "factor_ritmo_variable": 1.25,
+    "referencia_activa": "porteño_bodegon_birra"
 }
