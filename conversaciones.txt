@@ -856,3 +856,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Interpreté tu vibe armónico con enteros o decimales, ajusté la serie y el flujo prosódico al vuelo.
 ---
+[USUARIO]: ¿Por qué?
+---
