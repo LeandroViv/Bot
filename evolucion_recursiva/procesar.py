@@ -118,6 +118,12 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
+        
+        # Inyectamos el GITHUB_TOKEN para autenticación segura en push
+        token_git = os.environ.get("GITHUB_TOKEN")
+        if token_git:
+            subprocess.run(["git", "remote", "set-url", "origin", f"https://{token_git}@github.com/LeandroViv/Bot.git"], check=True)
+
         subprocess.run(["git", "add", "."], check=True)
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
@@ -455,12 +461,16 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             filtro_audio = ",".join(filtros_lista)
 
-            subprocess.run([
-                "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", filtro_audio,
-                "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
-                ruta_respuesta_ogg
-            ], check=True)
+            try:
+                subprocess.run([
+                    "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
+                    "-filter:a", filtro_audio,
+                    "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+                    ruta_respuesta_ogg
+                ], capture_output=True, text=True, check=True)
+            except subprocess.CalledProcessError as cpe:
+                print(f"❌ Error crítico en FFmpeg: {cpe.stderr}")
+                raise cpe
 
             caption_estructurado = (
                 f"-Lo que interpretaste: {texto_crudo}\n"
@@ -477,7 +487,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print("✅ Nota de voz procesada con serie armónica abierta.")
 
         except Exception as e:
-            print(f"⚠️ Error en audio: {e}")
+            print(f"⚠️ Error general en audio: {e}")
             await update.message.reply_text("Che, se me armó un lío procesando el audio.")
 
         finally:
