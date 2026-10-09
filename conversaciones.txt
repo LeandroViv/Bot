@@ -840,3 +840,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas.
 ---
+[USUARIO]: Gracias
+---
