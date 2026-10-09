@@ -9,7 +9,6 @@ on:
       - master
   workflow_dispatch:
 
-# Cancela ejecuciones viejas automáticamente al hacer git push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -54,5 +53,6 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ secrets.HF_DATASET_REPO }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COQUI_TOS_AGREED: "1"
         run: |
           python procesar.py
