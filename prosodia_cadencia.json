@@ -1,1 +1,4 @@
-"La serie armónica ha sido ajustada para un tono más grave y sonoro, con una frecuencia fundamental de 150 Hz. Se han aplicado perillas de agudos y graves para darle un toque más intenso y expresivo al audio."
+{
+    "voz": "masculina",
+    "tono": "bajo"
+}
