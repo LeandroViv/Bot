@@ -872,3 +872,7 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Analicé el director acústico por motor local, ajustando perillas.
 ---
+[USUARIO]: Buscate una muestra de audio en la web de un locutor, analizá su perfil acústico, ajustá la frecuencia fundamental a 150 Hz con perillas de agudos y graves, y respondeme por nota de voz explicándome cómo quedó configurada la serie armónica.
+---
+[LEANDRO_BOT]: Listo, che. Analicé el director acústico por motor local, ajustando perillas.
+---
