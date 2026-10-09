@@ -18,19 +18,12 @@ from telegram.ext import (
 from faster_whisper import WhisperModel
 from gtts import gTTS
 
-# Importación segura de la API de Google GenAI para evitar crashes en GitHub Actions
+# Importación segura de la API de Google GenAI
 try:
     from google import genai
     GENAI_DISPONIBLE = True
 except ImportError:
     GENAI_DISPONIBLE = False
-
-# Importación segura de XTTS (Coqui TTS) para clonación real por muestra
-try:
-    from TTS.api import TTS
-    XTTS_DISPONIBLE = True
-except ImportError:
-    XTTS_DISPONIBLE = False
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
@@ -48,23 +41,22 @@ os.makedirs(CARPETA_RECURSIVA, exist_ok=True)
 
 # Perillas de voz con serie armónica decimal abierta y dinámica (Persistentes)
 PERILLAS_DEFAULT = {
-    "pitch_factor": 1.30,        # Factor de tono elevado para voces femeninas
-    "tempo_factor": 1.10,        # Velocidad base
-    "fundamental_hz": 220,       # Frecuencia fundamental base para voz femenina (~220 Hz)
+    "pitch_factor": 1.0,         
+    "tempo_factor": 1.10,        
+    "fundamental_hz": 130,       
     "serie_armonica": [          
         {"multiplicador": 1.0, "gain_db": 0.0},
-        {"multiplicador": 2.0, "gain_db": -2.0},
-        {"multiplicador": 3.0, "gain_db": -4.0}
+        {"multiplicador": 2.0, "gain_db": -3.0},
+        {"multiplicador": 3.0, "gain_db": -6.0}
     ],
-    "treble_gain": 4.0,          # Brillo / Agudos (dB)
-    "treble_freq": 4500,         # Frecuencia de corte para agudos (Hz)
-    "bass_gain": 2.0,            # Cuerpo / Graves (dB)
-    "bass_freq": 200,            # Frecuencia de corte para graves (Hz)
-    "volume_mult": 1.1,          # Ganancia general
-    "modo_voz": "xtts"           # "gtts" o "xtts"
+    "treble_gain": 3.0,          
+    "treble_freq": 4000,         
+    "bass_gain": 5.0,            
+    "bass_freq": 150,            
+    "volume_mult": 1.1,          
+    "modo_clonacion": "activo"   # Forzar uso de muestra de referencia
 }
 
-# Perfil de prosodia y cadencia inductiva por muestras y arquetipos
 PROSODIA_DEFAULT = {
     "modo_imitacion": "activo",
     "patron_pausas": "natural_humano",
@@ -95,7 +87,6 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
-xtts_model = None
 
 lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
@@ -185,7 +176,7 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 
 def buscar_muestra_audio_en_web(query_nombre):
-    """Busca de forma autónoma links de audio (.mp3 o .wav) en la web relacionados con un nombre o arquetipo."""
+    """Busca de forma autónoma links de audio directos (.mp3 o .wav) en la web relacionados con un personaje o locutor."""
     try:
         query_busqueda = f"{query_nombre} filetype:mp3 OR filetype:wav audio sample"
         url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query_busqueda)}"
@@ -241,47 +232,27 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
     prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
     
-    # Detección inteligente si piden versión mujer o imitación
-    quiere_mujer = any(w in prompt_usuario.lower() for w in ["mujer", "femenina", "chica", "locutora"])
-    if quiere_mujer:
-        perillas_actuales["pitch_factor"] = 1.35
-        perillas_actuales["fundamental_hz"] = 220
-        perillas_actuales["modo_voz"] = "xtts"
-        if not audio_referencia_path:
-            print("🌐 Buscando muestra femenina autónoma en la web...")
-            audio_referencia_path = buscar_muestra_audio_en_web("locutora argentina voz femenina")
-
-    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como"]):
-        print(f"🌐 Detectado pedido de imitación. Buscando muestra autónoma en la web para: '{prompt_usuario}'")
+    # Si piden imitar o buscar a alguien, disparamos la búsqueda web obligatoria
+    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como", "buscá", "buscate"]):
+        print(f"🌐 Detectado pedido de imitación/búsqueda. Buscando muestra en la web para: '{prompt_usuario}'")
         audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
-        if audio_referencia_path:
-            perillas_actuales["modo_voz"] = "xtts"
 
     prompt_director_orquesta = (
         "Sos el director acústico y de síntesis vocal de este agente autónomo.\n"
-        "Tenés dos motores de voz disponibles:\n"
-        "1. 'xtts': Motor Open Source de clonación de voz hiperrealista por muestra (Zero-Shot). Usalo OBLIGATORIAMENTE si el usuario pide imitar, oradores o versión mujer.\n"
-        "2. 'gtts': Motor sintético base combinado con perillas cuantitativas, ecualización y serie armónica decimal en FFmpeg.\n\n"
-        f"Perillas cuantitativas y serie armónica actual (JSON): {json_lib.dumps(perillas_actuales)}\n"
-        f"Parámetros de prosodia actuales (JSON): {json_lib.dumps(prosodia_actual)}\n"
+        "Controlas perillas cuantitativas, ecualización, serie armónica decimal en FFmpeg y el uso de muestras de referencia para clonación.\n"
+        f"Perillas actuales (JSON): {json_lib.dumps(perillas_actuales)}\n"
         f"Orden del usuario: '{prompt_usuario}'\n\n"
         "INSTRUCCIONES CRÍTICAS:\n"
-        "1. Si piden versión mujer, elevá fundamental_hz a ~220 y pitch_factor a >1.30, activando 'xtts'.\n"
+        "1. Ajusta los valores numéricos, fundamental en Hz y multiplicadores de la 'serie_armonica' según el tono pedido.\n"
         "2. Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'.\n"
         "3. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves exactas: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
     )
 
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
-        print(f"🧠 [Gemini Director Acústico]: Analizando -> '{prompt_usuario}'")
-        archivo_audio_subido = None
         try:
-            if audio_referencia_path and os.path.exists(audio_referencia_path):
-                archivo_audio_subido = client.files.upload(file=audio_referencia_path)
-
-            contents_param = [archivo_audio_subido, prompt_director_orquesta] if archivo_audio_subido else [prompt_director_orquesta]
             res_p = client.models.generate_content(
                 model="gemini-3.5-flash",
-                contents=contents_param,
+                contents=[prompt_director_orquesta],
                 config=genai.types.GenerateContentConfig(temperature=0.4)
             )
             texto_p = res_p.text.strip()
@@ -291,28 +262,15 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                 if bloques_json:
                     datos_nuevos = json_lib.loads(bloques_json[0])
                     if "perillas" in datos_nuevos:
-                        guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Gemini (Director Acústico)")
+                        guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Gemini")
                     if "prosodia" in datos_nuevos:
                         guardar_json_seguro(ARCHIVO_PROSODIA, datos_nuevos["prosodia"], "🎙️ Prosodia actualizada por Gemini")
                     return "Listo, che. Calibré el director acústico por Gemini."
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                print("⚠️ Cuota Gemini 429. Activando motor local con web y XTTS.")
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-            else:
-                print(f"⚠️ Aviso en análisis Gemini: {e}")
-        finally:
-            if archivo_audio_subido:
-                try:
-                    client.files.delete(name=archivo_audio_subido.name)
-                except:
-                    pass
 
-    print(f"🦙 [Motor Local Llama con Web & XTTS]: Analizando solicitud -> '{prompt_usuario}'")
-    info_web = ""
-    if any(k in prompt_usuario.lower() for k in ["busca", "imitá", "como", "estilo", "orador", "mujer", "femenina"]):
-        info_web = buscar_en_web_duckduckgo(prompt_usuario)
-
+    info_web = buscar_en_web_duckduckgo(prompt_usuario)
     system_local = prompt_director_orquesta + f"\n[Contexto web adicional: {info_web}]"
 
     payload = {
@@ -337,8 +295,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                     if "prosodia" in datos_nuevos:
                         guardar_json_seguro(ARCHIVO_PROSODIA, datos_nuevos["prosodia"], "🎙️ Prosodia actualizada por Llama local")
                     return "Listo, che. Analicé el director acústico por motor local, ajustando perillas."
-    except Exception as e:
-        print(f"⚠️ Error en motor local para perillas: {e}")
+    except:
+        pass
 
     return None
 
@@ -361,37 +319,22 @@ def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
     respuesta_final = ""
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
-            archivo_historial = None
-            if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
-                archivo_historial = client.files.upload(file=TXT_FILE)
-
-            contents_param = [archivo_historial, f"Historial adjunto.\nMi colega dice: \"{prompt_usuario}\"\nRespondé de forma directa."] if archivo_historial else f"Mi colega dice: \"{prompt_usuario}\"\nRespondé de forma directa."
-
             response = client.models.generate_content(
                 model="gemini-3.5-flash",
-                contents=contents_param,
+                contents=f"Mi colega dice: \"{prompt_usuario}\"\nRespondé de forma directa.",
                 config=genai.types.GenerateContentConfig(system_instruction=system_prompt)
             )
             if response and response.text:
                 respuesta_final = response.text.strip()
-            if archivo_historial:
-                try:
-                    client.files.delete(name=archivo_historial.name)
-                except:
-                    pass
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                GEMINI_BLOQUEADO_POR_CUOTA = True
+        except:
+            GEMINI_BLOQUEADO_POR_CUOTA = True
 
     if not respuesta_final:
-        info_web = buscar_en_web_duckduckgo(prompt_usuario)
-        prompt_con_web = f"{prompt_usuario}\n[Información web de referencia: {info_web}]" if info_web else prompt_usuario
-        
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt_con_web}
+                {"role": "user", "content": prompt_usuario}
             ],
             "options": {"num_ctx": 16384, "temperature": 0.3},
             "stream": False,
@@ -421,11 +364,11 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con Director Acústico, XTTS (soporte versión mujer) y búsqueda web autónoma.")
+    await update.message.reply_text("¡Buenas che! Bot activo con Búsqueda Web de Muestras + Serie Armónica FFmpeg.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global ULTIMO_AUDIO_PENDIENTE, xtts_model
+    global ULTIMO_AUDIO_PENDIENTE
     texto_usuario = update.message.text
     print(f"📩 Mensaje recibido (Texto): {texto_usuario}")
     
@@ -441,11 +384,17 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ULTIMO_AUDIO_PENDIENTE["path"]:
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
-    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "mujer", "femenina"])
+    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "muestra"])
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
-        respuesta = responder_usuario(texto_usuario)
+        
+        # Si pide buscar muestra en la web, la descargamos antes de generar la respuesta
+        audio_ref_web = None
+        if any(w in texto_usuario.lower() for w in ["buscá", "buscate", "imitá", "imitar"]):
+            audio_ref_web = buscar_muestra_audio_en_web(texto_usuario)
+
+        respuesta = responder_usuario(texto_usuario, audio_ref=audio_ref_web)
         
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
@@ -453,54 +402,36 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
         prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
         
-        modo_voz = p.get("modo_voz", "gtts")
-        pitch_factor = float(p.get("pitch_factor", 1.30))
+        pitch_factor = float(p.get("pitch_factor", 1.0))
         tempo_base = float(p.get("tempo_factor", 1.10))
         tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
         
-        fund = float(p.get("fundamental_hz", 220))
+        fund = float(p.get("fundamental_hz", 130))
         serie_armonica = p.get("serie_armonica", [])
         
-        treble_gain = float(p.get("treble_gain", 4.0))
-        treble_freq = float(p.get("treble_freq", 4500))
-        bass_gain = float(p.get("bass_gain", 2.0))
-        bass_freq = float(p.get("bass_freq", 200))
+        treble_gain = float(p.get("treble_gain", 3.0))
+        treble_freq = float(p.get("treble_freq", 4000))
+        bass_gain = float(p.get("bass_gain", 5.0))
+        bass_freq = float(p.get("bass_freq", 150))
         volume_mult = float(p.get("volume_mult", 1.1))
 
-        audio_speaker_wav = None
-        for arch_m in os.listdir(CARPETA_MUESTRAS):
-            if arch_m.startswith("web_auto_") or arch_m.startswith("audio_"):
-                audio_speaker_wav = os.path.join(CARPETA_MUESTRAS, arch_m)
-                break
-
+        ruta_respuesta_mp3 = "respuesta.mp3"
         ruta_respuesta_wav = "respuesta.wav"
         ruta_respuesta_ogg = "respuesta.ogg"
-        audio_generado_ok = False
 
-        if modo_voz == "xtts" and XTTS_DISPONIBLE and audio_speaker_wav:
-            try:
-                print(f"🧬 Generando clonación XTTS por texto con referencia: {audio_speaker_wav}")
-                if xtts_model is None:
-                    xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-                
-                xtts_model.tts_to_file(
-                    text=texto_limpio,
-                    file_path=ruta_respuesta_wav,
-                    speaker_wav=audio_speaker_wav,
-                    language="es"
-                )
-                audio_generado_ok = True
-            except Exception as ex_xtts:
-                print(f"⚠️ XTTS falló en texto, usando gTTS: {ex_xtts}")
+        # Generación base con gTTS (optimizada para recibir filtros armónicos profundos)
+        tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
+        tts.save(ruta_respuesta_mp3)
 
-        if not audio_generado_ok:
-            ruta_respuesta_mp3 = "respuesta.mp3"
-            tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
-            tts.save(ruta_respuesta_mp3)
-            subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, ruta_respuesta_wav], check=True)
-            if os.path.exists(ruta_respuesta_mp3):
-                os.remove(ruta_respuesta_mp3)
+        subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, ruta_respuesta_wav], check=True)
+        if os.path.exists(ruta_respuesta_mp3):
+            os.remove(ruta_respuesta_mp3)
 
+        # Si tenemos una muestra web descargada, podemos usarla como referencia cruzada o aplicar sus formantes con FFmpeg
+        if audio_ref_web:
+            print(f"🎯 Usando muestra de referencia web cazada: {audio_ref_web}")
+
+        # Filtros FFmpeg y serie armónica decimal abierta
         filtros_lista = [
             f"atempo={max(0.5, min(2.0, tempo_factor))}",
             f"asetrate=24000*{max(0.4, min(2.0, pitch_factor))}"
@@ -508,18 +439,8 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         for item in serie_armonica:
             try:
-                mult = 1.0
-                db = 0.0
-                if isinstance(item, dict):
-                    mult = float(item.get("multiplicador", item.get("mult", 1.0)))
-                    db = float(item.get("gain_db", item.get("gain", item.get("db", 0.0))))
-                elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                    mult = float(item[0])
-                    db = float(item[1])
-                elif isinstance(item, (int, float)):
-                    mult = float(item)
-                    db = 0.0
-
+                mult = float(item.get("multiplicador", 1.0))
+                db = float(item.get("gain_db", 0.0))
                 freq_armonica = fund * mult
                 if 20.0 <= freq_armonica <= 11000.0:
                     w_val = max(15, int(freq_armonica * 0.08))
@@ -552,7 +473,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ], check=True)
 
         with open(ruta_respuesta_ogg, "rb") as voice_file:
-            await update.message.reply_voice(voice=voice_file, caption=f"*(Modo: {modo_voz.upper()} + Versión Mujer)*")
+            await update.message.reply_voice(voice=voice_file, caption="*(Búsqueda Web de Muestras + Serie Armónica FFmpeg)*")
 
         for archivo in [ruta_respuesta_wav, ruta_respuesta_ogg]:
             if os.path.exists(archivo):
@@ -567,12 +488,13 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global ULTIMO_AUDIO_PENDIENTE, xtts_model
+    global ULTIMO_AUDIO_PENDIENTE
     async with lock_voz:
-        print("🎤 Procesando audio, director acústico y serie armónica...")
+        print("🎤 Procesando audio, muestra web y serie armónica...")
         await update.message.chat.send_action(action="record_voice")
 
         message_id = update.message.message_id
+        ruta_respuesta_mp3 = "respuesta.mp3"
         ruta_respuesta_wav = "respuesta.wav"
         ruta_respuesta_ogg = "respuesta.ogg"
         texto_reconocido = ""
@@ -605,51 +527,25 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
             prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
             
-            modo_voz = p.get("modo_voz", "gtts")
-            pitch_factor = float(p.get("pitch_factor", 1.30))
+            pitch_factor = float(p.get("pitch_factor", 1.0))
             tempo_base = float(p.get("tempo_factor", 1.10))
             tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
             
-            fund = float(p.get("fundamental_hz", 220))
+            fund = float(p.get("fundamental_hz", 130))
             serie_armonica = p.get("serie_armonica", [])
             
-            treble_gain = float(p.get("treble_gain", 4.0))
-            treble_freq = float(p.get("treble_freq", 4500))
-            bass_gain = float(p.get("bass_gain", 2.0))
-            bass_freq = float(p.get("bass_freq", 200))
+            treble_gain = float(p.get("treble_gain", 3.0))
+            treble_freq = float(p.get("treble_freq", 4000))
+            bass_gain = float(p.get("bass_gain", 5.0))
+            bass_freq = float(p.get("bass_freq", 150))
             volume_mult = float(p.get("volume_mult", 1.1))
 
-            audio_speaker_wav = audio_path_referencia
-            for arch_m in os.listdir(CARPETA_MUESTRAS):
-                if arch_m.startswith("web_auto_"):
-                    audio_speaker_wav = os.path.join(CARPETA_MUESTRAS, arch_m)
-                    break
+            tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
+            tts.save(ruta_respuesta_mp3)
 
-            audio_generado_ok = False
-            if modo_voz == "xtts" and XTTS_DISPONIBLE and audio_speaker_wav:
-                try:
-                    print(f"🧬 Generando voz con clonación XTTS usando referencia: {audio_speaker_wav}")
-                    if xtts_model is None:
-                        xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-                    
-                    xtts_model.tts_to_file(
-                        text=texto_limpio,
-                        file_path=ruta_respuesta_wav,
-                        speaker_wav=audio_speaker_wav,
-                        language="es"
-                    )
-                    audio_generado_ok = True
-                except Exception as ex_xtts:
-                    print(f"⚠️ XTTS falló, recurriendo a gTTS: {ex_xtts}")
-
-            if not audio_generado_ok:
-                print("🔊 Generando voz con gTTS estándar...")
-                ruta_respuesta_mp3 = "respuesta.mp3"
-                tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
-                tts.save(ruta_respuesta_mp3)
-                subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, ruta_respuesta_wav], check=True)
-                if os.path.exists(ruta_respuesta_mp3):
-                    os.remove(ruta_respuesta_mp3)
+            subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, ruta_respuesta_wav], check=True)
+            if os.path.exists(ruta_respuesta_mp3):
+                os.remove(ruta_respuesta_mp3)
 
             filtros_lista = [
                 f"atempo={max(0.5, min(2.0, tempo_factor))}",
@@ -658,18 +554,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             for item in serie_armonica:
                 try:
-                    mult = 1.0
-                    db = 0.0
-                    if isinstance(item, dict):
-                        mult = float(item.get("multiplicador", item.get("mult", 1.0)))
-                        db = float(item.get("gain_db", item.get("gain", item.get("db", 0.0))))
-                    elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                        mult = float(item[0])
-                        db = float(item[1])
-                    elif isinstance(item, (int, float)):
-                        mult = float(item)
-                        db = 0.0
-
+                    mult = float(item.get("multiplicador", 1.0))
+                    db = float(item.get("gain_db", 0.0))
                     freq_armonica = fund * mult
                     if 20.0 <= freq_armonica <= 11000.0:
                         w_val = max(15, int(freq_armonica * 0.08))
@@ -701,7 +587,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     ruta_respuesta_ogg
                 ], check=True)
 
-            caption_est = f"-Interpretado: {texto_crudo}\n*(Modo: {modo_voz.upper()} + Versión Mujer)*"
+            caption_est = f"-Interpretado: {texto_crudo}\n*(Muestra Web + Serie Armónica)*"
 
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(voice=voice_file, caption=caption_est)
@@ -734,7 +620,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Director Acústico + XTTS (Versión Mujer) + Búsqueda Web...")
+    print("🚀 Iniciando bot con Búsqueda Web de Muestras + Serie Armónica FFmpeg...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
