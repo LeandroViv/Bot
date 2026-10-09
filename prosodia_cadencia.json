@@ -1,9 +1,1 @@
-{
-    "modo_voz": "xtts",
-    "modo_imitacion": "activo",
-    "patron_pausas": "locutor_profesional_pausado",
-    "factor_ritmo_variable": 1.05,
-    "referencia_activa": "locutor_radio_institucional",
-    "pitch_factor": 1.0,
-    "tempo_factor": 1.0
-}
+"La serie armónica ha sido ajustada para un tono más grave y sonoro, con una frecuencia fundamental de 150 Hz. Se han aplicado perillas de agudos y graves para darle un toque más intenso y expresivo al audio."
