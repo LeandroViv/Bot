@@ -860,3 +860,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Che, no hay tiempo para explicaciones. La vida es demasiado corta para dar vueltas.
 ---
+[USUARIO]: A ver, quiero que suenes como un tachero por teño, como un taxista por teño, por favor.
+---
