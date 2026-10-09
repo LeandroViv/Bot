@@ -1,6 +1,6 @@
 {
     "modo_imitacion": "activo",
-    "patron_pausas": "porteño_charla_de_cafe_birra",
-    "factor_ritmo_variable": 1.25,
-    "referencia_activa": "porteño_bodegon_birra"
+    "patron_pausas": "porteño_cafe_pausado",
+    "factor_ritmo_variable": 1.15,
+    "referencia_activa": "porteño_cafe_esquina"
 }
