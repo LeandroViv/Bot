@@ -904,3 +904,35 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Perillas y director paramétrico actualizados según tu orden.
 ---
+[USUARIO]: Actualizá las perillas de voz fijando el pitch en 1, la fundamental en 140 Hz, el treble gain en 5.0, y mandame una nota de voz con prosodia fluida y dinámica móvil de acentuación contándome un chiste.
+---
+[LEANDRO_BOT]: Che, bancá que ya te acomodo todo eso. 
+
+...
+
+Listo, ahí quedó: pitch en 1, la fundamental clavada en 140 Hz y le subí el treble a 5.0 para que tenga un poco más de brillo. 
+
+Ahí te va el audio, escuchá:
+
+*(Micrófono abierto)*
+
+"A ver ahí... ¿se escucha bien? Sí, fluye bárbaro, tiene alta dinámica esto. Bueno, che, va el chiste, prestá atención a los énfasis, jajaja:
+
+Resulta que va un chabón a una entrevista de laburo, re careta el lugar. El de Recursos Humanos lo mira y le dice: 
+—*A ver, acá en el currículum dice que sabés inglés. ¿Qué nivel tenés?*
+El vago, re canchero, le dice: 
+—*Excelente.*
+—*Perfecto. Traduzca 'juguete'.*
+—*Toy.*
+—*Bien. Ahora úselo en una oración.*
+Y el tipo, con una cara de deprimido total, le mete: 
+—*Toy... re triste, loco.*"
+
+*(Fin del audio)*
+
+¿Qué onda? ¿Te sirve este setup o querés que le toque alguna otra perilla? Avisame.
+---
+[USUARIO]: A ver, quiero ver cómo zona.
+---
+[LEANDRO_BOT]: Che, ¿qué onda? ¿Qué te trae a hablar?
+---
