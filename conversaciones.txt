@@ -868,3 +868,7 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Calibré el director acústico por Gemini.
 ---
+[USUARIO]: Buscate una muestra de audio en la web de un locutor, activá el modo xtts clonando esa voz, y respondeme por nota de voz explicándome qué perillas armónicas estás usando ahora.
+---
+[LEANDRO_BOT]: Listo, che. Analicé el director acústico por motor local, ajustando perillas.
+---
