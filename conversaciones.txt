@@ -838,3 +838,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: A ver, ahora ponenme vos como de un niño, por favor, ponete vos de niños, gracias.
 ---
+[LEANDRO_BOT]: Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas.
+---
