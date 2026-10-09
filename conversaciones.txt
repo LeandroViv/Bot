@@ -822,3 +822,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Gracias
 ---
+[LEANDRO_BOT]: ¡De una, che! No hay por qué. Si ves que hay que retocar alguna perilla de la voz o meterle mano al código de nuevo, chiflame y lo cocinamos al toque.
+---
