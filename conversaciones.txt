@@ -876,3 +876,15 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Analicé el director acústico por motor local, ajustando perillas.
 ---
+[USUARIO]: Bucate en la huevo una muestra de un locutor e inmitala por favor.
+---
+[LEANDRO_BOT]: Listo, che. Analicé el director acústico por motor local, ajustando perillas.
+---
+[USUARIO]: Gracias
+---
+[LEANDRO_BOT]: No hay de qué, che. ¿Qué onda?
+---
+[USUARIO]: Cuando encontré salgo en la web, escribíme y mostráme lo algo interesante que me puedas  mostrar, pero no ahora. Hace lo sin que yo te escribo.
+---
+[LEANDRO_BOT]: Che, ¿qué onda? Acá te dejo algo que te puede gustar. ¿Sabías que hay una isla en el Pacífico que es tan pequeña que solo mide 1,2 km de diámetro? Es la isla de Truk, en Micronesia. La isla tiene solo 2,5 km cuadrados de superficie y está ubicada en el océano Pacífico, a unos 300 km de la costa de Guam. La isla fue un importante objetivo militar durante la Segunda Guerra Mundial y fue bombardeada por los estadounidenses en 1944. Hoy en día, la isla es un lugar turístico y un recordatorio de la historia militar de la región.
+---

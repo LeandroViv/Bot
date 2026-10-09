@@ -5,28 +5,28 @@
             0.0
         ],
         [
-            1.5,
-            -3.0
-        ],
-        [
             2.0,
             -6.0
         ],
         [
-            2.5,
-            -9.0
-        ],
-        [
             3.0,
             -12.0
+        ],
+        [
+            4.0,
+            -18.0
+        ],
+        [
+            5.0,
+            -24.0
         ]
     ],
-    "treble_gain": 1.0,
-    "treble_freq": 4000,
-    "bass_gain": 1.0,
-    "bass_freq": 90,
-    "harmonic_drive": 0.6,
-    "harmonic_freq": 500,
+    "treble_gain": 0.8,
+    "treble_freq": 3500,
+    "bass_gain": 0.9,
+    "bass_freq": 80,
+    "harmonic_drive": 0.4,
+    "harmonic_freq": 450,
     "crusher_bits": 16,
-    "volume_mult": 1.0
+    "volume_mult": 0.7
 }
