@@ -25,10 +25,10 @@
     "fundamental_freq": 140,
     "treble_gain": 5.0,
     "treble_freq": 3800,
-    "bass_gain": 1.5,
+    "bass_gain": 1.8,
     "bass_freq": 90,
     "harmonic_drive": 0.6,
     "harmonic_freq": 400,
     "crusher_bits": 16,
-    "volume_mult": 0.85
+    "volume_mult": 0.9
 }

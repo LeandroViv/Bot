@@ -900,3 +900,7 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Director paramétrico y prosodia ajustados.
 ---
+[USUARIO]: Actualizá las perillas de voz fijando el pitch en 1, la fundamental en 140 Hz, el treble gain en 5.0, y mandame una nota de voz con prosodia fluida y dinámica móvil de acentuación contándome un chiste.
+---
+[LEANDRO_BOT]: Listo, che. Perillas y director paramétrico actualizados según tu orden.
+---
