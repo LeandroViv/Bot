@@ -206,6 +206,35 @@ def buscar_muestra_audio_en_web(query_nombre):
     return None
 
 
+def obtener_o_construir_muestra_voz(query_nombre):
+    """
+    1. Intenta descargar muestra web.
+    2. Si no encuentra, genera una muestra sintética de fallback en /muestras_voz.
+    """
+    ruta_web = buscar_muestra_audio_en_web(query_nombre)
+    if ruta_web and os.path.exists(ruta_web):
+        return ruta_web
+
+    print(f"⚙️ Muestra web no encontrada. Construyendo muestra sintética de fallback...")
+    try:
+        nombre_archivo = f"sintetica_fallback_{abs(hash(query_nombre))}.wav"
+        ruta_sintetica = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
+        
+        texto_muestra = f"Muestra base de audio generada para calibrar el perfil de voz {query_nombre}."
+        mp3_temp = os.path.join(CARPETA_MUESTRAS, "temp_fallback.mp3")
+        gTTS(text=texto_muestra, lang="es", tld="com.ar").save(mp3_temp)
+        
+        subprocess.run(["ffmpeg", "-y", "-i", mp3_temp, "-ar", "24000", "-ac", "1", ruta_sintetica], check=True)
+        if os.path.exists(mp3_temp):
+            os.remove(mp3_temp)
+            
+        print(f"💾 Muestra sintética construida en: {ruta_sintetica}")
+        return ruta_sintetica
+    except Exception as e:
+        print(f"⚠️ Error construyendo muestra sintética: {e}")
+        return None
+
+
 def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
     global GEMINI_BLOQUEADO_POR_CUOTA
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
@@ -213,7 +242,7 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
     
     if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como", "buscá", "buscate", "locutor", "campesino", "actualizá"]):
         if any(w in prompt_usuario.lower() for w in ["buscá", "buscate", "imitá"]):
-            audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
+            audio_referencia_path = obtener_o_construir_muestra_voz(prompt_usuario)
 
     prompt_director = (
         "Sos el director acústico y de prosodia paramétrica de este agente.\n"
@@ -314,7 +343,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con perillas exactas y respuestas fluidas.")
+    await update.message.reply_text("¡Buenas che! Bot activo con fallbacks de muestras y reconexión.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -333,11 +362,11 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
-        audio_ref_web = None
+        audio_ref = None
         if any(w in texto_usuario.lower() for w in ["imitá", "buscá", "buscate"]):
-            audio_ref_web = buscar_muestra_audio_en_web(texto_usuario)
+            audio_ref = obtener_o_construir_muestra_voz(texto_usuario)
             
-        respuesta = responder_usuario(texto_usuario, audio_ref=audio_ref_web)
+        respuesta = responder_usuario(texto_usuario, audio_ref=audio_ref)
         
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
@@ -394,7 +423,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="*(Perillas JSON Aplicadas + Respuesta Completa)*")
+            await update.message.reply_voice(voice=vf, caption="*(Muestra Procesada + FFmpeg)*")
 
         for f in [wav_f, ogg_f]:
             if os.path.exists(f): os.remove(f)
@@ -500,7 +529,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con perillas exactas y reconexión automática...")
+    print("🚀 Iniciando Bot con fallbacks de muestras y reconexión automática...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
