@@ -1,6 +1,6 @@
 {
     "modo_imitacion": "activo",
-    "patron_pausas": "natural_humano",
-    "factor_ritmo_variable": 1.0,
-    "referencia_activa": "libre_y_arquetipos"
+    "patron_pausas": "porteño_entusiasta",
+    "factor_ritmo_variable": 1.25,
+    "referencia_activa": "porteño_social_reunion"
 }
