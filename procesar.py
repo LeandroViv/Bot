@@ -30,6 +30,15 @@ except ImportError:
     GENAI_DISPONIBLE = False
     print("⚠️ [INIT]: Google GenAI NO disponible.")
 
+# Importación segura de Coqui XTTS para clonación neuronal
+XTTS_DISPONIBLE = False
+try:
+    from TTS.api import TTS
+    XTTS_DISPONIBLE = True
+    print("✅ [INIT]: Coqui XTTS disponible.")
+except ImportError:
+    print("⚠️ [INIT]: Coqui XTTS no instalado. Se usará fallback paramétrico.")
+
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
 REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
@@ -98,6 +107,20 @@ GEMINI_BLOQUEADO_POR_CUOTA = False
 
 lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
+_xtts_instance = None
+
+def obtener_xtts():
+    global _xtts_instance
+    if not XTTS_DISPONIBLE:
+        return None
+    if _xtts_instance is None:
+        try:
+            print("🧠 Cargando modelo Coqui XTTS v2 (esto puede tardar unos segundos)...")
+            _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
+        except Exception as e:
+            print(f"⚠️ Error al inicializar XTTS: {e}")
+            return None
+    return _xtts_instance
 
 
 def cargar_json_seguro(path, defecto):
@@ -207,20 +230,16 @@ def buscar_muestra_audio_en_web(query_nombre):
 
 
 def obtener_o_construir_muestra_voz(query_nombre):
-    """
-    1. Intenta descargar muestra web.
-    2. Si no encuentra, genera una muestra sintética de fallback en /muestras_voz.
-    """
     ruta_web = buscar_muestra_audio_en_web(query_nombre)
     if ruta_web and os.path.exists(ruta_web):
         return ruta_web
 
-    print(f"⚙️ Muestra web no encontrada. Construyendo muestra sintética de fallback...")
+    print(f"⚙️ Muestra web no encontrada. Construyendo muestra sintética de fallback para XTTS...")
     try:
         nombre_archivo = f"sintetica_fallback_{abs(hash(query_nombre))}.wav"
         ruta_sintetica = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
         
-        texto_muestra = f"Muestra base de audio generada para calibrar el perfil de voz {query_nombre}."
+        texto_muestra = f"Muestra base de audio generada para clonación neuronal con XTTS para el perfil {query_nombre}."
         mp3_temp = os.path.join(CARPETA_MUESTRAS, "temp_fallback.mp3")
         gTTS(text=texto_muestra, lang="es", tld="com.ar").save(mp3_temp)
         
@@ -240,8 +259,8 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
     prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
     
-    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como", "buscá", "buscate", "locutor", "campesino", "actualizá"]):
-        if any(w in prompt_usuario.lower() for w in ["buscá", "buscate", "imitá"]):
+    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como", "buscá", "buscate", "locutor", "campesino", "actualizá", "xtts"]):
+        if any(w in prompt_usuario.lower() for w in ["buscá", "buscate", "imitá", "xtts"]):
             audio_referencia_path = obtener_o_construir_muestra_voz(prompt_usuario)
 
     prompt_director = (
@@ -249,7 +268,7 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
         f"Perillas actuales: {json_lib.dumps(perillas_actuales)}\n"
         f"Prosodia actual: {json_lib.dumps(prosodia_actual)}\n"
         f"Orden del usuario: '{prompt_usuario}'\n"
-        "Si el usuario pide actualizar perillas o tonos (pitch, fundamental_freq, treble_gain, bass_gain, volumen, etc.), extrae los valores y devuelve un bloque JSON exacto con claves `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ```. Si no hay pedidos técnicos de audio, responde 'NO_ES_AUDIO'."
+        "Si el usuario pide actualizar perillas o tonos, extrae los valores y devuelve un bloque JSON exacto con claves `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ```. Si no hay pedidos técnicos de audio, responde 'NO_ES_AUDIO'."
     )
 
     archivo_audio_subido = None
@@ -343,7 +362,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con fallbacks de muestras y reconexión.")
+    await update.message.reply_text("¡Buenas che! Bot activo con reporte XTTS y reconexión.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -358,12 +377,12 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
-    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "muestra", "locutor", "campesino", "actualizá", "chiste"])
+    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "muestra", "locutor", "campesino", "actualizá", "chiste", "xtts"])
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
         audio_ref = None
-        if any(w in texto_usuario.lower() for w in ["imitá", "buscá", "buscate"]):
+        if any(w in texto_usuario.lower() for w in ["imitá", "buscá", "buscate", "xtts"]):
             audio_ref = obtener_o_construir_muestra_voz(texto_usuario)
             
         respuesta = responder_usuario(texto_usuario, audio_ref=audio_ref)
@@ -371,62 +390,90 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-        p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
-        prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
-        
-        pitch = float(p.get("pitch", 1.05))
-        fund = float(p.get("fundamental_freq", 140))
-        treble_g = float(p.get("treble_gain", 5.0))
-        treble_f = float(p.get("treble_freq", 3800))
-        bass_g = float(p.get("bass_gain", 1.5))
-        bass_f = float(p.get("bass_freq", 90))
-        vol = float(p.get("volume_mult", 0.85))
+        ogg_f = "resp.ogg"
+        xtts_generado = False
 
-        tempo_base = float(p.get("tempo_factor", 1.10))
-        factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
-        tempo = tempo_base * factor_ritmo
-        
-        serie = p.get("serie_armonica", [])
+        if audio_ref and os.path.exists(audio_ref):
+            xtts_engine = obtener_xtts()
+            if xtts_engine:
+                try:
+                    print(f"🧬 [XTTS]: Intentando clonar voz con referencia: {audio_ref}")
+                    wav_xtts = "resp_xtts.wav"
+                    xtts_engine.tts_to_file(
+                        text=texto_limpio,
+                        speaker_wav=audio_ref,
+                        language="es",
+                        file_path=wav_xtts
+                    )
+                    subprocess.run(["ffmpeg", "-y", "-i", wav_xtts, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+                    if os.path.exists(wav_xtts): os.remove(wav_xtts)
+                    xtts_generado = True
+                    print("✅ [XTTS]: ¡Éxito! Audio clonado neuronalmente con XTTS.")
+                except Exception as e:
+                    print(f"⚠️ [XTTS] Falló la clonación neuronal ({e}). Cambiando a FFmpeg paramétrico...")
 
-        mp3_f, wav_f, ogg_f = "resp.mp3", "resp.wav", "resp.ogg"
-        gTTS(text=texto_limpio, lang="es", tld="com.ar").save(mp3_f)
-        subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
-        if os.path.exists(mp3_f): os.remove(mp3_f)
+        if not xtts_generado:
+            print("🎚️ [AVISO]: XTTS no disponible o falló. Renderizando con gTTS + FFmpeg paramétrico...")
+            mp3_f, wav_f = "resp.mp3", "resp.wav"
+            gTTS(text=texto_limpio, lang="es", tld="com.ar").save(mp3_f)
+            subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
+            if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        filtros = [
-            f"atempo={max(0.5, min(2.0, tempo))}",
-            f"asetrate=24000*{max(0.4, min(2.0, pitch))}",
-            f"equalizer=f={treble_f}:t=h:w=300:g={treble_g}",
-            f"equalizer=f={bass_f}:t=h:w=100:g={bass_g}"
-        ]
+            p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+            prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
+            
+            pitch = float(p.get("pitch", 1.05))
+            fund = float(p.get("fundamental_freq", 140))
+            treble_g = float(p.get("treble_gain", 5.0))
+            treble_f = float(p.get("treble_freq", 3800))
+            bass_g = float(p.get("bass_gain", 1.5))
+            bass_f = float(p.get("bass_freq", 90))
+            vol = float(p.get("volume_mult", 0.85))
 
-        for item in serie:
-            try:
-                if isinstance(item, list) and len(item) == 2:
-                    m, db = float(item[0]), float(item[1])
-                elif isinstance(item, dict):
-                    m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
-                else:
-                    continue
-                    
-                freq = fund * m
-                if 20.0 <= freq <= 11000.0:
-                    filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
-            except:
-                pass
+            tempo_base = float(p.get("tempo_factor", 1.10))
+            factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
+            tempo = tempo_base * factor_ritmo
+            
+            serie = p.get("serie_armonica", [])
 
-        filtros.extend([
-            "dynaudnorm=f=120:g=18:p=0.9",
-            f"volume={vol}"
-        ])
+            filtros = [
+                f"atempo={max(0.5, min(2.0, tempo))}",
+                f"asetrate=24000*{max(0.4, min(2.0, pitch))}",
+                f"equalizer=f={treble_f}:t=h:w=300:g={treble_g}",
+                f"equalizer=f={bass_f}:t=h:w=100:g={bass_g}"
+            ]
 
-        subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+            for item in serie:
+                try:
+                    if isinstance(item, list) and len(item) == 2:
+                        m, db = float(item[0]), float(item[1])
+                    elif isinstance(item, dict):
+                        m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
+                    else:
+                        continue
+                        
+                    freq = fund * m
+                    if 20.0 <= freq <= 11000.0:
+                        filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
+                except:
+                    pass
+
+            filtros.extend([
+                "dynaudnorm=f=120:g=18:p=0.9",
+                f"volume={vol}"
+            ])
+
+            subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+            if os.path.exists(wav_f): os.remove(wav_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="*(Muestra Procesada + FFmpeg)*")
+            if xtts_generado:
+                caption_txt = "🧬 *(XTTS: Clonación neuronal exitosa)*"
+            else:
+                caption_txt = "⚠️ *(XTTS no disponible/falló -> Usé FFmpeg paramétrico)*"
+            await update.message.reply_voice(voice=vf, caption=caption_txt)
 
-        for f in [wav_f, ogg_f]:
-            if os.path.exists(f): os.remove(f)
+        if os.path.exists(ogg_f): os.remove(ogg_f)
     else:
         await update.message.chat.send_action(action="typing")
         respuesta = responder_usuario(texto_usuario)
@@ -457,64 +504,86 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-        p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
-        prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
-        
-        pitch = float(p.get("pitch", 1.05))
-        fund = float(p.get("fundamental_freq", 140))
-        treble_g = float(p.get("treble_gain", 5.0))
-        treble_f = float(p.get("treble_freq", 3800))
-        bass_g = float(p.get("bass_gain", 1.5))
-        bass_f = float(p.get("bass_freq", 90))
-        vol = float(p.get("volume_mult", 0.85))
+        ogg_f = "resp.ogg"
+        xtts_generado = False
 
-        tempo_base = float(p.get("tempo_factor", 1.10))
-        factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
-        tempo = tempo_base * factor_ritmo
-        
-        serie = p.get("serie_armonica", [])
-
-        mp3_f, wav_f, ogg_f = "resp.mp3", "resp.wav", "resp.ogg"
-        gTTS(text=texto_limpio, lang="es", tld="com.ar").save(mp3_f)
-        subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
-        if os.path.exists(mp3_f): os.remove(mp3_f)
-
-        filtros = [
-            f"atempo={max(0.5, min(2.0, tempo))}",
-            f"asetrate=24000*{max(0.4, min(2.0, pitch))}",
-            f"equalizer=f={treble_f}:t=h:w=300:g={treble_g}",
-            f"equalizer=f={bass_f}:t=h:w=100:g={bass_g}"
-        ]
-
-        for item in serie:
+        xtts_engine = obtener_xtts()
+        if xtts_engine and os.path.exists(path_in):
             try:
-                if isinstance(item, list) and len(item) == 2:
-                    m, db = float(item[0]), float(item[1])
-                elif isinstance(item, dict):
-                    m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
-                else:
-                    continue
-                    
-                freq = fund * m
-                if 20.0 <= freq <= 11000.0:
-                    filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
+                wav_xtts = "resp_xtts.wav"
+                xtts_engine.tts_to_file(
+                    text=texto_limpio,
+                    speaker_wav=path_in,
+                    language="es",
+                    file_path=wav_xtts
+                )
+                subprocess.run(["ffmpeg", "-y", "-i", wav_xtts, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+                if os.path.exists(wav_xtts): os.remove(wav_xtts)
+                xtts_generado = True
             except:
                 pass
 
-        filtros.extend([
-            "dynaudnorm=f=120:g=18:p=0.9",
-            f"volume={vol}"
-        ])
+        if not xtts_generado:
+            mp3_f, wav_f = "resp.mp3", "resp.wav"
+            gTTS(text=texto_limpio, lang="es", tld="com.ar").save(mp3_f)
+            subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
+            if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+            p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+            prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
+            
+            pitch = float(p.get("pitch", 1.05))
+            fund = float(p.get("fundamental_freq", 140))
+            treble_g = float(p.get("treble_gain", 5.0))
+            treble_f = float(p.get("treble_freq", 3800))
+            bass_g = float(p.get("bass_gain", 1.5))
+            bass_f = float(p.get("bass_freq", 90))
+            vol = float(p.get("volume_mult", 0.85))
+
+            tempo_base = float(p.get("tempo_factor", 1.10))
+            factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
+            tempo = tempo_base * factor_ritmo
+            
+            serie = p.get("serie_armonica", [])
+
+            filtros = [
+                f"atempo={max(0.5, min(2.0, tempo))}",
+                f"asetrate=24000*{max(0.4, min(2.0, pitch))}",
+                f"equalizer=f={treble_f}:t=h:w=300:g={treble_g}",
+                f"equalizer=f={bass_f}:t=h:w=100:g={bass_g}"
+            ]
+
+            for item in serie:
+                try:
+                    if isinstance(item, list) and len(item) == 2:
+                        m, db = float(item[0]), float(item[1])
+                    elif isinstance(item, dict):
+                        m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
+                    else:
+                        continue
+                        
+                    freq = fund * m
+                    if 20.0 <= freq <= 11000.0:
+                        filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
+                except:
+                    pass
+
+            filtros.extend([
+                "dynaudnorm=f=120:g=18:p=0.9",
+                f"volume={vol}"
+            ])
+
+            subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+            if os.path.exists(wav_f): os.remove(wav_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"-Interpretado: {texto_crudo}\n*(Perillas JSON Aplicadas)*")
+            if xtts_generado:
+                caption_txt = f"-Interpretado: {texto_crudo}\n🧬 *(XTTS Clonación exitosa)*"
+            else:
+                caption_txt = f"-Interpretado: {texto_crudo}\n⚠️ *(XTTS no disponible -> FFmpeg paramétrico)*"
+            await update.message.reply_voice(voice=vf, caption=caption_txt)
 
-        for f in [wav_f, ogg_f]:
-            if os.path.exists(f):
-                try: os.remove(f)
-                except: pass
+        if os.path.exists(ogg_f): os.remove(ogg_f)
 
 
 def main():
@@ -529,7 +598,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con fallbacks de muestras y reconexión automática...")
+    print("🚀 Iniciando Bot con reporte XTTS y reconexión automática...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
