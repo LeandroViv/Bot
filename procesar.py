@@ -206,7 +206,7 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
     prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
     
-    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como", "buscá", "buscate", "locutor"]):
+    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como", "buscá", "buscate", "locutor", "campesino"]):
         audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
 
     prompt_director = (
@@ -306,7 +306,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
-    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "muestra", "locutor"])
+    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "muestra", "locutor", "campesino"])
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
@@ -329,7 +329,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
         if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        filtros = [f"atempo={max(0.5, min(2.0, tempo))}", f"asetrate=24000*{max(0.4, min(2.0, pitch)}"]
+        filtros = [f"atempo={max(0.5, min(2.0, tempo))}", f"asetrate=24000*{max(0.4, min(2.0, pitch))}"]
         for item in serie:
             try:
                 m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
@@ -389,7 +389,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
         if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        filtros = [f"atempo={max(0.5, min(2.0, tempo))}", f"asetrate=24000*{max(0.4, min(2.0, pitch)}"]
+        filtros = [f"atempo={max(0.5, min(2.0, tempo))}", f"asetrate=24000*{max(0.4, min(2.0, pitch))}"]
         for item in serie:
             try:
                 m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
