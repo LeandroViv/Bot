@@ -119,16 +119,15 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
         
-        # Inyectamos el GITHUB_TOKEN para autenticación segura en push
         token_git = os.environ.get("GITHUB_TOKEN")
         if token_git:
             subprocess.run(["git", "remote", "set-url", "origin", f"https://{token_git}@github.com/LeandroViv/Bot.git"], check=True)
 
-        subprocess.run(["git", "add", "."], check=True)
+        subprocess.run(["git", "add", "procesar.py", "perillas_voz.json", "prosodia_cadencia.json", "historial_induccion.json", "historial_refinamiento.json", "conversaciones.txt"], check=True)
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ Sincronizado y pusheado con éxito en GitHub.")
+            print("☁️ Código y perillas sincronizados con éxito en GitHub.")
     except Exception as e:
         print(f"⚠️ Aviso de git (no crítico): {e}")
 
@@ -136,7 +135,6 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
 def guardar_en_txt(rol, texto):
     with open(TXT_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{rol.upper()}]: {texto}\n---\n")
-    sincronizar_con_github()
 
 
 def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
@@ -153,7 +151,8 @@ def registrar_refinamiento_ia(prompt_usuario, respuesta_generada):
     refinamientos.append({"entrada_usuario": prompt_usuario, "respuesta_ia": respuesta_generada})
     if len(refinamientos) > 100:
         refinamientos = refinamientos[-100:]
-    guardar_json_seguro(REGISTRO_REFINAMIENTO, refinamientos, "📝 Refinamiento de IA guardado")
+    with open(REGISTRO_REFINAMIENTO, "w", encoding="utf-8") as f:
+        json_lib.dump(refinamientos, f, indent=4, ensure_ascii=False)
 
 
 def cotejar_y_corregir_induccion(texto_crudo):
@@ -419,38 +418,42 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Cargamos perillas y serie armónica abierta
+            # Cargamos perillas y serie armónica abierta de forma segura
             p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
             prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
             
-            pitch_factor = p.get("pitch_factor", 0.80)
-            tempo_base = p.get("tempo_factor", 1.20)
-            tempo_factor = tempo_base * prosodia.get("factor_ritmo_variable", 1.0)
+            pitch_factor = float(p.get("pitch_factor", 0.80))
+            tempo_base = float(p.get("tempo_factor", 1.20))
+            tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
             
-            fund = p.get("fundamental_hz", 130)
+            fund = float(p.get("fundamental_hz", 130))
             serie_armonica = p.get("serie_armonica", [])
             
-            treble_gain = p.get("treble_gain", 3.0)
-            treble_freq = p.get("treble_freq", 4000)
-            bass_gain = p.get("bass_gain", 5.0)
-            bass_freq = p.get("bass_freq", 150)
-            volume_mult = p.get("volume_mult", 1.1)
+            treble_gain = float(p.get("treble_gain", 3.0))
+            treble_freq = float(p.get("treble_freq", 4000))
+            bass_gain = float(p.get("bass_gain", 5.0))
+            bass_freq = float(p.get("bass_freq", 150))
+            volume_mult = float(p.get("volume_mult", 1.1))
 
             print(f"🎚️ [Serie Armónica Dinámica]: Fundamental={fund}Hz | Cantidad de armónicos={len(serie_armonica)}")
 
-            # Construcción dinámica y abierta de filtros FFmpeg para enteros y decimales
+            # Construcción dinámica y abierta de filtros FFmpeg a prueba de fallos
             filtros_lista = [
-                f"atempo={tempo_factor}",
-                f"asetrate=24000*{pitch_factor}"
+                f"atempo={max(0.5, min(2.0, tempo_factor))}",
+                f"asetrate=24000*{max(0.4, min(2.0, pitch_factor))}"
             ]
 
             for item in serie_armonica:
-                mult = float(item.get("multiplicador", 1.0))
-                db = float(item.get("gain_db", 0.0))
-                freq_armonica = fund * mult
-                if 20 <= freq_armonica <= 18000:
-                    w_val = max(15, int(freq_armonica * 0.08))
-                    filtros_lista.append(f"equalizer=f={freq_armonica:.2f}:t=h:w={w_val}:g={db}")
+                try:
+                    mult = float(item.get("multiplicador", 1.0))
+                    db = float(item.get("gain_db", 0.0))
+                    freq_armonica = fund * mult
+                    # Validamos rangos seguros de frecuencia para FFmpeg (entre 20 Hz y 11000 Hz por seguridad de sample rate)
+                    if 20.0 <= freq_armonica <= 11000.0:
+                        w_val = max(15, int(freq_armonica * 0.08))
+                        filtros_lista.append(f"equalizer=f={freq_armonica:.2f}:t=h:w={w_val}:g={db}")
+                except Exception as ex_arm:
+                    print(f"⚠️ Armónico ignorado por formato inválido: {ex_arm}")
 
             filtros_lista.extend([
                 f"equalizer=f={treble_freq}:t=h:w=200:g={treble_gain}",
@@ -460,6 +463,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
 
             filtro_audio = ",".join(filtros_lista)
+            print(f"🎛️ Filtro FFmpeg generado con éxito.")
 
             try:
                 subprocess.run([
@@ -467,10 +471,16 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "-filter:a", filtro_audio,
                     "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                     ruta_respuesta_ogg
-                ], capture_output=True, text=True, check=True)
+                ], check=True)
             except subprocess.CalledProcessError as cpe:
-                print(f"❌ Error crítico en FFmpeg: {cpe.stderr}")
-                raise cpe
+                print(f"❌ Error crítico en FFmpeg, aplicando fallback limpio sin filtros complejos...")
+                # Fallback de emergencia si la cadena compleja falla
+                subprocess.run([
+                    "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
+                    "-filter:a", f"atempo={tempo_factor},volume={volume_mult}",
+                    "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+                    ruta_respuesta_ogg
+                ], check=True)
 
             caption_estructurado = (
                 f"-Lo que interpretaste: {texto_crudo}\n"
@@ -484,7 +494,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=caption_estructurado
                 )
 
-            print("✅ Nota de voz procesada con serie armónica abierta.")
+            print("✅ Nota de voz procesada y enviada con éxito.")
 
         except Exception as e:
             print(f"⚠️ Error general en audio: {e}")
