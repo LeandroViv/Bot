@@ -852,3 +852,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas.
 ---
+[USUARIO]: bueno ahora te pido que suenes con la cadencia brítmica y dinámica de un  porteño que está juntándose en un lugar con gente
+---
