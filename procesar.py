@@ -112,13 +112,15 @@ _xtts_instance = None
 def obtener_xtts():
     global _xtts_instance
     if not XTTS_DISPONIBLE:
+        print("❌ [XTTS]: La librería TTS no está instalada.")
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 Cargando modelo Coqui XTTS v2 (esto puede tardar unos segundos)...")
+            print("🧠 Cargando modelo Coqui XTTS v2...")
             _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
+            print("✅ [XTTS]: Modelo cargado con éxito.")
         except Exception as e:
-            print(f"⚠️ Error al inicializar XTTS: {e}")
+            print(f"❌ [XTTS ERROR CRÍTICO]: Falló al inicializar el modelo -> {e}")
             return None
     return _xtts_instance
 
@@ -232,9 +234,10 @@ def buscar_muestra_audio_en_web(query_nombre):
 def obtener_o_construir_muestra_voz(query_nombre):
     ruta_web = buscar_muestra_audio_en_web(query_nombre)
     if ruta_web and os.path.exists(ruta_web):
+        print(f"🎯 [REF]: Usando muestra web encontrada en {ruta_web}")
         return ruta_web
 
-    print(f"⚙️ Muestra web no encontrada. Construyendo muestra sintética de fallback para XTTS...")
+    print(f"⚙️ Muestra web no encontrada. Construyendo muestra sintética de fallback en {CARPETA_MUESTRAS}...")
     try:
         nombre_archivo = f"sintetica_fallback_{abs(hash(query_nombre))}.wav"
         ruta_sintetica = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
@@ -247,7 +250,7 @@ def obtener_o_construir_muestra_voz(query_nombre):
         if os.path.exists(mp3_temp):
             os.remove(mp3_temp)
             
-        print(f"💾 Muestra sintética construida en: {ruta_sintetica}")
+        print(f"💾 [REF]: Muestra sintética generada y guardada con éxito en: {ruta_sintetica}")
         return ruta_sintetica
     except Exception as e:
         print(f"⚠️ Error construyendo muestra sintética: {e}")
@@ -362,7 +365,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con reporte XTTS y reconexión.")
+    await update.message.reply_text("¡Buenas che! Bot activo con reporte XTTS detallado.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -381,9 +384,10 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
-        audio_ref = None
-        if any(w in texto_usuario.lower() for w in ["imitá", "buscá", "buscate", "xtts"]):
-            audio_ref = obtener_o_construir_muestra_voz(texto_usuario)
+        
+        # Forzamos la obtención o construcción explícita de la muestra de referencia
+        audio_ref = obtener_o_construir_muestra_voz(texto_usuario)
+        print(f"📁 [AUDIO REF SELECCIONADO]: {audio_ref}")
             
         respuesta = responder_usuario(texto_usuario, audio_ref=audio_ref)
         
@@ -397,7 +401,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             xtts_engine = obtener_xtts()
             if xtts_engine:
                 try:
-                    print(f"🧬 [XTTS]: Intentando clonar voz con referencia: {audio_ref}")
+                    print(f"🧬 [XTTS]: Intentando clonar voz usando referencia: {audio_ref}")
                     wav_xtts = "resp_xtts.wav"
                     xtts_engine.tts_to_file(
                         text=texto_limpio,
@@ -408,12 +412,12 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     subprocess.run(["ffmpeg", "-y", "-i", wav_xtts, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
                     if os.path.exists(wav_xtts): os.remove(wav_xtts)
                     xtts_generado = True
-                    print("✅ [XTTS]: ¡Éxito! Audio clonado neuronalmente con XTTS.")
+                    print("✅ [XTTS]: ¡Éxito! Audio clonado neuronalmente.")
                 except Exception as e:
-                    print(f"⚠️ [XTTS] Falló la clonación neuronal ({e}). Cambiando a FFmpeg paramétrico...")
+                    print(f"⚠️ [XTTS ERROR]: Falló la clonación neuronal -> {e}. Pasando a FFmpeg paramétrico...")
 
         if not xtts_generado:
-            print("🎚️ [AVISO]: XTTS no disponible o falló. Renderizando con gTTS + FFmpeg paramétrico...")
+            print("🎚️ [FALLBACK]: Renderizando con gTTS + FFmpeg paramétrico...")
             mp3_f, wav_f = "resp.mp3", "resp.wav"
             gTTS(text=texto_limpio, lang="es", tld="com.ar").save(mp3_f)
             subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
@@ -467,10 +471,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if os.path.exists(wav_f): os.remove(wav_f)
 
         with open(ogg_f, "rb") as vf:
-            if xtts_generado:
-                caption_txt = "🧬 *(XTTS: Clonación neuronal exitosa)*"
-            else:
-                caption_txt = "⚠️ *(XTTS no disponible/falló -> Usé FFmpeg paramétrico)*"
+            caption_txt = "🧬 *(XTTS: Clonación neuronal exitosa)*" if xtts_generado else "⚠️ *(XTTS falló/no disponible -> Usé FFmpeg paramétrico)*"
             await update.message.reply_voice(voice=vf, caption=caption_txt)
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
@@ -577,10 +578,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if os.path.exists(wav_f): os.remove(wav_f)
 
         with open(ogg_f, "rb") as vf:
-            if xtts_generado:
-                caption_txt = f"-Interpretado: {texto_crudo}\n🧬 *(XTTS Clonación exitosa)*"
-            else:
-                caption_txt = f"-Interpretado: {texto_crudo}\n⚠️ *(XTTS no disponible -> FFmpeg paramétrico)*"
+            caption_txt = f"-Interpretado: {texto_crudo}\n🧬 *(XTTS Clonación exitosa)*" if xtts_generado else f"-Interpretado: {texto_crudo}\n⚠️ *(XTTS no disponible -> FFmpeg paramétrico)*"
             await update.message.reply_voice(voice=vf, caption=caption_txt)
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
@@ -598,7 +596,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con reporte XTTS y reconexión automática...")
+    print("🚀 Iniciando Bot con control de muestras y XTTS...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
