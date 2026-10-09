@@ -842,3 +842,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Gracias
 ---
+[LEANDRO_BOT]: De nada, che. ¿Qué onda, te gustó cómo quedó la voz de pibe o querés que le toquemos alguna perilla más? Avisame y lo cocinamos.
+---
