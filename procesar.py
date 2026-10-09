@@ -7,6 +7,7 @@ import shutil
 import difflib
 import subprocess
 import requests
+import time
 
 print("🚀 [INIT]: Importando librerías...")
 from telegram import Update
@@ -353,7 +354,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
         if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        # Filtros paramétricos con ecualización armónica, formantes y compresor dinámico móvil
         filtros = [
             f"atempo={max(0.5, min(2.0, tempo))}",
             f"asetrate=24000*{max(0.4, min(2.0, pitch))}"
@@ -368,7 +368,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except:
                 pass
 
-        # Añadimos compresión dinámica móvil y ecualización de presencia conversacional
         filtros.extend([
             "equalizer=f=3000:t=h:w=300:g=3.5",
             "dynaudnorm=f=120:g=18:p=0.9",
@@ -471,12 +470,20 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con Prosodia Paramétrica y Fraseo Dinámico...")
+    print("🚀 Iniciando Bot con Prosodia Paramétrica y reconexión automática...")
+    
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
     app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
-    app.run_polling(drop_pending_updates=True)
+
+    while True:
+        try:
+            print("🔄 [POLLING]: Conectando y escuchando eventos...")
+            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        except Exception as e:
+            print(f"⚠️ Red de Telegram interrumpida ({e}). Reconectando en 5 segundos...")
+            time.sleep(5)
 
 
 if __name__ == "__main__":
