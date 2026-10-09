@@ -896,3 +896,7 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Director paramétrico y prosodia ajustados.
 ---
+[USUARIO]: A ver mostrame
+---
+[LEANDRO_BOT]: Listo, che. Director paramétrico y prosodia ajustados.
+---
