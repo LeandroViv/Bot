@@ -848,3 +848,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [LEANDRO_BOT]: Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas.
 ---
+[USUARIO]: Bueno, que suene más natural el ritmo, que no sea uniforme, que manejes la  cadencia al ritmo y también los volúmenes, que manejes la cadencia, los  volúmenes de lo que sería un discurso normal.
+---
