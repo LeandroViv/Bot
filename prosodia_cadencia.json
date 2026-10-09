@@ -1,5 +1,5 @@
 {
-    "pausas": 0.5,
-    "ritmo": 1.2,
-    "cadencia": 1.5
+    "velocidad": 0.95,
+    "respiracion": 0.4,
+    "brillo_vocal": 0.8
 }
