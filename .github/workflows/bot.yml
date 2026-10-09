@@ -1,58 +1,37 @@
-name: Leandro Bot 24/7
+name: Bot Telegram Vibe Coding
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'
   push:
-    branches:
-      - main
-      - master
+    branches: [ main ]
   workflow_dispatch:
-
-# Cancela ejecuciones viejas automáticamente al hacer git push
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
+    - name: Checkout repositorio
+      uses: actions/checkout@v4
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
 
-      - name: Instalar dependencias del sistema (FFmpeg)
-        run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+    - name: Instalar dependencias del sistema (FFmpeg y libopus)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg libopus-dev
 
-      - name: Instalar Ollama y descargar modelo
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          nohup ollama serve > ollama.log 2>&1 &
-          sleep 5
-          ollama pull llama3.2
+    - name: Instalar dependencias de Python
+      run: |
+        python -m pip install --upgrade pip
+        pip install python-telegram-bot[socks] faster-whisper gTTS google-genai requests
 
-      - name: Instalar y limpiar librerías de Python
-        run: |
-          python -m pip install --upgrade pip
-          pip uninstall -y google-generativeai google-ai-generativelanguage || true
-          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts faster-whisper google-genai
-
-      - name: Ejecutar el Bot
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: ${{ secrets.HF_DATASET_REPO }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python procesar.py
+    - name: Ejecutar Bot Autónomo
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        python procesar.py
