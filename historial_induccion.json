@@ -50,5 +50,9 @@
     "chí, ahora te quiero pedir por favor que aumentes el ritmo de tu voz que se  escuche más rápido, lo que me decís, eso lo puedes hacer por favor.": {
         "correcto": "[\"Che, ahora te quiero pedir por favor que aumentes el ritmo de tu voz, que se escuche más rápido lo que me decís, ¿eso lo podés hacer por favor?\"]",
         "audio_muestra": "muestras_voz/audio_878.ogg"
+    },
+    "te quiero pedir por favor que suenes más rápido, un ritmo más rápido y que bueno ese cambio lo mantengas por favor, gracias.": {
+        "correcto": "[ \"Te quiero pedir, por favor, que suenes más rápido, a un ritmo más rápido, y que bueno ese cambio lo mantengas, por favor. Gracias.\"]",
+        "audio_muestra": "muestras_voz/audio_888.ogg"
     }
 }
