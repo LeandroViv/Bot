@@ -846,3 +846,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Bueno, ahora poné voz de adulto, pero con una cadencia más natural que  manejes los ritmos de una manera más natural que en el lugar de hacerlo todo uniforme por favor.
 ---
+[LEANDRO_BOT]: Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas.
+---
