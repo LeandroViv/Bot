@@ -834,3 +834,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Gracias
 ---
+[LEANDRO_BOT]: De nada, che. Quedó bien ronca y al palo, ¿no? Si querés tocarle algo más a la voz o al código, chiflame y lo hacemos al toque.
+---
