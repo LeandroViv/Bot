@@ -19,6 +19,13 @@ from faster_whisper import WhisperModel
 from google import genai
 from gtts import gTTS
 
+# Importación segura de XTTS (Coqui TTS) para clonación real por muestra
+try:
+    from TTS.api import TTS
+    XTTS_DISPONIBLE = True
+except ImportError:
+    XTTS_DISPONIBLE = False
+
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
 REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
@@ -47,7 +54,8 @@ PERILLAS_DEFAULT = {
     "treble_freq": 4000,         # Frecuencia de corte para agudos (Hz)
     "bass_gain": 5.0,            # Cuerpo / Graves (dB)
     "bass_freq": 150,            # Frecuencia de corte para graves (Hz)
-    "volume_mult": 1.1           # Ganancia general
+    "volume_mult": 1.1,          # Ganancia general
+    "modo_voz": "gtts"           # "gtts" (sintético/perillas) o "xtts" (clonación por muestra)
 }
 
 # Perfil de prosodia y cadencia inductiva por muestras y arquetipos
@@ -81,6 +89,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
+xtts_model = None
 
 lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
@@ -169,6 +178,30 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
+def buscar_muestra_audio_en_web(query_nombre):
+    """Busca de forma autónoma links de audio (.mp3 o .wav) en la web relacionados con un nombre o arquetipo."""
+    try:
+        query_busqueda = f"{query_nombre} filetype:mp3 OR filetype:wav audio sample"
+        url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query_busqueda)}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        res = requests.get(url, headers=headers, timeout=12)
+        if res.status_code == 200:
+            urls_encontradas = re.findall(r'href="(http[s]?://[^"]+\.(?:mp3|wav))"', res.text, re.I)
+            if urls_encontradas:
+                link_audio = urls_encontradas[0]
+                print(f"🎯 Muestra de audio encontrada en la web: {link_audio}")
+                res_audio = requests.get(link_audio, headers=headers, timeout=15)
+                if res_audio.status_code == 200:
+                    ext = ".wav" if ".wav" in link_audio.lower() else ".mp3"
+                    ruta_destino = os.path.join(CARPETA_MUESTRAS, f"web_auto_{abs(hash(link_audio))}{ext}")
+                    with open(ruta_destino, "wb") as f:
+                        f.write(res_audio.content)
+                    return ruta_destino
+    except Exception as e:
+        print(f"⚠️ Error buscando muestra de audio autónoma en web: {e}")
+    return None
+
+
 def buscar_en_web_duckduckgo(query):
     try:
         url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
@@ -202,9 +235,16 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
     prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
     
-    # 1. Intentamos prioritariamente con Gemini
+    # Detección inteligente de pedidos de imitación para buscar muestras en la web autónomamente
+    if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como"]):
+        print(f"🌐 Detectado pedido de imitación. Buscando muestra autónoma en la web para: '{prompt_usuario}'")
+        audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
+        if audio_referencia_path:
+            perillas_actuales["modo_voz"] = "xtts"
+            guardar_json_seguro(ARCHIVO_PERILLAS, perillas_actuales, "🎙️ Modo XTTS activado por muestra web autónoma")
+
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
-        print(f"🧠 [Gemini Vibe Coding & Serie Armónica]: Analizando -> '{prompt_usuario}'")
+        print(f"🧠 [Gemini Vibe Coding]: Analizando -> '{prompt_usuario}'")
         archivo_audio_subido = None
         try:
             if audio_referencia_path and os.path.exists(audio_referencia_path):
@@ -216,7 +256,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                 f"Parámetros de prosodia actuales (JSON): {json_lib.dumps(prosodia_actual)}",
                 f"La orden de tu colega es: '{prompt_usuario}'.",
                 "INSTRUCCIONES:",
-                "1. Si el pedido afecta al audio, voz, fundamental Hz, serie armónica (enteros/decimales) o prosodia, actualizalos.",
+                "1. Si el pedido afecta al audio, voz, fundamental Hz, serie armónica, modo de voz ('gtts' o 'xtts') o prosodia, actualizalos.",
                 "2. Si NO es sobre audio, respondé exactamente 'NO_ES_AUDIO'.",
                 "3. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
             ])
@@ -240,7 +280,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                     return "Listo, che. Calibré perillas y prosodia por Gemini."
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                print("⚠️ Cuota Gemini 429. Activando bypass local con web y muestras.")
+                print("⚠️ Cuota Gemini 429. Activando motor local con web y XTTS.")
                 GEMINI_BLOQUEADO_POR_CUOTA = True
             else:
                 print(f"⚠️ Aviso en análisis Gemini: {e}")
@@ -251,8 +291,8 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                 except:
                     pass
 
-    # 2. Fallback / Motor local Ollama (Llama 3.2) con búsqueda web y muestras
-    print(f"🦙 [Motor Local Llama con Web & Muestras]: Analizando solicitud -> '{prompt_usuario}'")
+    # Motor local Ollama (Llama 3.2) con búsqueda web y XTTS
+    print(f"🦙 [Motor Local Llama con Web & XTTS]: Analizando solicitud -> '{prompt_usuario}'")
     info_web = ""
     if any(k in prompt_usuario.lower() for k in ["busca", "imitá", "como", "estilo", "orador", "periodista", "persona", "arquetipo"]):
         info_web = buscar_en_web_duckduckgo(prompt_usuario)
@@ -263,7 +303,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
         f"Prosodia actual JSON: {json_lib.dumps(prosodia_actual)}\n"
         f"Contexto de búsqueda web sobre la muestra o arquetipo pedido: {info_web}\n"
         "INSTRUCCIONES:\n"
-        "1. Si la orden es sobre audio, voz, timbre, armónicos o imitación de muestras/arquetipos/personas, adaptá inteligentemente los valores numéricos y la serie armónica (con multiplicadores decimales).\n"
+        "1. Si la orden es sobre audio, voz, timbre, modo_voz ('gtts' o 'xtts') o imitación de muestras, adaptá inteligentemente los valores.\n"
         "2. Devolvé OBLIGATORIAMENTE un JSON válido con perillas y prosodia en este formato exacto:\n"
         "```json\n{\"perillas\": {...}, \"prosodia\": {...}}\n```\n"
         "Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'."
@@ -287,10 +327,10 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
                 if bloques_json:
                     datos_nuevos = json_lib.loads(bloques_json[0])
                     if "perillas" in datos_nuevos:
-                        guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Llama local con web")
+                        guardar_json_seguro(ARCHIVO_PERILLAS, datos_nuevos["perillas"], "🎚️ Perillas actualizadas por Llama local")
                     if "prosodia" in datos_nuevos:
                         guardar_json_seguro(ARCHIVO_PROSODIA, datos_nuevos["prosodia"], "🎙️ Prosodia actualizada por Llama local")
-                    return "Listo, che. Analicé la muestra/arquetipo por web y motor local, ajustando perillas y prosodia."
+                    return "Listo, che. Analicé la muestra por motor local, ajustando perillas y prosodia."
     except Exception as e:
         print(f"⚠️ Error en motor local para perillas: {e}")
 
@@ -335,10 +375,8 @@ def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
                     pass
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                print("⚠️ Cuota Gemini 429 en chat. Cambiando a Llama local con Web.")
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    # Fallback o uso directo de Llama local con búsqueda web integrada
     if not respuesta_final:
         info_web = buscar_en_web_duckduckgo(prompt_usuario)
         prompt_con_web = f"{prompt_usuario}\n[Información web de referencia: {info_web}]" if info_web else prompt_usuario
@@ -377,7 +415,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con prioridad en Gemini, bypass 429 y motor local potenciado (Web + Muestras + Serie armónica decimal).")
+    await update.message.reply_text("¡Buenas che! Bot activo con búsqueda web autónoma de muestras, XTTS y perillas armónicas.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -403,27 +441,28 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global ULTIMO_AUDIO_PENDIENTE
+    global ULTIMO_AUDIO_PENDIENTE, xtts_model
     async with lock_voz:
-        print("🎤 Procesando audio, web y serie armónica...")
+        print("🎤 Procesando audio, web autónoma y serie armónica...")
         await update.message.chat.send_action(action="record_voice")
 
         message_id = update.message.message_id
-        ruta_respuesta_mp3 = "respuesta.mp3"
+        ruta_respuesta_wav = "respuesta.wav"
         ruta_respuesta_ogg = "respuesta.ogg"
         texto_reconocido = ""
 
+        audio_path_referencia = None
         try:
             archivo_telegram = await update.message.voice.get_file()
             audio_filename = f"audio_{message_id}.ogg"
-            audio_path = os.path.join(CARPETA_MUESTRAS, audio_filename)
-            await archivo_telegram.download_to_drive(audio_path)
+            audio_path_referencia = os.path.join(CARPETA_MUESTRAS, audio_filename)
+            await archivo_telegram.download_to_drive(audio_path_referencia)
 
             model = WhisperModel("base", device="cpu", compute_type="int8")
-            segments, _ = model.transcribe(audio_path, beam_size=5, language="es")
+            segments, _ = model.transcribe(audio_path_referencia, beam_size=5, language="es")
             texto_crudo = " ".join([segment.text for segment in segments]).strip()
             
-            ULTIMO_AUDIO_PENDIENTE["path"] = audio_path
+            ULTIMO_AUDIO_PENDIENTE["path"] = audio_path_referencia
             ULTIMO_AUDIO_PENDIENTE["crudo"] = texto_crudo
 
             texto_reconocido = cotejar_y_corregir_induccion(texto_crudo)
@@ -432,17 +471,15 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Che, no te capté bien el audio, ¿me lo repetís?")
                 return
 
-            respuesta = responder_usuario(texto_reconocido, audio_ref=audio_path)
+            respuesta = responder_usuario(texto_reconocido, audio_ref=audio_path_referencia)
 
             texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
             texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-            tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
-            tts.save(ruta_respuesta_mp3)
-
             p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
             prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
             
+            modo_voz = p.get("modo_voz", "gtts")
             pitch_factor = float(p.get("pitch_factor", 0.80))
             tempo_base = float(p.get("tempo_factor", 1.20))
             tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
@@ -456,17 +493,51 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             bass_freq = float(p.get("bass_freq", 150))
             volume_mult = float(p.get("volume_mult", 1.1))
 
+            # Verificar si se descargó una muestra autónoma de la web para XTTS
+            audio_speaker_wav = audio_path_referencia
+            for arch_m in os.listdir(CARPETA_MUESTRAS):
+                if arch_m.startswith("web_auto_"):
+                    audio_speaker_wav = os.path.join(CARPETA_MUESTRAS, arch_m)
+                    modo_voz = "xtts"
+                    break
+
+            # GENERACIÓN DE AUDIO: XTTS (Clonación real por muestra) o gTTS (Sintético)
+            audio_generado_ok = False
+            if modo_voz == "xtts" and XTTS_DISPONIBLE:
+                try:
+                    print(f"🧬 Generando voz con clonación XTTS usando referencia: {audio_speaker_wav}")
+                    if xtts_model is None:
+                        xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+                    
+                    xtts_model.tts_to_file(
+                        text=texto_limpio,
+                        file_path=ruta_respuesta_wav,
+                        speaker_wav=audio_speaker_wav,
+                        language="es"
+                    )
+                    audio_generado_ok = True
+                except Exception as ex_xtts:
+                    print(f"⚠️ XTTS falló, recurriendo a gTTS: {ex_xtts}")
+
+            if not audio_generado_ok:
+                print("🔊 Generando voz con gTTS estándar...")
+                ruta_respuesta_mp3 = "respuesta.mp3"
+                tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
+                tts.save(ruta_respuesta_mp3)
+                subprocess.run(["ffmpeg", "-y", "-i", ruta_respuesta_mp3, ruta_respuesta_wav], check=True)
+                if os.path.exists(ruta_respuesta_mp3):
+                    os.remove(ruta_respuesta_mp3)
+
+            # APLICACIÓN DE SERIE ARMÓNICA Y PERILLAS EN FFMEGP
             filtros_lista = [
                 f"atempo={max(0.5, min(2.0, tempo_factor))}",
                 f"asetrate=24000*{max(0.4, min(2.0, pitch_factor))}"
             ]
 
-            # Parser ultra robusto (diccionarios, listas, tuplas o números)
             for item in serie_armonica:
                 try:
                     mult = 1.0
                     db = 0.0
-                    
                     if isinstance(item, dict):
                         mult = float(item.get("multiplicador", item.get("mult", 1.0)))
                         db = float(item.get("gain_db", item.get("gain", item.get("db", 0.0))))
@@ -481,8 +552,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if 20.0 <= freq_armonica <= 11000.0:
                         w_val = max(15, int(freq_armonica * 0.08))
                         filtros_lista.append(f"equalizer=f={freq_armonica:.2f}:t=h:w={w_val}:g={db}")
-                except Exception as ex_arm:
-                    print(f"⚠️ Armónico ignorado por formato inválido: {ex_arm}")
+                except:
+                    pass
 
             filtros_lista.extend([
                 f"equalizer=f={treble_freq}:t=h:w=200:g={treble_gain}",
@@ -495,32 +566,32 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             try:
                 subprocess.run([
-                    "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
+                    "ffmpeg", "-y", "-i", ruta_respuesta_wav,
                     "-filter:a", filtro_audio,
                     "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                     ruta_respuesta_ogg
                 ], check=True)
             except:
                 subprocess.run([
-                    "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
+                    "ffmpeg", "-y", "-i", ruta_respuesta_wav,
                     "-filter:a", f"atempo={tempo_factor},volume={volume_mult}",
                     "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                     ruta_respuesta_ogg
                 ], check=True)
 
-            caption_est = f"-Interpretado: {texto_crudo}\n*(Procesado con serie armónica dinámica robusta)*"
+            caption_est = f"-Interpretado: {texto_crudo}\n*(Modo: {modo_voz.upper()} + Búsqueda Web Autónoma)*"
 
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(voice=voice_file, caption=caption_est)
 
-            print("✅ Nota de voz procesada con éxito.")
+            print("✅ Nota de voz procesada y enviada con éxito.")
 
         except Exception as e:
             print(f"⚠️ Error general en audio: {e}")
             await update.message.reply_text("Che, se me armó un lío procesando el audio.")
 
         finally:
-            for archivo in [ruta_respuesta_mp3, ruta_respuesta_ogg]:
+            for archivo in [ruta_respuesta_wav, ruta_respuesta_ogg]:
                 if os.path.exists(archivo):
                     try:
                         os.remove(archivo)
@@ -541,7 +612,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Híbrido Gemini / Llama Local (Web + Muestras + Serie Armónica Robusta)...")
+    print("🚀 Iniciando bot con Búsqueda Web Autónoma de Muestras + XTTS + Perillas...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
