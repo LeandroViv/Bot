@@ -46,5 +46,9 @@
     "si vos mismo vas a ir mejorando a partir de cómo se te voy a ir entrenando.": {
         "correcto": "[\"Si y vos mismo vas a ir mejorando, a partir de cómo yo te voy a ir entrenando.\"]",
         "audio_muestra": "muestras_voz/audio_807.ogg"
+    },
+    "chí, ahora te quiero pedir por favor que aumentes el ritmo de tu voz que se  escuche más rápido, lo que me decís, eso lo puedes hacer por favor.": {
+        "correcto": "[\"Che, ahora te quiero pedir por favor que aumentes el ritmo de tu voz, que se escuche más rápido lo que me decís, ¿eso lo podés hacer por favor?\"]",
+        "audio_muestra": "muestras_voz/audio_878.ogg"
     }
 }
