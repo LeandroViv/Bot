@@ -21,9 +21,9 @@
             -20.0
         ]
     ],
-    "pitch": 1.02,
-    "fundamental_freq": 135,
-    "treble_gain": 6.0,
+    "pitch": 1.0,
+    "fundamental_freq": 140,
+    "treble_gain": 5.0,
     "treble_freq": 3800,
     "bass_gain": 1.5,
     "bass_freq": 90,
