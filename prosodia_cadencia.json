@@ -1,6 +1,7 @@
 {
+    "modo_voz": "xtts",
     "modo_imitacion": "activo",
-    "patron_pausas": "porteño_cafe_pausado",
-    "factor_ritmo_variable": 1.15,
-    "referencia_activa": "porteño_cafe_esquina"
+    "patron_pausas": "locutor_profesional_pausado",
+    "factor_ritmo_variable": 1.05,
+    "referencia_activa": "locutor_radio_institucional"
 }
