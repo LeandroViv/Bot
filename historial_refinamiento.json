@@ -343,5 +343,9 @@
         "entrada_usuario": "en un rato de te escribo saludo",
         "respuesta_ia": "Che, qué bien.",
         "estado": "refinado_por_api"
+    },
+    {
+        "entrada_usuario": "¿Por qué?",
+        "respuesta_ia": "Che, no hay tiempo para explicaciones. La vida es demasiado corta para dar vueltas."
     }
 ]
