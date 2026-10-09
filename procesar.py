@@ -61,8 +61,9 @@ PERILLAS_DEFAULT = {
 
 PROSODIA_DEFAULT = {
     "modo_imitacion": "activo",
-    "patron_pausas": "natural_humano",
-    "factor_ritmo_variable": 1.0,
+    "patron_pausas": "natural_humano_porteno",
+    "factor_ritmo_variable": 1.05,
+    "dinamica_movil": "acentuacion_y_corte",
     "referencia_activa": "libre_y_arquetipos"
 }
 
@@ -175,7 +176,6 @@ def cotejar_y_corregir_induccion(texto_crudo):
 
 
 def buscar_muestra_audio_en_web(query_nombre):
-    """Busca y descarga archivos de audio reales de la web, guardándolos en la carpeta muestras_voz."""
     try:
         query_busqueda = f"{query_nombre} filetype:mp3 OR filetype:wav audio sample"
         url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query_busqueda)}"
@@ -210,17 +210,18 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
         audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
 
     prompt_director = (
-        "Sos el director acústico de este agente.\n"
+        "Sos el director acústico y de prosodia paramétrica de este agente.\n"
         f"Perillas actuales: {json_lib.dumps(perillas_actuales)}\n"
+        f"Prosodia actual: {json_lib.dumps(prosodia_actual)}\n"
         f"Orden del usuario: '{prompt_usuario}'\n"
-        "Analiza el pedido de imitación o timbre y devuelve un bloque JSON con perillas (pitch_factor, fundamental_hz, serie_armonica, etc.) y prosodia entre ```json ... ``` o 'NO_ES_AUDIO'."
+        "Analiza el pedido de imitación, ritmo fraseado y dinámicas móviles naturales, y devuelve un bloque JSON exacto con dos claves: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` o 'NO_ES_AUDIO'."
     )
 
     archivo_audio_subido = None
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             if audio_referencia_path and os.path.exists(audio_referencia_path):
-                print(f"📤 Subiendo muestra de audio {audio_referencia_path} a Gemini para análisis acústico...")
+                print(f"📤 Subiendo muestra {audio_referencia_path} a Gemini para análisis paramétrico...")
                 archivo_audio_subido = client.files.upload(file=audio_referencia_path)
 
             contents_param = [archivo_audio_subido, prompt_director] if archivo_audio_subido else [prompt_director]
@@ -235,10 +236,10 @@ def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
                 if bloques:
                     datos = json_lib.loads(bloques[0])
                     if "perillas" in datos:
-                        guardar_json_seguro(ARCHIVO_PERILLAS, datos["perillas"], "🎚️ Perillas calibradas por muestra web")
+                        guardar_json_seguro(ARCHIVO_PERILLAS, datos["perillas"], "🎚️ Perillas paramétricas calibradas")
                     if "prosodia" in datos:
-                        guardar_json_seguro(ARCHIVO_PROSODIA, datos["prosodia"], "🎙️ Prosodia calibrada")
-                    return "Listo, che. Muestra descargada y director acústico calibrado."
+                        guardar_json_seguro(ARCHIVO_PROSODIA, datos["prosodia"], "🎙️ Prosodia fraseada calibrada")
+                    return "Listo, che. Director paramétrico y prosodia ajustados."
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
@@ -259,7 +260,7 @@ def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
     if resp_ev:
         return resp_ev
 
-    system_prompt = "Sos Leandro hablando con un colega por Telegram. Porteño, directo, sin introducciones de robot, usando 'vos' y 'che'."
+    system_prompt = "Sos Leandro hablando con un colega por Telegram. Porteño, directo, sin introducciones de robot, usando 'vos' y 'che', con cadencia conversacional natural y fraseada."
     respuesta = ""
 
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
@@ -271,8 +272,28 @@ def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
             )
             if res and res.text:
                 respuesta = res.text.strip()
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                GEMINI_BLOQUEADO_POR_CUOTA = True
+            print(f"⚠️ Gemini falló, intentando Ollama: {e}")
+
+    if not respuesta:
+        print("🦙 Intentando conectar con Ollama local...")
+        payload = {
+            "model": "llama3.2",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            "options": {"num_ctx": 16384, "temperature": 0.4},
+            "stream": False,
+        }
+        try:
+            res_local = requests.post("http://127.0.0.1:11434/api/chat", json=payload, timeout=10)
+            if res_local.status_code == 200:
+                respuesta = res_local.json().get("message", {}).get("content", "").strip()
         except:
-            GEMINI_BLOQUEADO_POR_CUOTA = True
+            pass
 
     if not respuesta:
         respuesta = "Che, me quedé sin conexión, tirámela de nuevo."
@@ -291,7 +312,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con descarga de muestras web y director acústico.")
+    await update.message.reply_text("¡Buenas che! Bot activo con prosodia paramétrica y fraseo natural.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -320,7 +341,10 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
         
         pitch = float(p.get("pitch_factor", 1.0))
-        tempo = float(p.get("tempo_factor", 1.10)) * float(prosodia.get("factor_ritmo_variable", 1.0))
+        tempo_base = float(p.get("tempo_factor", 1.10))
+        factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
+        tempo = tempo_base * factor_ritmo
+        
         fund = float(p.get("fundamental_hz", 130))
         serie = p.get("serie_armonica", [])
 
@@ -329,7 +353,12 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
         if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        filtros = [f"atempo={max(0.5, min(2.0, tempo))}", f"asetrate=24000*{max(0.4, min(2.0, pitch))}"]
+        # Filtros paramétricos con ecualización armónica, formantes y compresor dinámico móvil
+        filtros = [
+            f"atempo={max(0.5, min(2.0, tempo))}",
+            f"asetrate=24000*{max(0.4, min(2.0, pitch))}"
+        ]
+
         for item in serie:
             try:
                 m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
@@ -338,12 +367,18 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
             except:
                 pass
-        filtros.append("dynaudnorm=f=150:g=15")
+
+        # Añadimos compresión dinámica móvil y ecualización de presencia conversacional
+        filtros.extend([
+            "equalizer=f=3000:t=h:w=300:g=3.5",
+            "dynaudnorm=f=120:g=18:p=0.9",
+            "volume=1.15"
+        ])
 
         subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="*(Muestra Web Descargada + Director Acústico)*")
+            await update.message.reply_voice(voice=vf, caption="*(Prosodia Paramétrica & Fraseo Natural)*")
 
         for f in [wav_f, ogg_f]:
             if os.path.exists(f): os.remove(f)
@@ -356,7 +391,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE
     async with lock_voz:
-        print("🎤 Procesando audio entrante...")
+        print("🎤 Procesando audio con prosodia paramétrica...")
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
         path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
@@ -379,8 +414,12 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
         prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
+        
         pitch = float(p.get("pitch_factor", 1.0))
-        tempo = float(p.get("tempo_factor", 1.10)) * float(prosodia.get("factor_ritmo_variable", 1.0))
+        tempo_base = float(p.get("tempo_factor", 1.10))
+        factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
+        tempo = tempo_base * factor_ritmo
+        
         fund = float(p.get("fundamental_hz", 130))
         serie = p.get("serie_armonica", [])
 
@@ -389,7 +428,11 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
         if os.path.exists(mp3_f): os.remove(mp3_f)
 
-        filtros = [f"atempo={max(0.5, min(2.0, tempo))}", f"asetrate=24000*{max(0.4, min(2.0, pitch))}"]
+        filtros = [
+            f"atempo={max(0.5, min(2.0, tempo))}",
+            f"asetrate=24000*{max(0.4, min(2.0, pitch))}"
+        ]
+
         for item in serie:
             try:
                 m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
@@ -398,12 +441,17 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
             except:
                 pass
-        filtros.append("dynaudnorm=f=150:g=15")
+
+        filtros.extend([
+            "equalizer=f=3000:t=h:w=300:g=3.5",
+            "dynaudnorm=f=120:g=18:p=0.9",
+            "volume=1.15"
+        ])
 
         subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"-Interpretado: {texto_crudo}\n*(Muestra Analizada + FFmpeg)*")
+            await update.message.reply_voice(voice=vf, caption=f"-Interpretado: {texto_crudo}\n*(Prosodia Paramétrica Natural)*")
 
         for f in [wav_f, ogg_f]:
             if os.path.exists(f):
@@ -423,7 +471,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot de Telegram con descargas en carpeta muestras...")
+    print("🚀 Iniciando Bot con Prosodia Paramétrica y Fraseo Dinámico...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
