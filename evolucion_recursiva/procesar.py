@@ -22,6 +22,7 @@ from gtts import gTTS
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
 REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
+ARCHIVO_PERILLAS = "perillas_voz.json"
 CARPETA_MUESTRAS = "muestras_voz"
 CARPETA_ORIGINALES = "originales"
 CARPETA_RECURSIVA = "evolucion_recursiva"
@@ -30,6 +31,24 @@ CARPETA_RECURSIVA = "evolucion_recursiva"
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 os.makedirs(CARPETA_ORIGINALES, exist_ok=True)
 os.makedirs(CARPETA_RECURSIVA, exist_ok=True)
+
+# Perillas de voz base iniciales (Persistentes)
+PERILLAS_DEFAULT = {
+    "pitch_factor": 0.80,      # Gravedad de la voz
+    "tempo_factor": 1.20,      # Velocidad / Ritmo rápido por defecto
+    "treble_gain": 3.0,        # Brillo / Agudos (dB)
+    "treble_freq": 4000,       # Frecuencia de corte para agudos (Hz)
+    "bass_gain": 5.0,          # Cuerpo / Graves (dB)
+    "bass_freq": 150,          # Frecuencia de corte para graves (Hz)
+    "harmonic_drive": 0.15,    # Saturación armónica / Calor analógico (0.0 a 0.5)
+    "harmonic_freq": 2500,     # Frecuencia central de enfoque armónico (Hz)
+    "crusher_bits": 16,        # Profundidad de bits para textura armónica (8 a 16)
+    "volume_mult": 1.1         # Ganancia general
+}
+
+if not os.path.exists(ARCHIVO_PERILLAS):
+    with open(ARCHIVO_PERILLAS, "w", encoding="utf-8") as f:
+        json_lib.dump(PERILLAS_DEFAULT, f, indent=4, ensure_ascii=False)
 
 for archivo_base, contenido_inicial in [
     (REGISTRO_INDUCCION, {}),
@@ -50,21 +69,31 @@ lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 
+def cargar_perillas():
+    if os.path.exists(ARCHIVO_PERILLAS):
+        try:
+            with open(ARCHIVO_PERILLAS, "r", encoding="utf-8") as f:
+                return json_lib.load(f)
+        except:
+            return PERILLAS_DEFAULT
+    return PERILLAS_DEFAULT
+
+
+def guardar_perillas(perillas):
+    with open(ARCHIVO_PERILLAS, "w", encoding="utf-8") as f:
+        json_lib.dump(perillas, f, indent=4, ensure_ascii=False)
+    sincronizar_con_github("🎚️ Actualización universal de perillas y audio")
+
+
 def inicializar_directorios_control(archivo_actual="procesar.py"):
-    """
-    1. 'originales/': Guarda el snapshot inalterable base (se hace una sola vez).
-    2. 'evolucion_recursiva/': Espeja y actualiza la versión viva actual de la raíz.
-    """
     try:
         path_original = os.path.join(CARPETA_ORIGINALES, archivo_actual)
         if os.path.exists(archivo_actual) and not os.path.exists(path_original):
             shutil.copy(archivo_actual, path_original)
-            print(f"🛡️ [Directorio Originales]: Snapshot base sellado en {path_original}")
 
         path_recursivo = os.path.join(CARPETA_RECURSIVA, archivo_actual)
         if os.path.exists(archivo_actual):
             shutil.copy(archivo_actual, path_recursivo)
-            print(f"🔄 [Directorio Recursivo]: Respaldo actualizado desde la raíz.")
     except Exception as e:
         print(f"⚠️ Error en control de directorios: {e}")
 
@@ -73,9 +102,7 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
-        
         subprocess.run(["git", "add", "."], check=True)
-        
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
@@ -90,9 +117,6 @@ def guardar_en_txt(rol, texto):
     sincronizar_con_github()
 
 
-# ==========================================
-# GESTIÓN DE HISTORIALES Y EVOLUCIÓN AUTÓNOMA
-# ==========================================
 def cargar_json(path, tipo_defecto):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -111,24 +135,16 @@ def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
     }
     with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
         json_lib.dump(historial, f, indent=4, ensure_ascii=False)
-    print(f"🧠 [Inducción Registrada]: '{error_whisper}' -> '{correccion_real}'")
     sincronizar_con_github()
 
 
 def registrar_refinamiento_ia(prompt_usuario, respuesta_generada):
     refinamientos = cargar_json(REGISTRO_REFINAMIENTO, [])
-    registro_nuevo = {
-        "entrada_usuario": prompt_usuario,
-        "respuesta_ia": respuesta_generada,
-        "estado": "refinado_por_api"
-    }
-    refinamientos.append(registro_nuevo)
+    refinamientos.append({"entrada_usuario": prompt_usuario, "respuesta_ia": respuesta_generada})
     if len(refinamientos) > 100:
         refinamientos = refinamientos[-100:]
-        
     with open(REGISTRO_REFINAMIENTO, "w", encoding="utf-8") as f:
         json_lib.dump(refinamientos, f, indent=4, ensure_ascii=False)
-    print("💡 [Refinamiento IA Registrado]")
     sincronizar_con_github()
 
 
@@ -136,28 +152,50 @@ def cotejar_y_corregir_induccion(texto_crudo):
     historial = cargar_json(REGISTRO_INDUCCION, {})
     if not historial:
         return texto_crudo
-    
     texto_lower = texto_crudo.lower().strip()
     if texto_lower in historial:
         return historial[texto_lower]["correcto"]
-
-    frases_conocidas = list(historial.keys())
-    coincidencias = difflib.get_close_matches(texto_lower, frases_conocidas, n=1, cutoff=0.70)
+    coincidencias = difflib.get_close_matches(texto_lower, list(historial.keys()), n=1, cutoff=0.70)
     if coincidencias:
         return historial[coincidencias[0]]["correcto"]
-
     return texto_crudo
 
 
 def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
-    """
-    Vibe coding directo sobre la raíz sin cortes abruptos de procesos.
-    """
     if not client:
         return None
 
-    print(f"🧠 [Vibe Coding Directo en Raíz]: Analizando contexto profundo para -> {archivo_objetivo}")
+    print(f"🧠 [Vibe Coding Universal]: Analizando solicitud libre -> '{prompt_usuario}'")
 
+    # 1. Intentamos primero interpretar si el pedido apunta a modificar parámetros de audio/perillas mediante IA libre
+    perillas_actuales = cargar_json(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
+    try:
+        prompt_perillas = "\njson\n".join([
+            "Sos un ingeniero de sonido y productor musical experto trabajando codo a codo con tu colega.",
+            f"Estado actual de las perillas de audio (JSON): {json_lib.dumps(perillas_actuales)}",
+            f"La orden o vibe de audio que te tiró tu colega es: '{prompt_usuario}'.",
+            "INSTRUCCIONES:",
+            "1. Analizá si el pedido de tu colega está relacionado con cambiar la voz, timbre, tono, velocidad, frecuencias, armónicos, volumen o estética sonora.",
+            "2. Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'.",
+            "3. Si SÍ es sobre audio, interpretá libre y creativamente el pedido actualizando las variables del JSON (pitch_factor, tempo_factor, treble_gain, treble_freq, bass_gain, bass_freq, harmonic_drive, harmonic_freq, crusher_bits, volume_mult).",
+            "4. Devolvé OBLIGATORIAMENTE un bloque JSON válido con el diccionario actualizado entre ```json ... ``` y nada más."
+        ])
+        res_p = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=prompt_perillas,
+            config=genai.types.GenerateContentConfig(temperature=0.3)
+        )
+        texto_p = res_p.text.strip()
+        if "NO_ES_AUDIO" not in texto_p:
+            bloques_json = re.findall(r"```(?:json)?\s*(.*?)\s*```", texto_p, re.DOTALL)
+            if bloques_json:
+                nuevo_dict = json_lib.loads(bloques_json[0])
+                guardar_perillas(nuevo_dict)
+                return "Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas."
+    except Exception as e:
+        print(f"⚠️ Aviso en análisis de perillas de audio (continuando a código si corresponde): {e}")
+
+    # 2. Si no era solo de perillas o requiere modificar la lógica de código general, ejecutamos el vibe coding sobre el script principal
     if not os.path.exists(archivo_objetivo):
         return None
 
@@ -165,7 +203,6 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
     archivo_historial_ia = None
     try:
         archivo_subido_ia = client.files.upload(file=archivo_objetivo)
-        
         if os.path.exists(TXT_FILE) and os.path.getsize(TXT_FILE) > 0:
             archivo_historial_ia = client.files.upload(file=TXT_FILE)
 
@@ -174,11 +211,10 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
             "Se adjunta el código fuente actual de la raíz y el historial completo.",
             f"La orden actual de tu colega es: '{prompt_usuario}'.",
             "INSTRUCCIONES CRÍTICAS:",
-            "1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o perillas pedidos.",
-            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de triple comillas con python.",
+            "1. Analizá todo el historial hacia atrás para comprender los cambios pedidos.",
+            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de ```python ... ```.",
             "3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz (procesar.py). Prohibido crear archivos paralelos.",
-            "4. Asegurate de que los parámetros de ffmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.",
-            "5. Si es solo charla, respondé al hueso en tono porteño natural."
+            "4. Si es solo charla, respondé al hueso en tono porteño natural."
         ])
 
         contents_param = [archivo_subido_ia, archivo_historial_ia, prompt_ia] if archivo_historial_ia else [archivo_subido_ia, prompt_ia]
@@ -186,24 +222,20 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
         res = client.models.generate_content(
             model="gemini-3.5-flash",
             contents=contents_param,
-            config=genai.types.GenerateContentConfig(
-                temperature=0.3
-            )
+            config=genai.types.GenerateContentConfig(temperature=0.3)
         )
         
         texto_generado = res.text.strip()
-        bloques_codigo = re.findall(r"
-", texto_generado, re.DOTALL)
+        bloques_codigo = re.findall(r"```(?:python|json|env|yaml)?\s*(.*?)\s*```", texto_generado, re.DOTALL)
         
         if bloques_codigo:
             nuevo_contenido = "\n".join(bloques_codigo)
             if len(nuevo_contenido) > 50:
                 with open(archivo_objetivo, "w", encoding="utf-8") as f:
                     f.write(nuevo_contenido)
-                
                 inicializar_directorios_control(archivo_objetivo)
-                sincronizar_con_github(f"🤖 Vibe coding autónomo: actualización directa en raíz de {archivo_objetivo}")
-                return f"Listo, che. Actualicé la raíz y dejé todo sincronizado en GitHub."
+                sincronizar_con_github(f"🤖 Vibe coding autónomo universal: actualización en raíz de {archivo_objetivo}")
+                return f"Listo, che. Actualicé la raíz con tu vibe, apliqué los cambios y dejé todo sincronizado en GitHub."
 
         return texto_generado
 
@@ -246,13 +278,10 @@ def llamar_ia_externa_o_local(prompt_usuario):
             response = client.models.generate_content(
                 model="gemini-3.5-flash",
                 contents=contents_param,
-                config=genai.types.GenerateContentConfig(
-                    system_instruction=system_prompt
-                )
+                config=genai.types.GenerateContentConfig(system_instruction=system_prompt)
             )
             if response and response.text:
                 respuesta_final = response.text.strip()
-                
             if archivo_historial:
                 try:
                     client.files.delete(name=archivo_historial.name)
@@ -297,7 +326,7 @@ def responder_usuario(orden):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding estable, perillas dinámicas y procesamiento de audio blindado.")
+    await update.message.reply_text("¡Buenas che! Bot activo con vibe coding universal, perillas persistentes y control de audio libre por IA.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -363,45 +392,36 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tts = gTTS(text=texto_limpio, lang="es", tld="com.ar")
             tts.save(ruta_respuesta_mp3)
 
-            # Perillas de voz abiertas, dinámicas y optimizadas para mayor velocidad
-            prompt_lower = texto_reconocido.lower()
-            
-            pitch_factor = 0.75  # Tono masculino/grave por defecto
-            tempo_factor = 1.25  # Ritmo acelerado y rápido por defecto como fue solicitado
+            # Cargamos las perillas persistentes actualizadas
+            p = cargar_perillas()
+            pitch_factor = p.get("pitch_factor", 0.80)
+            tempo_factor = p.get("tempo_factor", 1.20)
+            treble_gain = p.get("treble_gain", 3.0)
+            treble_freq = p.get("treble_freq", 4000)
+            bass_gain = p.get("bass_gain", 5.0)
+            bass_freq = p.get("bass_freq", 150)
+            harmonic_drive = p.get("harmonic_drive", 0.15)
+            harmonic_freq = p.get("harmonic_freq", 2500)
+            crusher_bits = p.get("crusher_bits", 16)
+            volume_mult = p.get("volume_mult", 1.1)
 
-            if any(k in prompt_lower for k in ["más grave", "mas grave", "voz grave", "grave", "profunda", "bajo"]):
-                pitch_factor = 0.60
-            elif any(k in prompt_lower for k in ["más agudo", "mas agudo", "agudo", "finito"]):
-                pitch_factor = 0.90
+            print(f"🎚️ [Audio Aplicado]: Pitch={pitch_factor} | Tempo={tempo_factor} | Agudos={treble_gain}dB@{treble_freq}Hz | Armónicos={harmonic_drive}@{harmonic_freq}Hz")
 
-            if any(k in prompt_lower for k in ["más rápido", "mas rápido", "rápido", "acelerado", "ritmo", "velocidad", "ligero", "aumentes"]):
-                tempo_factor = 1.45
-            elif any(k in prompt_lower for k in ["más lento", "mas lento", "lento", "pausado", "despacio"]):
-                tempo_factor = 0.85
-
-            # Compensación matemática de tempo para desacoplar pitch y velocidad
-            tempo_interno = tempo_factor / pitch_factor
-            if tempo_interno > 2.0:
-                filtro_tempo = f"atempo=2.0,atempo={tempo_interno / 2.0:.2f}"
-            elif tempo_interno < 0.5:
-                filtro_tempo = f"atempo=0.5,atempo={tempo_interno / 0.5:.2f}"
-            else:
-                filtro_tempo = f"atempo={tempo_interno:.2f}"
-
-            # Ecualización dinámica para dar calidez humana y cambiar el timbre (menos robótico/metálico)
-            if any(k in prompt_lower for k in ["humano", "menos robótico", "menos robotico", "robótico", "robotico", "timbre", "natural"]):
-                # Filtro ultra-humanizado: reduce sibilancia, atenúa agudos metálicos, resalta calidez de pecho
-                filtro_humanizar = "highpass=f=80,equalizer=f=220:width_type=h:width=100:g=7,equalizer=f=2000:width_type=h:width=1000:g=-8,equalizer=f=4000:width_type=h:width=1000:g=-12,lowpass=f=7000"
-                print("🎙️ [Filtro]: Aplicando ecualización ultra-humanizada para timbre natural.")
-            else:
-                # Filtro estándar optimizado
-                filtro_humanizar = "highpass=f=80,equalizer=f=180:width_type=h:width=120:g=5,equalizer=f=3200:width_type=h:width=800:g=-6,lowpass=f=8000"
-
-            print(f"🎚️ [FFmpeg Dinámico Humanizado]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor} | Tempo Interno -> {tempo_interno:.2f}")
+            # Cadena de FFmpeg profesional aplicando ecualización paramétrica y armónicos quirúrgicos
+            filtro_audio = (
+                f"atempo={tempo_factor},"
+                f"asetrate=24000*{pitch_factor},"
+                f"equalizer=f={treble_freq}:t=h:w=200:g={treble_gain},"
+                f"equalizer=f={bass_freq}:t=h:w=100:g={bass_gain},"
+                f"equalizer=f={harmonic_freq}:t=h:w=300:g={harmonic_drive * 15},"
+                f"acrusher=bits={crusher_bits}:mix={harmonic_drive},"
+                f"volume={volume_mult},"
+                f"dynaudnorm=f=150:g=15"
+            )
 
             subprocess.run([
                 "ffmpeg", "-y", "-i", ruta_respuesta_mp3,
-                "-filter:a", f"asetrate=24000*{pitch_factor},aresample=24000,{filtro_tempo},{filtro_humanizar},dynaudnorm=f=150:g=15",
+                "-filter:a", filtro_audio,
                 "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
                 ruta_respuesta_ogg
             ], check=True)
@@ -446,7 +466,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot estable con Vibe Coding directo y perillas dinámicas...")
+    print("🚀 Iniciando bot con Vibe Coding universal y perillas persistentes...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))

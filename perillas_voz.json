@@ -1,0 +1,12 @@
+{
+    "pitch_factor": 0.8,
+    "tempo_factor": 1.5,
+    "treble_gain": 3.0,
+    "treble_freq": 4000,
+    "bass_gain": 5.0,
+    "bass_freq": 150,
+    "harmonic_drive": 0.15,
+    "harmonic_freq": 2500,
+    "crusher_bits": 16,
+    "volume_mult": 1.1
+}
