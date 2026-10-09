@@ -48,20 +48,20 @@ os.makedirs(CARPETA_RECURSIVA, exist_ok=True)
 
 # Perillas de voz con serie armónica decimal abierta y dinámica (Persistentes)
 PERILLAS_DEFAULT = {
-    "pitch_factor": 0.80,        # Gravedad de la voz
-    "tempo_factor": 1.20,        # Velocidad base
-    "fundamental_hz": 130,       # Frecuencia fundamental base (Hz)
-    "serie_armonica": [          # Multiplicadores libres (enteros o decimales) y ganancia en dB
+    "pitch_factor": 1.30,        # Factor de tono elevado para voces femeninas
+    "tempo_factor": 1.10,        # Velocidad base
+    "fundamental_hz": 220,       # Frecuencia fundamental base para voz femenina (~220 Hz)
+    "serie_armonica": [          
         {"multiplicador": 1.0, "gain_db": 0.0},
-        {"multiplicador": 2.0, "gain_db": -3.0},
-        {"multiplicador": 3.0, "gain_db": -6.0}
+        {"multiplicador": 2.0, "gain_db": -2.0},
+        {"multiplicador": 3.0, "gain_db": -4.0}
     ],
-    "treble_gain": 3.0,          # Brillo / Agudos (dB)
-    "treble_freq": 4000,         # Frecuencia de corte para agudos (Hz)
-    "bass_gain": 5.0,            # Cuerpo / Graves (dB)
-    "bass_freq": 150,            # Frecuencia de corte para graves (Hz)
+    "treble_gain": 4.0,          # Brillo / Agudos (dB)
+    "treble_freq": 4500,         # Frecuencia de corte para agudos (Hz)
+    "bass_gain": 2.0,            # Cuerpo / Graves (dB)
+    "bass_freq": 200,            # Frecuencia de corte para graves (Hz)
     "volume_mult": 1.1,          # Ganancia general
-    "modo_voz": "gtts"           # "gtts" (sintético/perillas) o "xtts" (clonación por muestra)
+    "modo_voz": "xtts"           # "gtts" o "xtts"
 }
 
 # Perfil de prosodia y cadencia inductiva por muestras y arquetipos
@@ -241,26 +241,34 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
     perillas_actuales = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
     prosodia_actual = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
     
+    # Detección inteligente si piden versión mujer o imitación
+    quiere_mujer = any(w in prompt_usuario.lower() for w in ["mujer", "femenina", "chica", "locutora"])
+    if quiere_mujer:
+        perillas_actuales["pitch_factor"] = 1.35
+        perillas_actuales["fundamental_hz"] = 220
+        perillas_actuales["modo_voz"] = "xtts"
+        if not audio_referencia_path:
+            print("🌐 Buscando muestra femenina autónoma en la web...")
+            audio_referencia_path = buscar_muestra_audio_en_web("locutora argentina voz femenina")
+
     if not audio_referencia_path and any(w in prompt_usuario.lower() for w in ["imitá", "imitar", "voz de", "hablá como"]):
         print(f"🌐 Detectado pedido de imitación. Buscando muestra autónoma en la web para: '{prompt_usuario}'")
         audio_referencia_path = buscar_muestra_audio_en_web(prompt_usuario)
         if audio_referencia_path:
             perillas_actuales["modo_voz"] = "xtts"
-            guardar_json_seguro(ARCHIVO_PERILLAS, perillas_actuales, "🎙️ Modo XTTS activado por muestra web autónoma")
 
     prompt_director_orquesta = (
         "Sos el director acústico y de síntesis vocal de este agente autónomo.\n"
         "Tenés dos motores de voz disponibles:\n"
-        "1. 'xtts': Motor Open Source de clonación de voz hiperrealista por muestra (Zero-Shot). Usalo OBLIGATORIAMENTE si el usuario pide explícitamente imitar a una persona, un personaje, un acento, un orador, o si hay una muestra de audio/archivo de referencia descargado de la web.\n"
-        "2. 'gtts': Motor sintético base combinado con perillas cuantitativas, ecualización y serie armónica decimal en FFmpeg. Usalo para charlas generales, modulación abstracta de arquetipos (ej: 'más grave', 'más rápido') o cuando no haya muestras de clonación.\n\n"
+        "1. 'xtts': Motor Open Source de clonación de voz hiperrealista por muestra (Zero-Shot). Usalo OBLIGATORIAMENTE si el usuario pide imitar, oradores o versión mujer.\n"
+        "2. 'gtts': Motor sintético base combinado con perillas cuantitativas, ecualización y serie armónica decimal en FFmpeg.\n\n"
         f"Perillas cuantitativas y serie armónica actual (JSON): {json_lib.dumps(perillas_actuales)}\n"
         f"Parámetros de prosodia actuales (JSON): {json_lib.dumps(prosodia_actual)}\n"
         f"Orden del usuario: '{prompt_usuario}'\n\n"
         "INSTRUCCIONES CRÍTICAS:\n"
-        "1. Evaluá si la orden requiere cambiar el `modo_voz` a 'xtts' o mantenerlo en 'gtts'.\n"
-        "2. Ajustá los valores numéricos, fundamental en Hz y multiplicadores decimales de la 'serie_armonica' según el vibe pedido.\n"
-        "3. Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'.\n"
-        "4. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves exactas: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
+        "1. Si piden versión mujer, elevá fundamental_hz a ~220 y pitch_factor a >1.30, activando 'xtts'.\n"
+        "2. Si NO es sobre audio, respondé exactamente la palabra 'NO_ES_AUDIO'.\n"
+        "3. Devolvé OBLIGATORIAMENTE un bloque JSON con dos claves exactas: `{\"perillas\": {...}, \"prosodia\": {...}}` entre ```json ... ``` y nada más."
     )
 
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
@@ -302,7 +310,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py", 
 
     print(f"🦙 [Motor Local Llama con Web & XTTS]: Analizando solicitud -> '{prompt_usuario}'")
     info_web = ""
-    if any(k in prompt_usuario.lower() for k in ["busca", "imitá", "como", "estilo", "orador", "periodista", "persona", "arquetipo"]):
+    if any(k in prompt_usuario.lower() for k in ["busca", "imitá", "como", "estilo", "orador", "mujer", "femenina"]):
         info_web = buscar_en_web_duckduckgo(prompt_usuario)
 
     system_local = prompt_director_orquesta + f"\n[Contexto web adicional: {info_web}]"
@@ -413,7 +421,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con Director Acústico, XTTS y búsqueda web autónoma de audio.")
+    await update.message.reply_text("¡Buenas che! Bot activo con Director Acústico, XTTS (soporte versión mujer) y búsqueda web autónoma.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -433,7 +441,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ULTIMO_AUDIO_PENDIENTE["path"]:
         ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
-    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate"])
+    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "buscáte", "buscate", "mujer", "femenina"])
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
@@ -446,24 +454,23 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
         
         modo_voz = p.get("modo_voz", "gtts")
-        pitch_factor = float(p.get("pitch_factor", 0.80))
-        tempo_base = float(p.get("tempo_factor", 1.20))
+        pitch_factor = float(p.get("pitch_factor", 1.30))
+        tempo_base = float(p.get("tempo_factor", 1.10))
         tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
         
-        fund = float(p.get("fundamental_hz", 130))
+        fund = float(p.get("fundamental_hz", 220))
         serie_armonica = p.get("serie_armonica", [])
         
-        treble_gain = float(p.get("treble_gain", 3.0))
-        treble_freq = float(p.get("treble_freq", 4000))
-        bass_gain = float(p.get("bass_gain", 5.0))
-        bass_freq = float(p.get("bass_freq", 150))
+        treble_gain = float(p.get("treble_gain", 4.0))
+        treble_freq = float(p.get("treble_freq", 4500))
+        bass_gain = float(p.get("bass_gain", 2.0))
+        bass_freq = float(p.get("bass_freq", 200))
         volume_mult = float(p.get("volume_mult", 1.1))
 
         audio_speaker_wav = None
         for arch_m in os.listdir(CARPETA_MUESTRAS):
-            if arch_m.startswith("web_auto_"):
+            if arch_m.startswith("web_auto_") or arch_m.startswith("audio_"):
                 audio_speaker_wav = os.path.join(CARPETA_MUESTRAS, arch_m)
-                modo_voz = "xtts"
                 break
 
         ruta_respuesta_wav = "respuesta.wav"
@@ -545,7 +552,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ], check=True)
 
         with open(ruta_respuesta_ogg, "rb") as voice_file:
-            await update.message.reply_voice(voice=voice_file, caption=f"*(Modo: {modo_voz.upper()} + XTTS)*")
+            await update.message.reply_voice(voice=voice_file, caption=f"*(Modo: {modo_voz.upper()} + Versión Mujer)*")
 
         for archivo in [ruta_respuesta_wav, ruta_respuesta_ogg]:
             if os.path.exists(archivo):
@@ -599,28 +606,27 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
             
             modo_voz = p.get("modo_voz", "gtts")
-            pitch_factor = float(p.get("pitch_factor", 0.80))
-            tempo_base = float(p.get("tempo_factor", 1.20))
+            pitch_factor = float(p.get("pitch_factor", 1.30))
+            tempo_base = float(p.get("tempo_factor", 1.10))
             tempo_factor = tempo_base * float(prosodia.get("factor_ritmo_variable", 1.0))
             
-            fund = float(p.get("fundamental_hz", 130))
+            fund = float(p.get("fundamental_hz", 220))
             serie_armonica = p.get("serie_armonica", [])
             
-            treble_gain = float(p.get("treble_gain", 3.0))
-            treble_freq = float(p.get("treble_freq", 4000))
-            bass_gain = float(p.get("bass_gain", 5.0))
-            bass_freq = float(p.get("bass_freq", 150))
+            treble_gain = float(p.get("treble_gain", 4.0))
+            treble_freq = float(p.get("treble_freq", 4500))
+            bass_gain = float(p.get("bass_gain", 2.0))
+            bass_freq = float(p.get("bass_freq", 200))
             volume_mult = float(p.get("volume_mult", 1.1))
 
             audio_speaker_wav = audio_path_referencia
             for arch_m in os.listdir(CARPETA_MUESTRAS):
                 if arch_m.startswith("web_auto_"):
                     audio_speaker_wav = os.path.join(CARPETA_MUESTRAS, arch_m)
-                    modo_voz = "xtts"
                     break
 
             audio_generado_ok = False
-            if modo_voz == "xtts" and XTTS_DISPONIBLE:
+            if modo_voz == "xtts" and XTTS_DISPONIBLE and audio_speaker_wav:
                 try:
                     print(f"🧬 Generando voz con clonación XTTS usando referencia: {audio_speaker_wav}")
                     if xtts_model is None:
@@ -695,7 +701,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     ruta_respuesta_ogg
                 ], check=True)
 
-            caption_est = f"-Interpretado: {texto_crudo}\n*(Modo: {modo_voz.upper()} + Director Acústico)*"
+            caption_est = f"-Interpretado: {texto_crudo}\n*(Modo: {modo_voz.upper()} + Versión Mujer)*"
 
             with open(ruta_respuesta_ogg, "rb") as voice_file:
                 await update.message.reply_voice(voice=voice_file, caption=caption_est)
@@ -728,7 +734,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Webhook error: {e}")
 
-    print("🚀 Iniciando bot con Director Acústico + XTTS + Búsqueda Web Autónoma...")
+    print("🚀 Iniciando bot con Director Acústico + XTTS (Versión Mujer) + Búsqueda Web...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
