@@ -3,5 +3,7 @@
     "modo_imitacion": "activo",
     "patron_pausas": "locutor_profesional_pausado",
     "factor_ritmo_variable": 1.05,
-    "referencia_activa": "locutor_radio_institucional"
+    "referencia_activa": "locutor_radio_institucional",
+    "pitch_factor": 1.0,
+    "tempo_factor": 1.0
 }
