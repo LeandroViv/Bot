@@ -9,6 +9,9 @@ import subprocess
 import requests
 import time
 
+# Aceptar Términos de Servicio de Coqui de forma no interactiva para GitHub Actions
+os.environ["COQUI_TOS_AGREED"] = "1"
+
 print("🚀 [INIT]: Importando librerías...")
 from telegram import Update
 from telegram.ext import (
@@ -565,52 +568,4 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         
                     freq = fund * m
                     if 20.0 <= freq <= 11000.0:
-                        filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
-                except:
-                    pass
-
-            filtros.extend([
-                "dynaudnorm=f=120:g=18:p=0.9",
-                f"volume={vol}"
-            ])
-
-            subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
-            if os.path.exists(wav_f): os.remove(wav_f)
-
-        with open(ogg_f, "rb") as vf:
-            caption_txt = f"-Interpretado: {texto_crudo}\n🧬 *(XTTS Clonación exitosa)*" if xtts_generado else f"-Interpretado: {texto_crudo}\n⚠️ *(XTTS no disponible -> FFmpeg paramétrico)*"
-            await update.message.reply_voice(voice=vf, caption=caption_txt)
-
-        if os.path.exists(ogg_f): os.remove(ogg_f)
-
-
-def main():
-    inicializar_directorios_control("procesar.py")
-    if not TOKEN:
-        print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
-        return
-
-    print("🧹 Limpiando webhooks...")
-    try:
-        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
-    except Exception as e:
-        print(f"⚠️ Aviso webhook: {e}")
-
-    print("🚀 Iniciando Bot con control de muestras y XTTS...")
-    
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
-
-    while True:
-        try:
-            print("🔄 [POLLING]: Conectando y escuchando eventos...")
-            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
-        except Exception as e:
-            print(f"⚠️ Red de Telegram interrumpida ({e}). Reconectando en 5 segundos...")
-            time.sleep(5)
-
-
-if __name__ == "__main__":
-    main()
+                        filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15,
