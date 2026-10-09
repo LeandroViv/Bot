@@ -175,8 +175,7 @@ def procesar_evolucion_autonoma(prompt_usuario, archivo_objetivo="procesar.py"):
             f"La orden actual de tu colega es: '{prompt_usuario}'.",
             "INSTRUCCIONES CRÍTICAS:",
             "1. Analizá todo el historial hacia atrás para comprender los ajustes de voz, tono, ritmo o perillas pedidos.",
-            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de
-.",
+            "2. Si la orden implica modificar código, devolvé OBLIGATORIAMENTE el bloque de código completo modificado dentro de triple comillas con python.",
             "3. Modificá y sobrescribí UNICAMENTE el archivo principal en la raíz (procesar.py). Prohibido crear archivos paralelos.",
             "4. Asegurate de que los parámetros de ffmpeg o lógica de voz sean dinámicos y adaptables según los pedidos.",
             "5. Si es solo charla, respondé al hueso en tono porteño natural."
@@ -389,8 +388,14 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 filtro_tempo = f"atempo={tempo_interno:.2f}"
 
-            # Ecualización para dar calidez humana (refuerzo de graves en 180Hz y atenuación de agudos metálicos en 3.2kHz)
-            filtro_humanizar = "equalizer=f=180:width_type=h:width=120:g=5,equalizer=f=3200:width_type=h:width=800:g=-6"
+            # Ecualización dinámica para dar calidez humana y cambiar el timbre (menos robótico/metálico)
+            if any(k in prompt_lower for k in ["humano", "menos robótico", "menos robotico", "robótico", "robotico", "timbre", "natural"]):
+                # Filtro ultra-humanizado: reduce sibilancia, atenúa agudos metálicos, resalta calidez de pecho
+                filtro_humanizar = "highpass=f=80,equalizer=f=220:width_type=h:width=100:g=7,equalizer=f=2000:width_type=h:width=1000:g=-8,equalizer=f=4000:width_type=h:width=1000:g=-12,lowpass=f=7000"
+                print("🎙️ [Filtro]: Aplicando ecualización ultra-humanizada para timbre natural.")
+            else:
+                # Filtro estándar optimizado
+                filtro_humanizar = "highpass=f=80,equalizer=f=180:width_type=h:width=120:g=5,equalizer=f=3200:width_type=h:width=800:g=-6,lowpass=f=8000"
 
             print(f"🎚️ [FFmpeg Dinámico Humanizado]: Pitch -> {pitch_factor} | Tempo -> {tempo_factor} | Tempo Interno -> {tempo_interno:.2f}")
 
