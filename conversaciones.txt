@@ -854,3 +854,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: bueno ahora te pido que suenes con la cadencia brítmica y dinámica de un  porteño que está juntándose en un lugar con gente
 ---
+[LEANDRO_BOT]: Listo, che. Interpreté tu vibe armónico con enteros o decimales, ajusté la serie y el flujo prosódico al vuelo.
+---
