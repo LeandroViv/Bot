@@ -826,3 +826,5 @@ Tirame el detalle de lo que necesitás y lo cocino al toque.
 ---
 [USUARIO]: Te quiero pedir por favor que suenes más rápido, un ritmo más rápido y que bueno ese cambio lo mantengas por favor, gracias.
 ---
+[LEANDRO_BOT]: Listo, che. Interpreté tu vibe de audio al vuelo, ajusté las perillas y frecuencias con total libertad y ya quedaron guardadas.
+---
