@@ -26,6 +26,14 @@ def _patched_torch_load(f, map_location=None, pickle_module=None, *, weights_onl
 torch.load = _patched_torch_load
 # ----------------------------------------------------------
 
+# --- PARCHE PARA EVITAR EL ERROR DE TORCHCODEC EN TORCHAUDIO ---
+import torchaudio
+try:
+    torchaudio.set_audio_backend("soundfile")
+except:
+    pass
+# -------------------------------------------------------------
+
 from telegram import Update
 from telegram.request import HTTPXRequest
 from telegram.ext import (
@@ -131,7 +139,7 @@ def obtener_xtts():
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 [XTTS]: Cargando modelo en memoria con parche PyTorch 2.6...")
+            print("🧠 [XTTS]: Cargando modelo en memoria con parches aplicados...")
             _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
             print("✅ [XTTS]: Modelo instanciado correctamente.")
         except Exception as e:
@@ -374,7 +382,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con parche global de PyTorch 2.6.")
+    await update.message.reply_text("¡Buenas che! Bot activo con parche de torchaudio.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -603,7 +611,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🧠 [ARRANQUE]: Precargando XTTS v2 con parche global de PyTorch...")
+    print("🧠 [ARRANQUE]: Precargando XTTS v2 con parches activos...")
     try:
         obtener_xtts()
     except Exception as e:
