@@ -9,9 +9,28 @@ import subprocess
 import requests
 import time
 
+# Aceptar Términos de Servicio de Coqui de forma no interactiva para GitHub Actions
 os.environ["COQUI_TOS_AGREED"] = "1"
 
 print("🚀 [INIT]: Importando librerías...")
+
+# --- SOLUCIÓN 1: PARCHE DE SEGURIDAD PYTORCH 2.6 (WeightsUnpickler Error) ---
+import torch
+try:
+    from TTS.tts.configs.xtts_config import XttsConfig
+    torch.serialization.add_safe_globals([XttsConfig])
+except Exception as e:
+    print(f"⚠️ [AVISO PYTORCH SAFE GLOBALS]: {e}")
+
+# Parche de compatibilidad para forzar weights_only=False en versiones estrictas de PyTorch
+_original_torch_load = torch.load
+def _patched_torch_load(*args, **kwargs):
+    if "weights_only" in kwargs:
+        kwargs["weights_only"] = False
+    return _original_torch_load(*args, **kwargs)
+torch.load = _patched_torch_load
+# --------------------------------------------------------------------------
+
 from telegram import Update
 from telegram.request import HTTPXRequest
 from telegram.ext import (
@@ -117,9 +136,9 @@ def obtener_xtts():
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 [XTTS]: Cargando modelo en memoria...")
+            print("🧠 [XTTS]: Cargar modelo en memoria con parches aplicados...")
             _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
-            print("✅ [XTTS]: Instancia cargada con éxito.")
+            print("✅ [XTTS]: Modelo instanciado correctamente.")
         except Exception as e:
             import traceback
             print(f"❌ [XTTS EXCEPCIÓN REAL]: {e}")
@@ -163,7 +182,7 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
         token_git = os.environ.get("GITHUB_TOKEN")
         if token_git:
             subprocess.run(["git", "remote", "set-url", "origin", f"https://{token_git}@github.com/LeandroViv/Bot.git"], check=True)
-        subprocess.run(["git", "add", "procesar.py", "perillas_voz.json", "prosodia_cadencia.json", "historial_induccion.json", "historial_refinamiento.json", "conversaciones.txt"], check=True)
+        subprocess.run(["git", "add", "procesar.py", "perillas_voz.json", "prosodia_cadencia.json", "historial_induccion.json", "historial_refinamiento.json", "conversaciones.txt", "muestras_voz/"], check=True)
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
@@ -225,6 +244,7 @@ def buscar_muestra_audio_en_web(query_nombre):
                     ruta_destino = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
                     with open(ruta_destino, "wb") as f:
                         f.write(res_audio.content)
+                    sincronizar_con_github("🎵 Muestra de audio descargada desde la web")
                     return ruta_destino
     except Exception as e:
         print(f"⚠️ Error descargando muestra web: {e}")
@@ -245,6 +265,7 @@ def obtener_o_construir_muestra_voz(query_nombre):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_temp, "-ar", "24000", "-ac", "1", ruta_sintetica], check=True)
         if os.path.exists(mp3_temp):
             os.remove(mp3_temp)
+        sincronizar_con_github("🎵 Muestra sintética generada y persista")
         return ruta_sintetica
     except Exception as e:
         print(f"⚠️ Error construyendo muestra sintética: {e}")
@@ -358,7 +379,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con XTTS y timeouts extendidos.")
+    await update.message.reply_text("¡Buenas che! Bot activo con parche PyTorch y timeouts extendidos.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -587,7 +608,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🧠 [ARRANQUE]: Precargando XTTS v2...")
+    print("🧠 [ARRANQUE]: Precargando XTTS v2 con parche de PyTorch...")
     try:
         obtener_xtts()
     except Exception as e:
@@ -595,8 +616,8 @@ def main():
 
     print("🚀 Iniciando Bot con timeouts de red extendidos...")
     
-    # Configuramos timeouts de red amplios (connect: 30s, read: 60s) para evitar ReadError de Telegram durante XTTS
-    request_config = HTTPXRequest(connect_timeout=30.0, read_timeout=60.0)
+    # Timeouts extendidos de red (connect: 60s, read: 120s, write: 120s)
+    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
     
     app.add_handler(CommandHandler("start", start))
