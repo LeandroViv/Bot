@@ -32,7 +32,7 @@ jobs:
       - name: Instalar dependencias del sistema (FFmpeg y Tauri deps)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libwebkit2gtk-4.0-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev build-essential curl wget file libasound2-dev libpulse-dev
+          sudo apt-get install -y ffmpeg libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev build-essential curl wget file libasound2-dev libpulse-dev
 
       - name: Instalar Rust, Bun y Just
         run: |
