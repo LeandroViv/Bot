@@ -13,6 +13,7 @@ os.environ["COQUI_TOS_AGREED"] = "1"
 
 print("🚀 [INIT]: Importando librerías...")
 from telegram import Update
+from telegram.request import HTTPXRequest
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -357,7 +358,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con XTTS directo.")
+    await update.message.reply_text("¡Buenas che! Bot activo con XTTS y timeouts extendidos.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -586,16 +587,18 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    # Precarga obligatoria al arrancar para que los pesos queden en caché local listos
     print("🧠 [ARRANQUE]: Precargando XTTS v2...")
     try:
         obtener_xtts()
     except Exception as e:
         print(f"⚠️ [AVISO ARRANQUE]: {e}")
 
-    print("🚀 Iniciando Bot con polling activo...")
+    print("🚀 Iniciando Bot con timeouts de red extendidos...")
     
-    app = Application.builder().token(TOKEN).build()
+    # Configuramos timeouts de red amplios (connect: 30s, read: 60s) para evitar ReadError de Telegram durante XTTS
+    request_config = HTTPXRequest(connect_timeout=30.0, read_timeout=60.0)
+    app = Application.builder().token(TOKEN).request(request_config).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
     app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
