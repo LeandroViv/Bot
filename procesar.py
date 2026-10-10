@@ -14,22 +14,18 @@ os.environ["COQUI_TOS_AGREED"] = "1"
 
 print("🚀 [INIT]: Importando librerías...")
 
-# --- SOLUCIÓN 1: PARCHE DE SEGURIDAD PYTORCH 2.6 (WeightsUnpickler Error) ---
+# --- SOLUCIÓN DEFINITIVA: PARCHE GLOBAL DE PYTORCH 2.6 ---
 import torch
-try:
-    from TTS.tts.configs.xtts_config import XttsConfig
-    torch.serialization.add_safe_globals([XttsConfig])
-except Exception as e:
-    print(f"⚠️ [AVISO PYTORCH SAFE GLOBALS]: {e}")
+import torch.serialization
 
-# Parche de compatibilidad para forzar weights_only=False en versiones estrictas de PyTorch
 _original_torch_load = torch.load
-def _patched_torch_load(*args, **kwargs):
-    if "weights_only" in kwargs:
-        kwargs["weights_only"] = False
-    return _original_torch_load(*args, **kwargs)
+
+def _patched_torch_load(f, map_location=None, pickle_module=None, *, weights_only=None, **kwargs):
+    # Forzamos weights_only a False para permitir la carga de configuraciones y modelos de Coqui XTTS
+    return _original_torch_load(f, map_location, pickle_module, weights_only=False, **kwargs)
+
 torch.load = _patched_torch_load
-# --------------------------------------------------------------------------
+# ----------------------------------------------------------
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -136,7 +132,7 @@ def obtener_xtts():
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 [XTTS]: Cargar modelo en memoria con parches aplicados...")
+            print("🧠 [XTTS]: Cargando modelo en memoria con parche PyTorch 2.6...")
             _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
             print("✅ [XTTS]: Modelo instanciado correctamente.")
         except Exception as e:
@@ -265,7 +261,7 @@ def obtener_o_construir_muestra_voz(query_nombre):
         subprocess.run(["ffmpeg", "-y", "-i", mp3_temp, "-ar", "24000", "-ac", "1", ruta_sintetica], check=True)
         if os.path.exists(mp3_temp):
             os.remove(mp3_temp)
-        sincronizar_con_github("🎵 Muestra sintética generada y persista")
+        sincronizar_con_github("🎵 Muestra sintética generada y persistida")
         return ruta_sintetica
     except Exception as e:
         print(f"⚠️ Error construyendo muestra sintética: {e}")
@@ -379,7 +375,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con parche PyTorch y timeouts extendidos.")
+    await update.message.reply_text("¡Buenas che! Bot activo con parche global de PyTorch 2.6.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -602,36 +598,4 @@ def main():
         print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
         return
 
-    print("🧹 Limpiando webhooks...")
-    try:
-        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
-    except Exception as e:
-        print(f"⚠️ Aviso webhook: {e}")
-
-    print("🧠 [ARRANQUE]: Precargando XTTS v2 con parche de PyTorch...")
-    try:
-        obtener_xtts()
-    except Exception as e:
-        print(f"⚠️ [AVISO ARRANQUE]: {e}")
-
-    print("🚀 Iniciando Bot con timeouts de red extendidos...")
-    
-    # Timeouts extendidos de red (connect: 60s, read: 120s, write: 120s)
-    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
-    app = Application.builder().token(TOKEN).request(request_config).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
-
-    while True:
-        try:
-            print("🔄 [POLLING]: Conectando y escuchando eventos...")
-            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
-        except Exception as e:
-            print(f"⚠️ Red de Telegram interrumpida ({e}). Reconectando en 5 segundos...")
-            time.sleep(5)
-
-
-if __name__ == "__main__":
-    main()
+    print("🧹
