@@ -599,4 +599,33 @@ def main():
 
     print("🧹 Limpiando webhooks...")
     try:
-        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true", timeout
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
+    except Exception as e:
+        print(f"⚠️ Aviso webhook: {e}")
+
+    print("🧠 [ARRANQUE]: Precargando XTTS v2 con parche global de PyTorch...")
+    try:
+        obtener_xtts()
+    except Exception as e:
+        print(f"⚠️ [AVISO ARRANQUE]: {e}")
+
+    print("🚀 Iniciando Bot con timeouts de red extendidos...")
+    
+    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
+    app = Application.builder().token(TOKEN).request(request_config).build()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
+
+    while True:
+        try:
+            print("🔄 [POLLING]: Conectando y escuchando eventos...")
+            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        except Exception as e:
+            print(f"⚠️ Red de Telegram interrumpida ({e}). Reconectando en 5 segundos...")
+            time.sleep(5)
+
+
+if __name__ == "__main__":
+    main()
