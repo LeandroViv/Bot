@@ -178,33 +178,38 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
 
     if BARK_DISPONIBLE:
         try:
-            print("🎙️ [CLONADOR]: Sintetizando voz expresiva con Bark...")
+            print("🎙️ [CLONADOR]: Sintetizando voz en castellano con Bark...")
             processor = AutoProcessor.from_pretrained("suno/bark-small")
             model = BarkModel.from_pretrained("suno/bark-small")
             
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = "cpu"
             model = model.to(device)
 
-            # Preset de voz en español con matices naturales
-            inputs = processor(texto, voice_preset="v2/es_speaker_3").to(device)
-            audio_array = model.generate(**inputs)
+            # Forzamos etiqueta de idioma [es] y recorte preventivo para CPU
+            texto_procesar = f"[es] {texto[:180]}"
+
+            inputs = processor(texto_procesar, voice_preset="v2/es_speaker_2").to(device)
+            
+            with torch.no_grad():
+                audio_array = model.generate(**inputs, max_new_tokens=450)
+            
             audio_array = audio_array.cpu().numpy().squeeze()
 
             sf.write(wav_temp, audio_array, model.generation_config.sample_rate)
             generado_ok = os.path.exists(wav_temp)
+            print("✅ [CLONADOR]: Audio en castellano generado con éxito.")
         except Exception as e:
-            print(f"⚠️ Error en modelo Bark, aplicando fallback: {e}")
+            print(f"⚠️ Error en modelo Bark: {e}")
 
     if not generado_ok:
-        # Fallback de emergencia si Bark falla
-        print("⚠️ Usando fallback de emergencia para audio...")
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=200:duration=2", wav_temp], check=True)
+        print("⚠️ Usando fallback de emergencia con FFmpeg...")
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=220:duration=2", wav_temp], check=True)
 
-    # Retoque final con FFmpeg (Ecualización y Opus para Telegram)
+    # Retoque final con FFmpeg para Telegram
     filtros = [
         "dynaudnorm=f=120:g=18:p=0.9",
-        "equalizer=f=90:t=h:w=100:g=3.0",    # Graves cálidos
-        "equalizer=f=3500:t=h:w=300:g=4.0",  # Presencia de locutor
+        "equalizer=f=90:t=h:w=100:g=3.0",
+        "equalizer=f=3500:t=h:w=300:g=4.0",
         "volume=0.95"
     ]
 
@@ -220,7 +225,7 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con clonador liviano y respaldo dual Gemini / Llama 3.2.")
+    await update.message.reply_text("¡Buenas che! Bot activo con clonador en castellano y respaldo dual Gemini / Llama 3.2.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -238,7 +243,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         generar_audio_con_clonador(texto_limpio, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="🎙️ *(Locución nocturna generada por IA)*")
+            await update.message.reply_voice(voice=vf, caption="🎙️ *(Locución nocturna en castellano)*")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
     else:
@@ -286,7 +291,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con clonación liviana y respaldo local...")
+    print("🚀 Iniciando Bot con clonación en castellano y respaldo local...")
     
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
