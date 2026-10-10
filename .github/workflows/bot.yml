@@ -40,11 +40,17 @@ jobs:
           sleep 5
           ollama pull llama3.2
 
+      - name: Levantar servidor de XTTS API en Docker
+        run: |
+          docker run -d -p 8020:8020 --name xtts-server daswer123/xtts-api-server --listen
+          echo "Esperando a que la API de XTTS inicie en Docker..."
+          sleep 20
+
       - name: Instalar y limpiar librerías de Python
         run: |
           python -m pip install --upgrade pip
           pip uninstall -y google-generativeai google-ai-generativelanguage || true
-          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts faster-whisper google-genai transformers==4.38.2 TTS
+          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts faster-whisper google-genai transformers==4.38.2
 
       - name: Ejecutar el Bot
         env:
@@ -53,6 +59,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ secrets.HF_DATASET_REPO }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XTTS_API_URL: "http://localhost:8020"
           COQUI_TOS_AGREED: "1"
         run: |
           python procesar.py
