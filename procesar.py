@@ -119,9 +119,9 @@ def obtener_xtts():
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 Cargando modelo Coqui XTTS v2...")
+            print("🧠 Cargando modelo Coqui XTTS v2 (esto puede demorar unos segundos la primera vez)...")
             _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
-            print("✅ [XTTS]: Modelo cargado con éxito.")
+            print("✅ [XTTS]: Modelo cargado y listo en memoria.")
         except Exception as e:
             print(f"❌ [XTTS ERROR CRÍTICO]: Falló al inicializar el modelo -> {e}")
             return None
@@ -368,7 +368,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con reporte XTTS detallado.")
+    await update.message.reply_text("¡Buenas che! Bot activo con XTTS precargado.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -388,7 +388,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
         
-        # Forzamos la obtención o construcción explícita de la muestra de referencia
         audio_ref = obtener_o_construir_muestra_voz(texto_usuario)
         print(f"📁 [AUDIO REF SELECCIONADO]: {audio_ref}")
             
@@ -404,7 +403,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             xtts_engine = obtener_xtts()
             if xtts_engine:
                 try:
-                    print(f"🧬 [XTTS]: Intentando clonar voz usando referencia: {audio_ref}")
+                    print(f"🧬 [XTTS]: Clonando voz usando referencia precargada: {audio_ref}")
                     wav_xtts = "resp_xtts.wav"
                     xtts_engine.tts_to_file(
                         text=texto_limpio,
@@ -417,7 +416,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     xtts_generado = True
                     print("✅ [XTTS]: ¡Éxito! Audio clonado neuronalmente.")
                 except Exception as e:
-                    print(f"⚠️ [XTTS ERROR]: Falló la clonación neuronal -> {e}. Pasando a FFmpeg paramétrico...")
+                    print(f"⚠️ [XTTS ERROR]: Falló la clonación -> {e}. Pasando a FFmpeg paramétrico...")
 
         if not xtts_generado:
             print("🎚️ [FALLBACK]: Renderizando con gTTS + FFmpeg paramétrico...")
@@ -599,7 +598,11 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con control de muestras y XTTS...")
+    # PRECAGA DE XTTS: Descarga y carga el modelo al arrancar el bot (evita el timeout en el primer mensaje)
+    print("🧠 [ARRANQUE]: Precargando modelo XTTS v2 en memoria...")
+    obtener_xtts()
+
+    print("🚀 Iniciando Bot con XTTS precargado y listo...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
