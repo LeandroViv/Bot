@@ -29,42 +29,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependencias del sistema (FFmpeg y Tauri deps)
+      - name: Instalar FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev build-essential curl wget file libasound2-dev libpulse-dev
+          sudo apt-get install -y ffmpeg
 
-      - name: Instalar Rust, Bun y Just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          
-          curl -fsSL https://bun.sh/install | bash
-          echo "$HOME/.bun/bin" >> $GITHUB_PATH
-
-          export PATH="$HOME/.cargo/bin:$HOME/.bun/bin:$PATH"
-          cargo install just
-
-      - name: Clonar y compilar Voicebox desde el código fuente
-        run: |
-          export PATH="$HOME/.cargo/bin:$HOME/.bun/bin:$PATH"
-          git clone https://github.com/jamiepine/voicebox.git
-          cd voicebox
-          just setup
-          just build
-
-      - name: Instalar Ollama y descargar modelo
+      - name: Instalar Ollama y descargar modelo local
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           nohup ollama serve > ollama.log 2>&1 &
           sleep 5
           ollama pull llama3.2
 
-      - name: Instalar y limpiar librerías de Python
+      - name: Instalar dependencias de Python
         run: |
           python -m pip install --upgrade pip
-          pip uninstall -y google-generativeai google-ai-generativelanguage || true
-          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts faster-whisper google-genai transformers==4.38.2 TTS
+          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts faster-whisper google-genai transformers==4.38.2
 
       - name: Ejecutar el Bot
         env:
@@ -73,6 +53,5 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ secrets.HF_DATASET_REPO }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COQUI_TOS_AGREED: "1"
         run: |
           python procesar.py
