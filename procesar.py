@@ -21,7 +21,6 @@ import torch.serialization
 _original_torch_load = torch.load
 
 def _patched_torch_load(f, map_location=None, pickle_module=None, *, weights_only=None, **kwargs):
-    # Forzamos weights_only a False para permitir la carga de configuraciones y modelos de Coqui XTTS
     return _original_torch_load(f, map_location, pickle_module, weights_only=False, **kwargs)
 
 torch.load = _patched_torch_load
@@ -598,4 +597,6 @@ def main():
         print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
         return
 
-    print("🧹
+    print("🧹 Limpiando webhooks...")
+    try:
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true", timeout
