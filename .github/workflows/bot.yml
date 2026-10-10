@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar FFmpeg
+      - name: Instalar FFmpeg y dependencias del sistema
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
@@ -41,10 +41,10 @@ jobs:
           sleep 5
           ollama pull llama3.2
 
-      - name: Instalar dependencias de Python
+      - name: Instalar dependencias de Python y Clonador Liviano
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 python-telegram-bot ddgs huggingface_hub openai-whisper soundfile gtts faster-whisper google-genai transformers==4.38.2
+          pip install requests python-telegram-bot faster-whisper google-genai soundfile torch transformers scipy
 
       - name: Ejecutar el Bot
         env:
