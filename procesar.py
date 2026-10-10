@@ -9,7 +9,30 @@ import subprocess
 import requests
 import time
 
+# Aceptar Términos de Servicio de Coqui de forma no interactiva para GitHub Actions
+os.environ["COQUI_TOS_AGREED"] = "1"
+
 print("🚀 [INIT]: Importando librerías...")
+
+# --- SOLUCIÓN DEFINITIVA: PARCHE GLOBAL DE PYTORCH 2.6 ---
+import torch
+import torch.serialization
+
+_original_torch_load = torch.load
+
+def _patched_torch_load(f, map_location=None, pickle_module=None, *, weights_only=None, **kwargs):
+    return _original_torch_load(f, map_location, pickle_module, weights_only=False, **kwargs)
+
+torch.load = _patched_torch_load
+# ----------------------------------------------------------
+
+# --- PARCHE PARA EVITAR EL ERROR DE TORCHCODEC EN TORCHAUDIO ---
+import torchaudio
+try:
+    torchaudio.set_audio_backend("soundfile")
+except:
+    pass
+# -------------------------------------------------------------
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -30,6 +53,14 @@ try:
 except ImportError:
     GENAI_DISPONIBLE = False
     print("⚠️ [INIT]: Google GenAI NO disponible.")
+
+XTTS_DISPONIBLE = False
+try:
+    from TTS.api import TTS
+    XTTS_DISPONIBLE = True
+    print("✅ [INIT]: Coqui XTTS disponible.")
+except ImportError:
+    print("⚠️ [INIT]: Coqui XTTS no instalado. Se usará fallback paramétrico.")
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_INDUCCION = "historial_induccion.json"
@@ -93,13 +124,30 @@ for archivo_base, contenido_inicial in [
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-XTTS_API_URL = os.environ.get("XTTS_API_URL") # URL externa de tu xtts-webui (ej: https://tu-endpoint.hf.space)
 
 client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
 
 lock_voz = asyncio.Lock()
 ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
+_xtts_instance = None
+
+def obtener_xtts():
+    global _xtts_instance
+    if not XTTS_DISPONIBLE:
+        print("❌ [XTTS]: La librería TTS no está instalada.")
+        return None
+    if _xtts_instance is None:
+        try:
+            print("🧠 [XTTS]: Cargando modelo en memoria de forma autónoma...")
+            _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
+            print("✅ [XTTS]: Modelo instanciado correctamente.")
+        except Exception as e:
+            import traceback
+            print(f"❌ [XTTS EXCEPCIÓN REAL]: {e}")
+            traceback.print_exc()
+            return None
+    return _xtts_instance
 
 
 def cargar_json_seguro(path, defecto):
@@ -130,7 +178,7 @@ def inicializar_directorios_control(archivo_actual="procesar.py"):
         print(f"⚠️ Error en control de directorios: {e}")
 
 
-def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de código"):
+def sincronizar_con_github(mensaje_commit="🤖 Sincronización autónoma y de código"):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Leandro Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "bot@actions.github.com"], check=True)
@@ -141,7 +189,7 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ Código sincronizado con GitHub.")
+            print("☁️ Código y muestras sincronizados con GitHub.")
     except Exception as e:
         print(f"⚠️ Aviso git: {e}")
 
@@ -225,27 +273,6 @@ def obtener_o_construir_muestra_voz(query_nombre):
     except Exception as e:
         print(f"⚠️ Error construyendo muestra sintética: {e}")
         return None
-
-
-def generar_audio_con_xtts_externo(texto, speaker_wav_path, ogg_salida):
-    if not XTTS_API_URL:
-        return False
-    try:
-        print(f"🌐 [XTTS API]: Enviando request a {XTTS_API_URL}...")
-        files = {'speaker_wav': open(speaker_wav_path, 'rb')}
-        data = {'text': texto, 'language': 'es'}
-        res = requests.post(f"{XTTS_API_URL.rstrip('/')}/api/clone_voice", data=data, files=files, timeout=60)
-        if res.status_code == 200:
-            wav_remoto = "resp_xtts_ext.wav"
-            with open(wav_remoto, "wb") as f:
-                f.write(res.content)
-            subprocess.run(["ffmpeg", "-y", "-i", wav_remoto, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_salida], check=True)
-            if os.path.exists(wav_remoto): os.remove(wav_remoto)
-            print("✅ [XTTS API]: ¡Audio clonado recibido con éxito desde la API externa!")
-            return True
-    except Exception as e:
-        print(f"⚠️ Error conectando a XTTS API externa: {e}")
-    return False
 
 
 def procesar_evolucion_autonoma(prompt_usuario, audio_referencia_path=None):
@@ -355,7 +382,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo conectado a XTTS API externa.")
+    await update.message.reply_text("¡Buenas che! Bot autónomo activo con Coqui XTTS local.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -385,7 +412,25 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         xtts_generado = False
 
         if audio_ref and os.path.exists(audio_ref):
-            xtts_generado = generar_audio_con_xtts_externo(texto_limpio, audio_ref, ogg_f)
+            xtts_engine = obtener_xtts()
+            if xtts_engine:
+                try:
+                    print(f"🧬 [XTTS]: Clonando voz con referencia local: {audio_ref}")
+                    wav_xtts = "resp_xtts.wav"
+                    xtts_engine.tts_to_file(
+                        text=texto_limpio,
+                        speaker_wav=audio_ref,
+                        language="es",
+                        file_path=wav_xtts
+                    )
+                    subprocess.run(["ffmpeg", "-y", "-i", wav_xtts, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+                    if os.path.exists(wav_xtts): os.remove(wav_xtts)
+                    xtts_generado = True
+                    print("✅ [XTTS]: ¡Éxito total! Clonación neuronal local completada.")
+                except Exception as e:
+                    import traceback
+                    print(f"❌ [XTTS ERROR DE EJECUCIÓN]: {e}")
+                    traceback.print_exc()
 
         if not xtts_generado:
             print("🎚️ [FALLBACK]: Aplicando FFmpeg paramétrico...")
@@ -442,7 +487,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if os.path.exists(wav_f): os.remove(wav_f)
 
         with open(ogg_f, "rb") as vf:
-            caption_txt = "🧬 *(XTTS API: Clonación neuronal exitosa)*" if xtts_generado else "⚠️ *(XTTS API no disponible -> Usé FFmpeg paramétrico)*"
+            caption_txt = "🧬 *(XTTS: Clonación neuronal local exitosa)*" if xtts_generado else "⚠️ *(XTTS falló -> Usé FFmpeg paramétrico)*"
             await update.message.reply_voice(voice=vf, caption=caption_txt)
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
@@ -478,8 +523,21 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ogg_f = "resp.ogg"
         xtts_generado = False
 
-        if os.path.exists(path_in):
-            xtts_generado = generar_audio_con_xtts_externo(texto_limpio, path_in, ogg_f)
+        xtts_engine = obtener_xtts()
+        if xtts_engine and os.path.exists(path_in):
+            try:
+                wav_xtts = "resp_xtts.wav"
+                xtts_engine.tts_to_file(
+                    text=texto_limpio,
+                    speaker_wav=path_in,
+                    language="es",
+                    file_path=wav_xtts
+                )
+                subprocess.run(["ffmpeg", "-y", "-i", wav_xtts, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
+                if os.path.exists(wav_xtts): os.remove(wav_xtts)
+                xtts_generado = True
+            except:
+                pass
 
         if not xtts_generado:
             mp3_f, wav_f = "resp.mp3", "resp.wav"
@@ -535,7 +593,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if os.path.exists(wav_f): os.remove(wav_f)
 
         with open(ogg_f, "rb") as vf:
-            caption_txt = f"-Interpretado: {texto_crudo}\n🧬 *(XTTS API Clonación exitosa)*" if xtts_generado else f"-Interpretado: {texto_crudo}\n⚠️ *(XTTS API no disponible -> FFmpeg paramétrico)*"
+            caption_txt = f"-Interpretado: {texto_crudo}\n🧬 *(XTTS Clonación local exitosa)*" if xtts_generado else f"-Interpretado: {texto_crudo}\n⚠️ *(XTTS no disponible -> FFmpeg paramétrico)*"
             await update.message.reply_voice(voice=vf, caption=caption_txt)
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
@@ -553,7 +611,13 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot optimizado para API externa de XTTS...")
+    print("🧠 [ARRANQUE]: Precargando XTTS v2 de forma local...")
+    try:
+        obtener_xtts()
+    except Exception as e:
+        print(f"⚠️ [AVISO ARRANQUE]: {e}")
+
+    print("🚀 Iniciando Bot autónomo con timeouts de red extendidos...")
     
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
