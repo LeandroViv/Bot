@@ -6,29 +6,29 @@
         ],
         [
             2.0,
-            -0.5
+            -0.2
         ],
         [
             3.0,
-            -4.0
+            -6.0
         ],
         [
             4.0,
-            -8.0
+            -12.0
         ],
         [
             5.0,
-            -12.0
+            -18.0
         ]
     ],
-    "pitch": 0.82,
-    "fundamental_freq": 65,
-    "treble_gain": -0.5,
-    "treble_freq": 5000,
-    "bass_gain": 10.5,
-    "bass_freq": 80,
-    "harmonic_drive": 5.5,
-    "harmonic_freq": 180,
+    "pitch": 0.78,
+    "fundamental_freq": 60,
+    "treble_gain": -2.5,
+    "treble_freq": 4500,
+    "bass_gain": 12.0,
+    "bass_freq": 75,
+    "harmonic_drive": 6.5,
+    "harmonic_freq": 150,
     "crusher_bits": 16,
-    "volume_mult": 0.95
+    "volume_mult": 1.0
 }
