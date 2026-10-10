@@ -9,7 +9,6 @@ import subprocess
 import requests
 import time
 
-# Aceptar Términos de Servicio de Coqui de forma no interactiva para GitHub Actions
 os.environ["COQUI_TOS_AGREED"] = "1"
 
 print("🚀 [INIT]: Importando librerías...")
@@ -24,7 +23,6 @@ from telegram.ext import (
 from faster_whisper import WhisperModel
 from gtts import gTTS
 
-# Importación segura de Google GenAI
 try:
     from google import genai
     GENAI_DISPONIBLE = True
@@ -33,7 +31,6 @@ except ImportError:
     GENAI_DISPONIBLE = False
     print("⚠️ [INIT]: Google GenAI NO disponible.")
 
-# Importación segura de Coqui XTTS para clonación neuronal
 XTTS_DISPONIBLE = False
 try:
     from TTS.api import TTS
@@ -119,12 +116,13 @@ def obtener_xtts():
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 Cargando modelo Coqui XTTS v2 en memoria (esto puede tomar unos segundos)...")
-            # Forzamos descarga y carga controlada
-            _xtts_instance = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", progress_bar=True).to("cpu")
-            print("✅ [XTTS]: Modelo cargado y listo en memoria.")
+            print("🧠 [XTTS]: Cargando modelo en memoria...")
+            _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
+            print("✅ [XTTS]: Instancia cargada con éxito.")
         except Exception as e:
-            print(f"❌ [XTTS ERROR CRÍTICO]: Falló al inicializar el modelo -> {e}")
+            import traceback
+            print(f"❌ [XTTS EXCEPCIÓN REAL]: {e}")
+            traceback.print_exc()
             return None
     return _xtts_instance
 
@@ -214,13 +212,11 @@ def buscar_muestra_audio_en_web(query_nombre):
         query_busqueda = f"{query_nombre} filetype:mp3 OR filetype:wav audio sample"
         url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query_busqueda)}"
         headers = {"User-Agent": "Mozilla/5.0"}
-        print(f"🌐 Buscando muestra web para: {query_nombre}")
         res = requests.get(url, headers=headers, timeout=12)
         if res.status_code == 200:
             urls_encontradas = re.findall(r'href="(http[s]?://[^"]+\.(?:mp3|wav))"', res.text, re.I)
             if urls_encontradas:
                 link_audio = urls_encontradas[0]
-                print(f"🎯 Muestra de audio encontrada en la web: {link_audio}")
                 res_audio = requests.get(link_audio, headers=headers, timeout=15)
                 if res_audio.status_code == 200:
                     ext = ".wav" if ".wav" in link_audio.lower() else ".mp3"
@@ -228,7 +224,6 @@ def buscar_muestra_audio_en_web(query_nombre):
                     ruta_destino = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
                     with open(ruta_destino, "wb") as f:
                         f.write(res_audio.content)
-                    print(f"💾 Muestra descargada y guardada con éxito en: {ruta_destino}")
                     return ruta_destino
     except Exception as e:
         print(f"⚠️ Error descargando muestra web: {e}")
@@ -238,23 +233,17 @@ def buscar_muestra_audio_en_web(query_nombre):
 def obtener_o_construir_muestra_voz(query_nombre):
     ruta_web = buscar_muestra_audio_en_web(query_nombre)
     if ruta_web and os.path.exists(ruta_web):
-        print(f"🎯 [REF]: Usando muestra web encontrada en {ruta_web}")
         return ruta_web
 
-    print(f"⚙️ Muestra web no encontrada. Construyendo muestra sintética de fallback en {CARPETA_MUESTRAS}...")
     try:
         nombre_archivo = f"sintetica_fallback_{abs(hash(query_nombre))}.wav"
         ruta_sintetica = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
-        
         texto_muestra = f"Muestra base de audio generada para clonación neuronal con XTTS para el perfil {query_nombre}."
         mp3_temp = os.path.join(CARPETA_MUESTRAS, "temp_fallback.mp3")
         gTTS(text=texto_muestra, lang="es", tld="com.ar").save(mp3_temp)
-        
         subprocess.run(["ffmpeg", "-y", "-i", mp3_temp, "-ar", "24000", "-ac", "1", ruta_sintetica], check=True)
         if os.path.exists(mp3_temp):
             os.remove(mp3_temp)
-            
-        print(f"💾 [REF]: Muestra sintética generada y guardada con éxito en: {ruta_sintetica}")
         return ruta_sintetica
     except Exception as e:
         print(f"⚠️ Error construyendo muestra sintética: {e}")
@@ -335,7 +324,6 @@ def llamar_ia_externa_o_local(prompt_usuario, audio_ref=None):
             print(f"⚠️ Gemini falló, intentando Ollama: {e}")
 
     if not respuesta:
-        print("🦙 Intentando conectar con Ollama local...")
         payload = {
             "model": "llama3.2",
             "messages": [
@@ -369,13 +357,12 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con XTTS blindado.")
+    await update.message.reply_text("¡Buenas che! Bot activo con XTTS directo.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE
     texto_usuario = update.message.text
-    print(f"📩 Texto recibido: {texto_usuario}")
     
     if ULTIMO_AUDIO_PENDIENTE["path"] and texto_usuario.lower().startswith(("corregir:", "corrección:")):
         registrar_correccion_inductiva(ULTIMO_AUDIO_PENDIENTE["path"], ULTIMO_AUDIO_PENDIENTE["crudo"], re.sub(r'^(corregir:|corrección:)\s*', '', texto_usuario, flags=re.I))
@@ -390,7 +377,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.chat.send_action(action="record_voice")
         
         audio_ref = obtener_o_construir_muestra_voz(texto_usuario)
-        print(f"📁 [AUDIO REF SELECCIONADO]: {audio_ref}")
             
         respuesta = responder_usuario(texto_usuario, audio_ref=audio_ref)
         
@@ -404,7 +390,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             xtts_engine = obtener_xtts()
             if xtts_engine:
                 try:
-                    print(f"🧬 [XTTS]: Clonando voz usando referencia: {audio_ref}")
+                    print(f"🧬 [XTTS]: Clonando voz con referencia: {audio_ref}")
                     wav_xtts = "resp_xtts.wav"
                     xtts_engine.tts_to_file(
                         text=texto_limpio,
@@ -415,12 +401,14 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     subprocess.run(["ffmpeg", "-y", "-i", wav_xtts, "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_f], check=True)
                     if os.path.exists(wav_xtts): os.remove(wav_xtts)
                     xtts_generado = True
-                    print("✅ [XTTS]: ¡Éxito! Audio clonado neuronalmente.")
+                    print("✅ [XTTS]: ¡Éxito total! Clonación neuronal completada.")
                 except Exception as e:
-                    print(f"⚠️ [XTTS ERROR]: Falló la clonación -> {e}. Pasando a FFmpeg paramétrico...")
+                    import traceback
+                    print(f"❌ [XTTS ERROR DE EJECUCIÓN]: {e}")
+                    traceback.print_exc()
 
         if not xtts_generado:
-            print("🎚️ [FALLBACK]: Renderizando con gTTS + FFmpeg paramétrico...")
+            print("🎚️ [FALLBACK]: Aplicando FFmpeg paramétrico...")
             mp3_f, wav_f = "resp.mp3", "resp.wav"
             gTTS(text=texto_limpio, lang="es", tld="com.ar").save(mp3_f)
             subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
@@ -487,7 +475,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ULTIMO_AUDIO_PENDIENTE
     async with lock_voz:
-        print("🎤 Procesando audio entrante...")
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
         path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
@@ -599,12 +586,12 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    # PRECAGA DE XTTS BLINDADA: Si baja todo bien, arranca limpito. Si falla por red/tiempo, sigue con fallback.
+    # Precarga obligatoria al arrancar para que los pesos queden en caché local listos
+    print("🧠 [ARRANQUE]: Precargando XTTS v2...")
     try:
-        print("🧠 [ARRANQUE]: Intentando precargar XTTS v2...")
         obtener_xtts()
     except Exception as e:
-        print(f"⚠️ [ARRANQUE XTTS AVISO]: No se pudo precargar en inicio -> {e}")
+        print(f"⚠️ [AVISO ARRANQUE]: {e}")
 
     print("🚀 Iniciando Bot con polling activo...")
     
