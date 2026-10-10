@@ -119,8 +119,9 @@ def obtener_xtts():
         return None
     if _xtts_instance is None:
         try:
-            print("🧠 Cargando modelo Coqui XTTS v2 (esto puede demorar unos segundos la primera vez)...")
-            _xtts_instance = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
+            print("🧠 Cargando modelo Coqui XTTS v2 en memoria (esto puede tomar unos segundos)...")
+            # Forzamos descarga y carga controlada
+            _xtts_instance = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", progress_bar=True).to("cpu")
             print("✅ [XTTS]: Modelo cargado y listo en memoria.")
         except Exception as e:
             print(f"❌ [XTTS ERROR CRÍTICO]: Falló al inicializar el modelo -> {e}")
@@ -368,7 +369,7 @@ def responder_usuario(orden, audio_ref=None):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con XTTS precargado.")
+    await update.message.reply_text("¡Buenas che! Bot activo con XTTS blindado.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -403,7 +404,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             xtts_engine = obtener_xtts()
             if xtts_engine:
                 try:
-                    print(f"🧬 [XTTS]: Clonando voz usando referencia precargada: {audio_ref}")
+                    print(f"🧬 [XTTS]: Clonando voz usando referencia: {audio_ref}")
                     wav_xtts = "resp_xtts.wav"
                     xtts_engine.tts_to_file(
                         text=texto_limpio,
@@ -598,11 +599,14 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    # PRECAGA DE XTTS: Descarga y carga el modelo al arrancar el bot (evita el timeout en el primer mensaje)
-    print("🧠 [ARRANQUE]: Precargando modelo XTTS v2 en memoria...")
-    obtener_xtts()
+    # PRECAGA DE XTTS BLINDADA: Si baja todo bien, arranca limpito. Si falla por red/tiempo, sigue con fallback.
+    try:
+        print("🧠 [ARRANQUE]: Intentando precargar XTTS v2...")
+        obtener_xtts()
+    except Exception as e:
+        print(f"⚠️ [ARRANQUE XTTS AVISO]: No se pudo precargar en inicio -> {e}")
 
-    print("🚀 Iniciando Bot con XTTS precargado y listo...")
+    print("🚀 Iniciando Bot con polling activo...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
