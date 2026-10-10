@@ -4,12 +4,11 @@ import os
 import re
 import sys
 import shutil
-import difflib
 import subprocess
 import requests
 import time
 
-print("🚀 [INIT]: Importando librerías...")
+print("🚀 [INIT]: Importando librerías y configurando entorno...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -21,7 +20,17 @@ from telegram.ext import (
     filters,
 )
 from faster_whisper import WhisperModel
-from gtts import gTTS
+
+# Intentamos cargar dependencias para clonación liviana
+try:
+    from transformers import AutoProcessor, BarkModel
+    import torch
+    import soundfile as sf
+    BARK_DISPONIBLE = True
+    print("✅ [INIT]: Motor de clonación liviano (Bark) disponible.")
+except ImportError:
+    BARK_DISPONIBLE = False
+    print("⚠️ [INIT]: Bark no disponible, se usará síntesis base.")
 
 try:
     from google import genai
@@ -45,32 +54,20 @@ os.makedirs(CARPETA_ORIGINALES, exist_ok=True)
 os.makedirs(CARPETA_RECURSIVA, exist_ok=True)
 
 PERILLAS_DEFAULT = {
-    "serie_armonica": [
-        [1.0, 0.0],
-        [2.0, -5.0],
-        [3.0, -10.0],
-        [4.0, -15.0],
-        [5.0, -20.0]
-    ],
     "pitch": 1.05,
     "fundamental_freq": 140,
     "treble_gain": 5.0,
     "treble_freq": 3800,
     "bass_gain": 1.5,
     "bass_freq": 90,
-    "harmonic_drive": 0.6,
-    "harmonic_freq": 400,
-    "crusher_bits": 16,
-    "volume_mult": 0.85,
+    "volume_mult": 0.9,
     "modo_imitacion": "activo"
 }
 
 PROSODIA_DEFAULT = {
     "modo_imitacion": "activo",
     "patron_pausas": "natural_humano_porteno",
-    "factor_ritmo_variable": 1.05,
-    "dinamica_movil": "acentuacion_y_corte",
-    "referencia_activa": "libre_y_arquetipos"
+    "factor_ritmo_variable": 1.05
 }
 
 if not os.path.exists(ARCHIVO_PERILLAS):
@@ -98,7 +95,6 @@ client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_AP
 GEMINI_BLOQUEADO_POR_CUOTA = False
 
 lock_voz = asyncio.Lock()
-ULTIMO_AUDIO_PENDIENTE = {"path": None, "crudo": None}
 
 
 def cargar_json_seguro(path, defecto):
@@ -109,24 +105,6 @@ def cargar_json_seguro(path, defecto):
         except:
             return defecto
     return defecto
-
-
-def guardar_json_seguro(path, datos, mensaje_git):
-    with open(path, "w", encoding="utf-8") as f:
-        json_lib.dump(datos, f, indent=4, ensure_ascii=False)
-    sincronizar_con_github(mensaje_git)
-
-
-def inicializar_directorios_control(archivo_actual="procesar.py"):
-    try:
-        path_original = os.path.join(CARPETA_ORIGINALES, archivo_actual)
-        if os.path.exists(archivo_actual) and not os.path.exists(path_original):
-            shutil.copy(archivo_actual, path_original)
-        path_recursivo = os.path.join(CARPETA_RECURSIVA, archivo_actual)
-        if os.path.exists(archivo_actual):
-            shutil.copy(archivo_actual, path_recursivo)
-    except Exception as e:
-        print(f"⚠️ Error en control de directorios: {e}")
 
 
 def sincronizar_con_github(mensaje_commit="🤖 Sincronización autónoma"):
@@ -150,18 +128,9 @@ def guardar_en_txt(rol, texto):
         f.write(f"[{rol.upper()}]: {texto}\n---\n")
 
 
-def registrar_refinamiento_ia(prompt_usuario, respuesta_generada):
-    refinamientos = cargar_json_seguro(REGISTRO_REFINAMIENTO, [])
-    refinamientos.append({"entrada_usuario": prompt_usuario, "respuesta_ia": respuesta_generada})
-    if len(refinamientos) > 100:
-        refinamientos = refinamientos[-100:]
-    with open(REGISTRO_REFINAMIENTO, "w", encoding="utf-8") as f:
-        json_lib.dump(refinamientos, f, indent=4, ensure_ascii=False)
-
-
 def llamar_ia_externa_o_local(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
-    system_prompt = "Sos Leandro hablando con un colega por Telegram. Porteño, directo, sin introducciones de robot, usando 'vos' y 'che', con cadencia conversacional natural y fraseada."
+    system_prompt = "Sos Leandro hablando con un colega por Telegram o un locutor nocturno de radio. Porteño, directo, cálido, usando 'vos' y 'che', con cadencia conversacional natural y fraseada."
     respuesta = ""
 
     # 1. Intento con Gemini
@@ -169,7 +138,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
         try:
             res = client.models.generate_content(
                 model="gemini-3.5-flash",
-                contents=f"Colega dice: \"{prompt_usuario}\"",
+                contents=f"Solicitud: \"{prompt_usuario}\"",
                 config=genai.types.GenerateContentConfig(system_instruction=system_prompt)
             )
             if res and res.text:
@@ -177,18 +146,18 @@ def llamar_ia_externa_o_local(prompt_usuario):
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-            print(f"⚠️ Gemini falló o se quedó sin cuota, usando Ollama local: {e}")
+            print(f"⚠️ Gemini falló o sin cuota, usando Ollama local: {e}")
 
     # 2. Fallback Automático a Llama 3.2 local (Ollama)
     if not respuesta:
-        print("llama [OLLAMA LOCAL]: Generando respuesta con Llama 3.2...")
+        print("🦙 [OLLAMA LOCAL]: Generando respuesta con Llama 3.2...")
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_usuario}
             ],
-            "options": {"num_ctx": 16384, "temperature": 0.4},
+            "options": {"num_ctx": 16384, "temperature": 0.5},
             "stream": False,
         }
         try:
@@ -200,99 +169,81 @@ def llamar_ia_externa_o_local(prompt_usuario):
 
     if not respuesta:
         respuesta = "Che, me quedé sin conexión por todos lados, tirámela de nuevo en un ratito."
-    else:
-        registrar_refinamiento_ia(prompt_usuario, respuesta)
     return respuesta
 
 
-def responder_usuario(orden):
-    if not orden or not orden.strip():
-        return "Che, no te entendí nada."
-    respuesta = llamar_ia_externa_o_local(orden)
-    guardar_en_txt("usuario", orden)
-    guardar_en_txt("leandro_bot", respuesta)
-    return respuesta
+def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
+    wav_temp = "temp_voz.wav"
+    generado_ok = False
 
+    if BARK_DISPONIBLE:
+        try:
+            print("🎙️ [CLONADOR]: Sintetizando voz expresiva con Bark...")
+            processor = AutoProcessor.from_pretrained("suno/bark-small")
+            model = BarkModel.from_pretrained("suno/bark-small")
+            
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            model = model.to(device)
 
-def generar_audio_parametrico(texto, ogg_salida):
-    mp3_f, wav_f = "resp.mp3", "resp.wav"
-    gTTS(text=texto, lang="es", tld="com.ar").save(mp3_f)
-    subprocess.run(["ffmpeg", "-y", "-i", mp3_f, wav_f], check=True)
-    if os.path.exists(mp3_f): os.remove(mp3_f)
+            # Preset de voz en español con matices naturales
+            inputs = processor(texto, voice_preset="v2/es_speaker_3").to(device)
+            audio_array = model.generate(**inputs)
+            audio_array = audio_array.cpu().numpy().squeeze()
 
-    p = cargar_json_seguro(ARCHIVO_PERILLAS, PERILLAS_DEFAULT)
-    prosodia = cargar_json_seguro(ARCHIVO_PROSODIA, PROSODIA_DEFAULT)
-    
-    pitch = float(p.get("pitch", 1.05))
-    fund = float(p.get("fundamental_freq", 140))
-    treble_g = float(p.get("treble_gain", 5.0))
-    treble_f = float(p.get("treble_freq", 3800))
-    bass_g = float(p.get("bass_gain", 1.5))
-    bass_f = float(p.get("bass_freq", 90))
-    vol = float(p.get("volume_mult", 0.85))
+            sf.write(wav_temp, audio_array, model.generation_config.sample_rate)
+            generado_ok = os.path.exists(wav_temp)
+        except Exception as e:
+            print(f"⚠️ Error en modelo Bark, aplicando fallback: {e}")
 
-    tempo_base = float(p.get("tempo_factor", 1.10))
-    factor_ritmo = float(prosodia.get("factor_ritmo_variable", 1.05))
-    tempo = tempo_base * factor_ritmo
-    
-    serie = p.get("serie_armonica", [])
+    if not generado_ok:
+        # Fallback de emergencia si Bark falla
+        print("⚠️ Usando fallback de emergencia para audio...")
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=200:duration=2", wav_temp], check=True)
 
+    # Retoque final con FFmpeg (Ecualización y Opus para Telegram)
     filtros = [
-        f"atempo={max(0.5, min(2.0, tempo))}",
-        f"asetrate=24000*{max(0.4, min(2.0, pitch))}",
-        f"equalizer=f={treble_f}:t=h:w=300:g={treble_g}",
-        f"equalizer=f={bass_f}:t=h:w=100:g={bass_g}"
+        "dynaudnorm=f=120:g=18:p=0.9",
+        "equalizer=f=90:t=h:w=100:g=3.0",    # Graves cálidos
+        "equalizer=f=3500:t=h:w=300:g=4.0",  # Presencia de locutor
+        "volume=0.95"
     ]
 
-    for item in serie:
-        try:
-            if isinstance(item, list) and len(item) == 2:
-                m, db = float(item[0]), float(item[1])
-            elif isinstance(item, dict):
-                m, db = float(item.get("multiplicador", 1.0)), float(item.get("gain_db", 0.0))
-            else:
-                continue
-                
-            freq = fund * m
-            if 20.0 <= freq <= 11000.0:
-                filtros.append(f"equalizer=f={freq:.2f}:t=h:w={max(15, int(freq*0.08))}:g={db}")
-        except:
-            pass
+    subprocess.run([
+        "ffmpeg", "-y", "-i", wav_temp,
+        "-filter:a", ",".join(filtros),
+        "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+        ogg_salida
+    ], check=True)
 
-    filtros.extend([
-        "dynaudnorm=f=120:g=18:p=0.9",
-        f"volume={vol}"
-    ])
-
-    subprocess.run(["ffmpeg", "-y", "-i", wav_f, "-filter:a", ",".join(filtros), "-c:a", "libopus", "-b:a", "48k", "-ar", "24000", ogg_salida], check=True)
-    if os.path.exists(wav_f): os.remove(wav_f)
+    if os.path.exists(wav_temp):
+        os.remove(wav_temp)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot paramétrico activo con soporte dual Gemini / Llama 3.2 local.")
+    await update.message.reply_text("¡Buenas che! Bot activo con clonador liviano y respaldo dual Gemini / Llama 3.2.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
-    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "chiste"])
+    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "chiste", "locutor"])
 
     if quiere_voz:
         await update.message.chat.send_action(action="record_voice")
-        respuesta = responder_usuario(texto_usuario)
+        respuesta = llamar_ia_externa_o_local(texto_usuario)
         
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
         ogg_f = "resp.ogg"
-        generar_audio_parametrico(texto_limpio, ogg_f)
+        generar_audio_con_clonador(texto_limpio, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="🎚️ *(Audio paramétrico adaptado)*")
+            await update.message.reply_voice(voice=vf, caption="🎙️ *(Locución nocturna generada por IA)*")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
     else:
         await update.message.chat.send_action(action="typing")
-        respuesta = responder_usuario(texto_usuario)
+        respuesta = llamar_ia_externa_o_local(texto_usuario)
         await update.message.reply_text(respuesta)
 
 
@@ -308,24 +259,23 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_crudo = " ".join([s.text for s in segments]).strip()
 
         if not texto_crudo:
-            await update.message.reply_text("Che, no te capté bien.")
+            await update.message.reply_text("Che, no te capté bien el audio.")
             return
 
-        respuesta = responder_usuario(texto_crudo)
+        respuesta = llamar_ia_externa_o_local(texto_crudo)
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
         ogg_f = "resp.ogg"
-        generar_audio_parametrico(texto_limpio, ogg_f)
+        generar_audio_con_clonador(texto_limpio, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"-Interpretado: {texto_crudo}\n🎚️ *(Audio paramétrico)*")
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ Entendido: {texto_crudo}")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
 
 def main():
-    inicializar_directorios_control("procesar.py")
     if not TOKEN:
         print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
         return
@@ -336,7 +286,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot optimizado (Gemini + Ollama local)...")
+    print("🚀 Iniciando Bot con clonación liviana y respaldo local...")
     
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
