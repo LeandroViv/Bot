@@ -1,7 +1,7 @@
 {
-    "velocidad": 0.5,
-    "respiracion": 0.98,
-    "brillo_vocal": 0.08,
-    "dinamica_movil": 0.1,
-    "acentuacion": 0.15
+    "velocidad": 0.7,
+    "respiracion": 0.9,
+    "brillo_vocal": 0.2,
+    "dinamica_movil": 0.2,
+    "acentuacion": 0.25
 }
