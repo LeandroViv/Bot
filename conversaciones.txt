@@ -936,3 +936,7 @@ Y el tipo, con una cara de deprimido total, le mete:
 ---
 [LEANDRO_BOT]: Che, ¿qué onda? ¿Qué te trae a hablar?
 ---
+[USUARIO]: Che, usá XTTS para imitar la voz de un locutor presentador de música nocturno y contame un chiste por nota de voz.
+---
+[LEANDRO_BOT]: Che, me quedé sin conexión, tirámela de nuevo.
+---
