@@ -2,33 +2,33 @@
     "serie_armonica": [
         [
             1.0,
-            0.0
+            2.5
         ],
         [
             2.0,
-            3.0
+            3.5
         ],
         [
             3.0,
-            -4.0
+            -2.0
         ],
         [
             4.0,
-            -10.0
+            -8.0
         ],
         [
             5.0,
-            -18.0
+            -16.0
         ]
     ],
-    "pitch": 0.58,
-    "fundamental_freq": 52.0,
-    "treble_gain": -8.0,
-    "treble_freq": 3200,
-    "bass_gain": 18.0,
-    "bass_freq": 80,
-    "harmonic_drive": 12.0,
-    "harmonic_freq": 100,
+    "pitch": 0.52,
+    "fundamental_freq": 55.0,
+    "treble_gain": -10.0,
+    "treble_freq": 3500,
+    "bass_gain": 16.0,
+    "bass_freq": 85,
+    "harmonic_drive": 14.0,
+    "harmonic_freq": 110,
     "crusher_bits": 16,
     "volume_mult": 1.0
 }
