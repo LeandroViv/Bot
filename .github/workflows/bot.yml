@@ -53,5 +53,6 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ secrets.HF_DATASET_REPO }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OLLAMA_HOST: "http://127.0.0.1:11434"
         run: |
           python procesar.py
