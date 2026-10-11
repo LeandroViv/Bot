@@ -5,5 +5,12 @@
         "archivo": "muestras_voz/audio_usuario_1079.wav",
         "texto": "Sí, yo lo que quiero es que en usted vaya dando cuenta de en qué momento meter pausas  cuando ir manejando los volúmenes bueno, eso lo vas a ir viendo",
         "total_entrenamientos": 1
+    },
+    {
+        "timestamp": "2026-10-11 19:27:34",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1081.wav",
+        "texto": "estás ahí chavón porque sonó un ruidito apenas, pero no te escuché  responderme nada, quería saber si estaba ahí a mío.",
+        "total_entrenamientos": 2
     }
 ]
