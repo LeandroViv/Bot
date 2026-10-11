@@ -105,28 +105,35 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "}"
     )
     
-    # 1. Gemini con archivo adjunto (Usando gemini-3.8-flash)
+    # 1. Gemini con archivo adjunto (reintentando si da 503 por alta demanda)
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
-        try:
-            archivo_adjunto = client.files.upload(file=REGISTRO_METRICAS)
-            res = client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=[archivo_adjunto, f"Mensaje del oyente: \"{prompt_usuario}\""],
-                config=genai.types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    response_mime_type="application/json"
+        for intento in range(2):
+            try:
+                archivo_adjunto = client.files.upload(file=REGISTRO_METRICAS)
+                res = client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=[archivo_adjunto, f"Mensaje del oyente: \"{prompt_usuario}\""],
+                    config=genai.types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            if res and res.text:
-                respuesta_raw = res.text.strip()
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                GEMINI_BLOQUEADO_POR_CUOTA = True
-                print("⚠️ [CUOTA EXCEDIDA]: Gemini bloqueado, derivando a Llama local (Ollama)...")
-            else:
-                print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
+                if res and res.text:
+                    respuesta_raw = res.text.strip()
+                    break
+            except Exception as e:
+                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    GEMINI_BLOQUEADO_POR_CUOTA = True
+                    print("⚠️ [CUOTA EXCEDIDA]: Gemini bloqueado, derivando a Llama local...")
+                    break
+                elif "503" in str(e) and intento == 0:
+                    print("⚠️ [503 UNAVAILABLE]: Reintentando llamada a Gemini en 2 segundos...")
+                    time.sleep(2)
+                else:
+                    print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
+                    break
 
-    # 2. Fallback a Llama local (Ollama) con timeout extendido a 60s
+    # 2. Fallback a Llama local (Ollama) con URL limpia sin corchetes
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
         payload = {
             "model": "llama3.2",
@@ -138,13 +145,14 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             "stream": False,
         }
         try:
-            res_local = requests.post("[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)", json=payload, timeout=60)
+            url_llama = "[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)"
+            res_local = requests.post(url_llama, json=payload, timeout=60)
             if res_local.status_code == 200:
                 respuesta_raw = res_local.json().get("message", {}).get("content", "").strip()
         except Exception as ex_local:
             print(f"⚠️ Error conectando con Llama local: {ex_local}")
 
-    # Limpieza total de markdown por si la IA se pone rebelde
+    # Limpieza total de markdown
     respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
     respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
     respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
@@ -158,7 +166,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         return texto, partitura
     except Exception as parse_err:
         print(f"⚠️ Error parseando JSON de la IA ({parse_err}). Respuesta cruda fue: {respuesta_raw}")
-        texto_fallback = "Che, te escuché perfecto, acá va la respuesta."
+        texto_fallback = "Che, te escuché perfecto, acá sintonizamos de nuevo."
         partitura_fallback = [{"palabra": w, "duracion_ms": 180, "intensidad_db": -0.5} for w in texto_fallback.split()]
         return texto_fallback, partitura_fallback
 
