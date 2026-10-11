@@ -53,7 +53,6 @@ if not os.path.exists(REGISTRO_METRICAS):
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-# Permitimos configurar la URL de Ollama por variable de entorno, fallback a localhost
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 
 client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
@@ -62,10 +61,6 @@ lock_voz = asyncio.Lock()
 
 
 def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicada, tipo="voz_usuario"):
-    """
-    Guarda de forma persistente y continua el flujo de audios, textos 
-    y métricas detalladas reales palabra por palabra.
-    """
     try:
         with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
             historial = json_lib.load(f)
@@ -107,7 +102,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "}"
     )
     
-    # 1. Gemini con archivo adjunto (reintentando si da 503 por alta demanda)
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
@@ -135,7 +129,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
                     break
 
-    # 2. Fallback a Llama local (Ollama) usando host parametrizado
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
         payload = {
             "model": "llama3.2",
@@ -154,7 +147,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         except Exception as ex_local:
             print(f"⚠️ Error conectando con Llama local en {OLLAMA_HOST}: {ex_local}")
 
-    # Limpieza total de markdown
     respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
     respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
     respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
@@ -186,7 +178,10 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             device = "cpu"
             model = model.to(device)
 
-            inputs = processor(f"[es] {texto[:200]}", voice_preset="v2/es_speaker_2").to(device)
+            # Generación limpia para que Bark hable con palabras claras y comprensibles
+            texto_para_bark = f"[es] {texto.strip()}"
+            inputs = processor(texto_para_bark, voice_preset="v2/es_speaker_2").to(device)
+            
             with torch.no_grad():
                 audio_bark = model.generate(**inputs)
             
@@ -210,44 +205,18 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         if max_val > 0:
             data_timbre = data_timbre / max_val
 
-        if len(data_timbre) < sr * 1.0:
-            data_timbre = np.tile(data_timbre, 2)
-
-        audio_dinamico = np.array([], dtype=np.float32)
-        chunk_base_size = int(sr * 0.15)
-
-        if not partitura:
-            partitura = [{"palabra": w, "duracion_ms": 180, "intensidad_db": 0.0} for w in texto.split()]
-
-        for item in partitura:
-            duracion_ms = item.get("duracion_ms", 180)
-            intensidad_db = item.get("intensidad_db", 0.0)
-
-            muestras_bloque = int(sr * (duracion_ms / 1000.0))
-            if muestras_bloque <= 0:
-                muestras_bloque = chunk_base_size
-
-            start_idx = np.random.randint(0, max(1, len(data_timbre) - muestras_bloque))
-            fragmento = data_timbre[start_idx : start_idx + muestras_bloque]
-
-            intensidad_db_segura = max(min(intensidad_db, 1.5), -2.5)
-            mult_vol = 10 ** (intensidad_db_segura / 20.0)
-            
-            audio_dinamico = np.concatenate((audio_dinamico, fragmento * mult_vol))
-
-        if len(audio_dinamico) < sr * 1.0:
-            audio_dinamico = data_timbre
-
+        # Usamos el audio de Bark directamente asegurando articulación clara de palabras
+        audio_dinamico = data_timbre.copy()
         sf.write(wav_temp_final, audio_dinamico, sr)
     except Exception as e:
-        print(f"⚠️ Error aplicando partitura segura: {e}")
+        print(f"⚠️ Error procesando audio final: {e}")
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
     filtros = [
         "highpass=f=80",
         "lowpass=f=7500",
         "dynaudnorm=f=150:g=15:p=0.9",
-        "volume=1.2"
+        "volume=1.3"
     ]
 
     subprocess.run([
@@ -297,17 +266,17 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"⚠️ Error convirtiendo .ogg a .wav: {e}")
 
-        # Extracción real con Whisper (Timestamps y texto)
         model = WhisperModel("base", device="cpu", compute_type="int8")
         segments, _ = model.transcribe(path_ogg, beam_size=5, language="es", word_timestamps=True)
         
         texto_crudo = ""
         partitura_real = []
 
-        # Cargamos el WAV para medir intensidad real RMS por tramo
         data_wav, sr_wav = sf.read(path_wav) if os.path.exists(path_wav) else (None, 22050)
         if data_wav is not None and len(data_wav.shape) > 1:
             data_wav = np.mean(data_wav, axis=1)
+
+        rms_total = np.sqrt(np.mean(data_wav**2)) if (data_wav is not None and len(data_wav) > 0) else 0
 
         for segment in segments:
             texto_crudo += segment.text + " "
@@ -319,15 +288,16 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     duracion_ms = max(50, fin_ms - inicio_ms)
                     
                     intensidad_db = 0.0
-                    if data_wav is not None and len(data_wav) > 0:
+                    if data_wav is not None and len(data_wav) > 0 and rms_total > 0:
                         idx_ini = int(w_info.start * sr_wav)
                         idx_fin = int(w_info.end * sr_wav)
                         fragmento = data_wav[max(0, idx_ini):min(len(data_wav), idx_fin)]
                         if len(fragmento) > 0:
                             rms = np.sqrt(np.mean(fragmento**2))
                             if rms > 0:
-                                intensidad_db = round(float(20 * np.log10(rms)), 2)
-                                intensidad_db = max(min(intensidad_db, 2.0), -4.0)
+                                relacion = rms / rms_total
+                                intensidad_db = round(float(20 * np.log10(max(0.01, relacion))), 2)
+                                intensidad_db = max(min(intensidad_db, 3.0), -6.0)
 
                     partitura_real.append({
                         "palabra": palabra,
@@ -344,7 +314,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not partitura_real:
             partitura_real = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto_crudo.split()]
 
-        # Guardamos en el JSON las métricas reales exactas
         registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo, partitura_real)
 
         try:
