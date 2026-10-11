@@ -186,12 +186,13 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
             model = model.to(device)
 
             # Forzamos etiqueta de idioma [es] y recorte preventivo para CPU
-            texto_procesar = f"[es] {texto[:180]}"
+            texto_procesar = f"[es] {texto[:150]}"
 
             inputs = processor(texto_procesar, voice_preset="v2/es_speaker_2").to(device)
             
+            # Llamada limpia sin duplicar argumentos max_new_tokens
             with torch.no_grad():
-                audio_array = model.generate(**inputs, max_new_tokens=450)
+                audio_array = model.generate(**inputs)
             
             audio_array = audio_array.cpu().numpy().squeeze()
 
@@ -207,7 +208,7 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
 
     # Retoque final con FFmpeg para Telegram
     filtros = [
-        "dynaudnorm=f=120:g=18:p=0.9",
+        "dynaudnorm=f=125:g=15:p=0.9",
         "equalizer=f=90:t=h:w=100:g=3.0",
         "equalizer=f=3500:t=h:w=300:g=4.0",
         "volume=0.95"
