@@ -334,5 +334,79 @@
             }
         ],
         "total_entrenamientos": 9
+    },
+    {
+        "timestamp": "2026-10-11 23:37:09",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1097.wav",
+        "texto": "quería ver si había podido incorporar todo esto de las métricas y eso",
+        "partitura_metrica": [
+            {
+                "palabra": "quería",
+                "duracion_ms": 1040,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 340,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 300,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "había",
+                "duracion_ms": 1020,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "podido",
+                "duracion_ms": 460,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "incorporar",
+                "duracion_ms": 859,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "todo",
+                "duracion_ms": 241,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "esto",
+                "duracion_ms": 380,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 180,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 160,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "métricas",
+                "duracion_ms": 720,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 220,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 300,
+                "intensidad_db": -4.0
+            }
+        ],
+        "total_entrenamientos": 10
     }
 ]
