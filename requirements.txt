@@ -8,3 +8,9 @@ pydantic==2.6.4
 google-genai
 faster-whisper
 gtts
+transformers
+torch
+soundfile
+librosa
+numpy
+
