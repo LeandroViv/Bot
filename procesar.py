@@ -9,7 +9,7 @@ import time
 import urllib.request
 import numpy as np
 
-print("🚀 [INIT]: Inicializando sistema híbrido (Timbre Bark + Métricas Web/Gemini)...")
+print("🚀 [INIT]: Inicializando sistema híbrido (Timbre Bark + Búsqueda Web + Fallback Sintético)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -113,7 +113,7 @@ def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
 
 
 def extraer_metricas_de_wav(path_wav):
-    """Extrae métricas cuantitativas (duraciones e intensidad en dB) de un .wav usando librosa."""
+    """Extrae métricas cuantitativas reales (duraciones e intensidad en dB) usando librosa."""
     if not LIBROSA_DISPONIBLE:
         return []
     try:
@@ -140,10 +140,14 @@ def extraer_metricas_de_wav(path_wav):
         return []
 
 
-def obtener_wav_de_la_web_o_gemini(query_o_url, texto_respuesta):
-    """Busca un .wav en la web. Si falla o no hay URL, Gemini genera la partitura cuantitativa."""
+def obtener_wav_de_la_web_o_sintetico(query_o_url):
+    """
+    1. Intenta buscar y descargar un .wav de referencia de la web.
+    2. Si falla o no hay URL, genera un .wav sintético local de respaldo con FFmpeg.
+    """
     wav_referencia = None
     
+    # Intento 1: Descargar de la web si pasaron una URL directa
     if query_o_url.startswith("http"):
         try:
             print(f"🌐 [WEB]: Buscando y descargando .wav de referencia desde: {query_o_url}")
@@ -151,33 +155,36 @@ def obtener_wav_de_la_web_o_gemini(query_o_url, texto_respuesta):
             urllib.request.urlretrieve(query_o_url, path_temp_web)
             if os.path.exists(path_temp_web) and os.path.getsize(path_temp_web) > 1000:
                 wav_referencia = path_temp_web
-                print("✅ [WEB]: ¡Archivo .wav descargado con éxito!")
+                print("✅ [WEB]: ¡Archivo .wav descargado con éxito de la web!")
         except Exception as e:
             print(f"⚠️ [WEB]: Falló la descarga del .wav online: {e}")
 
+    # Intento 2: Fallback a .wav sintético local si la web falló o no hubo enlace
+    if not wav_referencia:
+        print("🛠️ [FALLBACK SINTÉTICO]: Generando .wav de referencia local con FFmpeg...")
+        path_sintetico = os.path.join(CARPETA_MUESTRAS, "referencia_sintetica.wav")
+        try:
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "lavfi",
+                "-i", "sine=frequency=180:duration=2",
+                "-af", "volume=0.8",
+                path_sintetico
+            ], check=True)
+            if os.path.exists(path_sintetico):
+                wav_referencia = path_sintetico
+                print("✅ [FALLBACK SINTÉTICO]: .wav local generado con éxito.")
+        except Exception as ex:
+            print(f"⚠️ Error generando .wav sintético: {ex}")
+
+    # Extraemos métricas reales del wav obtenido (sea web o sintético)
     if wav_referencia and LIBROSA_DISPONIBLE:
         return extraer_metricas_de_wav(wav_referencia)
     else:
-        print("🧠 [FALLBACK GEMINI]: Generando métricas cuantitativas por IA...")
-        prompt_metrica_ia = (
-            "Analiza este texto y genera EXCLUSIVAMENTE un JSON válido que sea una lista de objetos. "
-            "Cada objeto debe contener: 'duracion_ms' (entero entre 80 y 250) e 'intensidad_db' (entre -4 y 0) "
-            f"para simular la dinámica y fraseo exacto. Texto: \"{texto_respuesta}\""
-        )
-        system_gen = "Sos un generador de métricas acústicas cuantitativas. Devuelves únicamente JSON puro sin markdown."
-        resp_json = llamar_ia_externa_o_local(prompt_metrica_ia, system_prompt_custom=system_gen)
-        
-        try:
-            inicio = resp_json.find('[')
-            fin = resp_json.rfind(']') + 1
-            partitura_generada = json_lib.loads(resp_json[inicio:fin])
-            return partitura_generada
-        except:
-            return [{"duracion_ms": 120, "intensidad_db": 0.0} for _ in texto_respuesta.split()]
+        return [{"duracion_ms": 120, "intensidad_db": 0.0}]
 
 
 def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_salida="resp.ogg"):
-    """Combina el timbre de Bark con la partitura cuantitativa de dinámica y exporta en Opus."""
+    """Combina el timbre de Bark con la partitura cuantitativa y exporta en Opus."""
     wav_temp_timbre = "temp_timbre_bark.wav"
     wav_temp_final = "temp_dinamica_final.wav"
     sample_rate = 24000
@@ -205,7 +212,7 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
     if not timbre_ok:
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=140:duration=3", wav_temp_timbre], check=True)
 
-    # 2. Aplicar Dinámica Cuantitativa
+    # 2. Aplicar Dinámica Cuantitativa basada en el .wav analizado
     try:
         print("🎛️ [DINÁMICA]: Aplicando métricas cuantitativas al fraseo...")
         data_timbre, sr = sf.read(wav_temp_timbre)
@@ -261,7 +268,7 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo: Timbre Bark + Métricas Web / Gemini.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo: Timbre Bark + Búsqueda Web / Fallback Sintético.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -273,13 +280,13 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
     url_potencial = next((w for w in texto_usuario.split() if w.startswith("http")), "sin_url")
-    partitura_dinamica = obtener_wav_de_la_web_o_gemini(url_potencial, texto_limpio)
+    partitura_dinamica = obtener_wav_de_la_web_o_sintetico(url_potencial)
 
     ogg_f = "resp.ogg"
     sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
     with open(ogg_f, "rb") as vf:
-        caption_txt = "🌐 *(Timbre Bark + Métricas Web/Gemini)*"
+        caption_txt = "🌐 *(Timbre Bark + Métricas Web/Sintéticas)*"
         await update.message.reply_voice(voice=vf, caption=caption_txt)
 
     if os.path.exists(ogg_f): 
@@ -305,13 +312,13 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-        partitura_dinamica = obtener_wav_de_la_web_o_gemini(path_in, texto_limpio)
+        partitura_dinamica = obtener_wav_de_la_web_o_sintetico(path_in)
 
         ogg_f = "resp.ogg"
         sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🗣️ Entendido y procesado por métricas híbridas.")
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ Entendido y procesado con métricas híbridas.")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
