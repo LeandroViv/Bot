@@ -9,7 +9,7 @@ import time
 import urllib.request
 import numpy as np
 
-print("🚀 [INIT]: Inicializando sistema híbrido (Timbre Bark + Búsqueda Web + Fallback Sintético)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Guardado .wav + Dinámica Cuantitativa)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -142,49 +142,50 @@ def extraer_metricas_de_wav(path_wav):
 
 def obtener_wav_de_la_web_o_sintetico(query_o_url):
     """
-    1. Intenta buscar y descargar un .wav de referencia de la web.
-    2. Si falla o no hay URL, genera un .wav sintético local de respaldo con FFmpeg.
+    1. Busca y descarga un .wav de referencia de la web y lo guarda en muestras_voz/.
+    2. Si falla o no hay URL, genera un .wav sintético local de respaldo con FFmpeg en muestras_voz/.
     """
+    os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
     wav_referencia = None
     
     # Intento 1: Descargar de la web si pasaron una URL directa
     if query_o_url.startswith("http"):
         try:
-            print(f"🌐 [WEB]: Buscando y descargando .wav de referencia desde: {query_o_url}")
-            path_temp_web = os.path.join(CARPETA_MUESTRAS, "referencia_web.wav")
+            print(f"🌐 [WEB]: Descargando .wav de referencia...")
+            path_temp_web = os.path.join(CARPETA_MUESTRAS, f"referencia_web_{int(time.time())}.wav")
             urllib.request.urlretrieve(query_o_url, path_temp_web)
             if os.path.exists(path_temp_web) and os.path.getsize(path_temp_web) > 1000:
                 wav_referencia = path_temp_web
-                print("✅ [WEB]: ¡Archivo .wav descargado con éxito de la web!")
+                print(f"✅ [WEB]: Guardado en {wav_referencia}")
         except Exception as e:
             print(f"⚠️ [WEB]: Falló la descarga del .wav online: {e}")
 
-    # Intento 2: Fallback a .wav sintético local si la web falló o no hubo enlace
+    # Intento 2: Fallback a .wav sintético local de 3 segundos reales guardado en muestras_voz/
     if not wav_referencia:
-        print("🛠️ [FALLBACK SINTÉTICO]: Generando .wav de referencia local con FFmpeg...")
-        path_sintetico = os.path.join(CARPETA_MUESTRAS, "referencia_sintetica.wav")
+        print("🛠️ [FALLBACK SINTÉTICO]: Generando .wav local de referencia...")
+        path_sintetico = os.path.join(CARPETA_MUESTRAS, f"referencia_sintetica_{int(time.time())}.wav")
         try:
             subprocess.run([
                 "ffmpeg", "-y", "-f", "lavfi",
-                "-i", "sine=frequency=180:duration=2",
+                "-i", "sine=frequency=180:duration=3",
                 "-af", "volume=0.8",
                 path_sintetico
             ], check=True)
             if os.path.exists(path_sintetico):
                 wav_referencia = path_sintetico
-                print("✅ [FALLBACK SINTÉTICO]: .wav local generado con éxito.")
+                print(f"✅ [FALLBACK SINTÉTICO]: Guardado en {wav_referencia}")
         except Exception as ex:
             print(f"⚠️ Error generando .wav sintético: {ex}")
 
-    # Extraemos métricas reales del wav obtenido (sea web o sintético)
+    # Extraemos métricas reales del wav obtenido
     if wav_referencia and LIBROSA_DISPONIBLE:
         return extraer_metricas_de_wav(wav_referencia)
     else:
-        return [{"duracion_ms": 120, "intensidad_db": 0.0}]
+        return [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in range(15)]
 
 
 def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_salida="resp.ogg"):
-    """Combina el timbre de Bark con la partitura cuantitativa y exporta en Opus."""
+    """Combina el timbre de Bark con la partitura cuantitativa y exporta en Opus con duración completa."""
     wav_temp_timbre = "temp_timbre_bark.wav"
     wav_temp_final = "temp_dinamica_final.wav"
     sample_rate = 24000
@@ -210,17 +211,20 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
             print(f"⚠️ Error en timbre Bark: {e}")
 
     if not timbre_ok:
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=140:duration=3", wav_temp_timbre], check=True)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=140:duration=4", wav_temp_timbre], check=True)
 
-    # 2. Aplicar Dinámica Cuantitativa basada en el .wav analizado
+    # 2. Aplicar Dinámica Cuantitativa basada en el .wav analizado (con loop circular seguro)
     try:
         print("🎛️ [DINÁMICA]: Aplicando métricas cuantitativas al fraseo...")
         data_timbre, sr = sf.read(wav_temp_timbre)
         audio_dinamico = np.array([], dtype=np.float32)
         
+        if len(partitura_dinamica) < 5:
+            partitura_dinamica = [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in texto.split()]
+
         indice_audio = 0
         for item in partitura_dinamica:
-            duracion_ms = item.get("duracion_ms", 100)
+            duracion_ms = item.get("duracion_ms", 120)
             intensidad_db = item.get("intensidad_db", 0.0)
             
             muestras_bloque = int(sr * (duracion_ms / 1000.0))
@@ -231,7 +235,9 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
                 fragmento = data_timbre[indice_audio:indice_audio + muestras_bloque]
                 indice_audio += muestras_bloque
             else:
-                fragmento = np.zeros(muestras_bloque, dtype=np.float32)
+                indice_audio = 0
+                fragmento = data_timbre[indice_audio:indice_audio + muestras_bloque]
+                indice_audio += muestras_bloque
                 
             mult_vol = 10 ** (intensidad_db / 20.0)
             fragmento_modulado = fragmento * mult_vol
@@ -264,11 +270,11 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
         if os.path.exists(temp_f):
             os.remove(temp_f)
             
-    print("✅ [PROCESO HÍBRIDO]: Audio final generado con éxito.")
+    print("✅ [PROCESO HÍBRIDO]: Audio completo generado con éxito.")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo: Timbre Bark + Búsqueda Web / Fallback Sintético.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo con guardado de .wav y timbre de Bark.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -286,7 +292,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
     with open(ogg_f, "rb") as vf:
-        caption_txt = "🌐 *(Timbre Bark + Métricas Web/Sintéticas)*"
+        caption_txt = "🎙️ *(Timbre Bark + Métricas de .wav guardado)*"
         await update.message.reply_voice(voice=vf, caption=caption_txt)
 
     if os.path.exists(ogg_f): 
@@ -297,7 +303,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async with lock_voz:
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
-        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
+        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_usuario_{update.message.message_id}.wav")
         await file.download_to_drive(path_in)
 
         model = WhisperModel("base", device="cpu", compute_type="int8")
@@ -312,13 +318,15 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-        partitura_dinamica = obtener_wav_de_la_web_o_sintetico(path_in)
+        partitura_dinamica = extraer_metricas_de_wav(path_in)
+        if not partitura_dinamica:
+            partitura_dinamica = [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in range(15)]
 
         ogg_f = "resp.ogg"
         sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🗣️ Entendido y procesado con métricas híbridas.")
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ Entendido con tu audio de referencia guardado.")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
@@ -334,7 +342,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot Híbrido Completo...")
+    print("🚀 Iniciando Bot Híbrido Definitivo...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
     
