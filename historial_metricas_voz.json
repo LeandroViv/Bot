@@ -122,5 +122,139 @@
             }
         ],
         "total_entrenamientos": 6
+    },
+    {
+        "timestamp": "2026-10-11 21:36:12",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1091.wav",
+        "texto": "Está bien, no quería decirte que antes me había grabado el buen silencio, pero nada más está bien igual, gracias, gracias por tu respuesta, amigo.",
+        "partitura_metrica": [
+            {
+                "palabra": "Está",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "bien,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "quería",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "decirte",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "antes",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "había",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "grabado",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "buen",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "silencio,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "nada",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "bien",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "igual,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "gracias,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "gracias",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "tu",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "respuesta,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "amigo.",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            }
+        ],
+        "total_entrenamientos": 7
     }
 ]
