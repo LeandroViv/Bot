@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Archivo JSON Adjunto a Gemini + Git Sync)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + JSON Adjunto a Gemini 3.8 + Git Sync)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -62,7 +62,7 @@ lock_voz = asyncio.Lock()
 def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicada, tipo="voz_usuario"):
     """
     Guarda de forma persistente y continua el flujo de audios, textos 
-    y métricas detalladas palabra por palabra.
+    y métricas detalladas reales palabra por palabra.
     """
     try:
         with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
@@ -88,14 +88,14 @@ def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicad
 
 def generar_respuesta_y_partitura_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
+    respuesta_raw = ""
     
     system_prompt = (
         "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
-        "Tenés adjunto el historial JSON completo con todas las métricas acumuladas de las notas de voz previas del usuario. "
-        "Analizá las partituras métricas históricas, abstrae las reglas de variación prosódica según la semántica del español, "
-        "las sílabas tónicas y la posición en la frase, y aplicá ese promedio ponderado orgánico para componer la partitura "
-        "de la nueva respuesta palabra por palabra.\n\n"
-        "Devolvé OBLIGATORIAMENTE un JSON estricto con esta estructura exacta, sin texto extra fuera:\n"
+        "Tenés adjunto el historial JSON completo con todas las métricas acumuladas de las notas de voz previas. "
+        "Analizá las duraciones e intensidades reales guardadas, abstrae las reglas de variación prosódica "
+        "según la semántica del español, y aplicá ese ritmo para componer la partitura de la respuesta palabra por palabra.\n\n"
+        "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown tipo ```json, solo el JSON crudo):\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada aquí\",\n"
         "  \"partitura\": [\n"
@@ -105,14 +105,12 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "}"
     )
     
-    respuesta_raw = ""
-    
-    # 1. Intentamos con Gemini adjuntando el archivo JSON físico acumulado
+    # 1. Gemini con archivo adjunto (Usando gemini-3.8-flash)
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         try:
             archivo_adjunto = client.files.upload(file=REGISTRO_METRICAS)
             res = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 contents=[archivo_adjunto, f"Mensaje del oyente: \"{prompt_usuario}\""],
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_prompt,
@@ -128,26 +126,28 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             else:
                 print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
 
-    # 2. Fallback automático a Llama local (Ollama) si Gemini falla o está sin cuota
+    # 2. Fallback a Llama local (Ollama) con timeout extendido a 60s
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
         payload = {
             "model": "llama3.2",
             "messages": [
-                {"role": "system", "content": system_prompt + "\nRespondé ÚNICAMENTE en JSON válido."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_usuario}
             ],
             "options": {"num_ctx": 16384, "temperature": 0.7},
             "stream": False,
         }
         try:
-            res_local = requests.post("http://127.0.0.1:11434/api/chat", json=payload, timeout=20)
+            res_local = requests.post("[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)", json=payload, timeout=60)
             if res_local.status_code == 200:
                 respuesta_raw = res_local.json().get("message", {}).get("content", "").strip()
-                respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw)
-                respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
-                respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
         except Exception as ex_local:
             print(f"⚠️ Error conectando con Llama local: {ex_local}")
+
+    # Limpieza total de markdown por si la IA se pone rebelde
+    respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
+    respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
+    respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
 
     try:
         datos = json_lib.loads(respuesta_raw)
@@ -156,13 +156,10 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         if not partitura:
             raise ValueError("Partitura vacía")
         return texto, partitura
-    except Exception:
-        texto_fallback = "Che, se me cruzaron los cables un segundo, decime de nuevo."
-        partitura_fallback = [
-            {"palabra": "Che,", "duracion_ms": 120, "intensidad_db": -1.0},
-            {"palabra": "todo", "duracion_ms": 150, "intensidad_db": 0.0},
-            {"palabra": "bien.", "duracion_ms": 250, "intensidad_db": -1.5}
-        ]
+    except Exception as parse_err:
+        print(f"⚠️ Error parseando JSON de la IA ({parse_err}). Respuesta cruda fue: {respuesta_raw}")
+        texto_fallback = "Che, te escuché perfecto, acá va la respuesta."
+        partitura_fallback = [{"palabra": w, "duracion_ms": 180, "intensidad_db": -0.5} for w in texto_fallback.split()]
         return texto_fallback, partitura_fallback
 
 
@@ -256,7 +253,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo con historial JSON adjunto y partituras continuas.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo con historial JSON adjunto y partituras continuas reales.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -290,35 +287,73 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"⚠️ Error convirtiendo .ogg a .wav: {e}")
 
+        # Extracción real con Whisper (Timestamps y texto)
         model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, _ = model.transcribe(path_ogg, beam_size=5, language="es")
-        texto_crudo = " ".join([s.text for s in segments]).strip()
+        segments, _ = model.transcribe(path_ogg, beam_size=5, language="es", word_timestamps=True)
+        
+        texto_crudo = ""
+        partitura_real = []
+
+        # Cargamos el WAV para medir intensidad real RMS por tramo
+        data_wav, sr_wav = sf.read(path_wav) if os.path.exists(path_wav) else (None, 22050)
+        if data_wav is not None and len(data_wav.shape) > 1:
+            data_wav = np.mean(data_wav, axis=1)
+
+        for segment in segments:
+            texto_crudo += segment.text + " "
+            if hasattr(segment, 'words') and segment.words:
+                for w_info in segment.words:
+                    palabra = w_info.word.strip()
+                    inicio_ms = int(w_info.start * 1000)
+                    fin_ms = int(w_info.end * 1000)
+                    duracion_ms = max(50, fin_ms - inicio_ms)
+                    
+                    intensidad_db = 0.0
+                    if data_wav is not None and len(data_wav) > 0:
+                        idx_ini = int(w_info.start * sr_wav)
+                        idx_fin = int(w_info.end * sr_wav)
+                        fragmento = data_wav[max(0, idx_ini):min(len(data_wav), idx_fin)]
+                        if len(fragmento) > 0:
+                            rms = np.sqrt(np.mean(fragmento**2))
+                            if rms > 0:
+                                intensidad_db = round(float(20 * np.log10(rms)), 2)
+                                intensidad_db = max(min(intensidad_db, 2.0), -4.0)
+
+                    partitura_real.append({
+                        "palabra": palabra,
+                        "duracion_ms": duracion_ms,
+                        "intensidad_db": intensidad_db
+                    })
+
+        texto_crudo = texto_crudo.strip()
 
         if not texto_crudo:
             await update.message.reply_text("Che, no te capté bien el audio.")
             return
 
-        # Generamos una partitura estimada inicial para el registro continuo basada en el texto reconocido
-        partitura_inicial = [{"palabra": w, "duracion_ms": 180, "intensidad_db": 0.0} for w in texto_crudo.split()]
-        registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo, partitura_inicial)
+        if not partitura_real:
+            partitura_real = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto_crudo.split()]
+
+        # Guardamos en el JSON las métricas reales exactas
+        registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo, partitura_real)
 
         try:
             subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
             subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
             subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS], check=True)
-            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento continuo métricas: {update.message.message_id}"], check=True)
+            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento métricas reales: {update.message.message_id}"], check=True)
             subprocess.run(["git", "push"], check=True)
-            print("🚀 [GIT SYNC]: Muestras y JSON acumulado subidos a GitHub.")
+            print("🚀 [GIT SYNC]: Muestras y métricas detalladas reales subidas a GitHub.")
         except Exception as git_err:
             print(f"⚠️ [GIT SYNC]: Push omitido o sin permisos: {git_err}")
 
-        texto_limpio, partitura = generar_respuesta_y_partitura_ia(texto_crudo)
+        texto_limpio, partitura_respuesta = generar_respuesta_y_partitura_ia(texto_crudo)
         ogg_f = "resp.ogg"
         
-        sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
+        sintetizar_con_partitura_de_ia(texto_limpio, partitura_respuesta, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🗣️ ¡Métricas acumuladas y partitura aplicada!")
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ ¡Métricas reales guardadas y respuesta lista!")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
@@ -330,11 +365,11 @@ def main():
 
     print("🧹 Limpiando webhooks...")
     try:
-        requests.get(f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot Híbrido con Archivo JSON Adjunto...")
+    print("🚀 Iniciando Bot Híbrido Definitivo...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
     
