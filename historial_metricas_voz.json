@@ -408,5 +408,99 @@
             }
         ],
         "total_entrenamientos": 10
+    },
+    {
+        "timestamp": "2026-10-11 23:53:31",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1099.wav",
+        "texto": "Perdón, no se entiende lo que me estás diciendo a ver ahí si me lo puedes decir.",
+        "partitura_metrica": [
+            {
+                "palabra": "Perdón,",
+                "duracion_ms": 541,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 140,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 240,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "entiende",
+                "duracion_ms": 360,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 200,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 120,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 100,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 200,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "diciendo",
+                "duracion_ms": 460,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 419,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 161,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 280,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 460,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 380,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 180,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "puedes",
+                "duracion_ms": 300,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "decir.",
+                "duracion_ms": 320,
+                "intensidad_db": -4.0
+            }
+        ],
+        "total_entrenamientos": 11
     }
 ]
