@@ -300,5 +300,39 @@
             }
         ],
         "total_entrenamientos": 8
+    },
+    {
+        "timestamp": "2026-10-11 22:27:46",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1095.wav",
+        "texto": "a ver ahí me escuchas",
+        "partitura_metrica": [
+            {
+                "palabra": "a",
+                "duracion_ms": 680,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 200,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 600,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 140,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "escuchas",
+                "duracion_ms": 640,
+                "intensidad_db": -4.0
+            }
+        ],
+        "total_entrenamientos": 9
     }
 ]
