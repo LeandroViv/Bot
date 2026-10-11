@@ -26,5 +26,12 @@
         "archivo": "muestras_voz/audio_usuario_1085.wav",
         "texto": "que me dijiste que me iba a escribir espontáneamente con alguna búsqueda huevo algo  y nada, que me fallaste con eso.",
         "total_entrenamientos": 4
+    },
+    {
+        "timestamp": "2026-10-11 21:01:18",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1087.wav",
+        "texto": "Chien me grabas que da algo en silencio amigo",
+        "total_entrenamientos": 5
     }
 ]
