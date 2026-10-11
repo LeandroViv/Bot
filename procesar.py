@@ -6,9 +6,10 @@ import sys
 import subprocess
 import requests
 import time
+import urllib.request
 import numpy as np
 
-print("🚀 [INIT]: Inicializando sistema híbrido (Timbre Bark + Dinámica Cuantitativa por Vibe Coding)...")
+print("🚀 [INIT]: Inicializando sistema híbrido (Timbre Bark + Métricas Web/Gemini)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -21,7 +22,7 @@ from telegram.ext import (
 )
 from faster_whisper import WhisperModel
 
-# Intentamos cargar dependencias para Bark
+# Intentamos cargar dependencias para Bark y análisis de audio
 try:
     from transformers import AutoProcessor, BarkModel
     import torch
@@ -33,6 +34,14 @@ except ImportError:
     print("⚠️ [INIT]: Bark no disponible.")
 
 try:
+    import librosa
+    LIBROSA_DISPONIBLE = True
+    print("✅ [INIT]: Librosa disponible para análisis DSP de .wav.")
+except ImportError:
+    LIBROSA_DISPONIBLE = False
+    print("⚠️ [INIT]: Librosa NO disponible.")
+
+try:
     from google import genai
     GENAI_DISPONIBLE = True
     print("✅ [INIT]: Google GenAI disponible.")
@@ -42,6 +51,9 @@ except ImportError:
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_METRICAS = "historial_metricas_voz.json"
+CARPETA_MUESTRAS = "muestras_voz"
+
+os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
 for archivo, contenido in [(TXT_FILE, ""), (REGISTRO_METRICAS, [])]:
     if not os.path.exists(archivo):
@@ -55,26 +67,6 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
 lock_voz = asyncio.Lock()
-
-
-def cargar_metricas_entrenadas():
-    if os.path.exists(REGISTRO_METRICAS):
-        try:
-            with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
-                return json_lib.load(f)
-        except:
-            return []
-    return []
-
-
-def guardar_metrica_entrenamiento(metrica_nueva):
-    historial = cargar_metricas_entrenadas()
-    historial.append(metrica_nueva)
-    # Mantenemos las últimas 50 para que evolucione sin romper memoria
-    if len(historial) > 50:
-        historial = historial[-50:]
-    with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
-        json_lib.dump(historial, f, indent=4, ensure_ascii=False)
 
 
 def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
@@ -120,19 +112,81 @@ def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
     return respuesta or "Che... me quedé sin conexión un toque."
 
 
-def sintetizar_hibrido_timbre_dinamica(texto, partitura_dinamica, ogg_salida="resp.ogg"):
-    """
-    Combina el timbre de Bark con la dinámica y fraseo cuantitativo de la partitura.
-    """
-    wav_temp_timbre = "temp_bark.wav"
-    wav_temp_final = "temp_final.wav"
-    sample_rate = 24000
+def extraer_metricas_de_wav(path_wav):
+    """Extrae métricas cuantitativas (duraciones e intensidad en dB) de un .wav usando librosa."""
+    if not LIBROSA_DISPONIBLE:
+        return []
+    try:
+        y, sr = librosa.load(path_wav, sr=22050)
+        hop_length = 512
+        rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
+        db_values = librosa.amplitude_to_db(rms, ref=np.max)
+        
+        chunk_duration_ms = int((hop_length / sr) * 1000)
+        partitura_extraida = []
+        
+        for i in range(0, len(db_values), 2):
+            intensidad = float(db_values[i])
+            intensidad_normalizada = max(min(intensidad / 6.0, 0.0), -4.0)
+            partitura_extraida.append({
+                "duracion_ms": chunk_duration_ms * 2,
+                "intensidad_db": intensidad_normalizada
+            })
+            
+        print(f"📊 [ANÁLISIS WAV]: Métricas extraídas de {path_wav} ({len(partitura_extraida)} frames).")
+        return partitura_extraida
+    except Exception as e:
+        print(f"⚠️ Error analizando .wav de referencia: {e}")
+        return []
+
+
+def obtener_wav_de_la_web_o_gemini(query_o_url, texto_respuesta):
+    """Busca un .wav en la web. Si falla o no hay URL, Gemini genera la partitura cuantitativa."""
+    wav_referencia = None
     
-    # 1. Obtenemos el timbre base con Bark (Caja negra para textura de voz)
+    if query_o_url.startswith("http"):
+        try:
+            print(f"🌐 [WEB]: Buscando y descargando .wav de referencia desde: {query_o_url}")
+            path_temp_web = os.path.join(CARPETA_MUESTRAS, "referencia_web.wav")
+            urllib.request.urlretrieve(query_o_url, path_temp_web)
+            if os.path.exists(path_temp_web) and os.path.getsize(path_temp_web) > 1000:
+                wav_referencia = path_temp_web
+                print("✅ [WEB]: ¡Archivo .wav descargado con éxito!")
+        except Exception as e:
+            print(f"⚠️ [WEB]: Falló la descarga del .wav online: {e}")
+
+    if wav_referencia and LIBROSA_DISPONIBLE:
+        return extraer_metricas_de_wav(wav_referencia)
+    else:
+        print("🧠 [FALLBACK GEMINI]: Generando métricas cuantitativas por IA...")
+        prompt_metrica_ia = (
+            "Analiza este texto y genera EXCLUSIVAMENTE un JSON válido que sea una lista de objetos. "
+            "Cada objeto debe contener: 'duracion_ms' (entero entre 80 y 250) e 'intensidad_db' (entre -4 y 0) "
+            f"para simular la dinámica y fraseo exacto. Texto: \"{texto_respuesta}\""
+        )
+        system_gen = "Sos un generador de métricas acústicas cuantitativas. Devuelves únicamente JSON puro sin markdown."
+        resp_json = llamar_ia_externa_o_local(prompt_metrica_ia, system_prompt_custom=system_gen)
+        
+        try:
+            inicio = resp_json.find('[')
+            fin = resp_json.rfind(']') + 1
+            partitura_generada = json_lib.loads(resp_json[inicio:fin])
+            return partitura_generada
+        except:
+            return [{"duracion_ms": 120, "intensidad_db": 0.0} for _ in texto_respuesta.split()]
+
+
+def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_salida="resp.ogg"):
+    """Combina el timbre de Bark con la partitura cuantitativa de dinámica y exporta en Opus."""
+    wav_temp_timbre = "temp_timbre_bark.wav"
+    wav_temp_final = "temp_dinamica_final.wav"
+    sample_rate = 24000
+
+    # 1. Timbre base con Bark
     timbre_ok = False
     if BARK_DISPONIBLE:
         try:
-            print("🎙️ [HÍBRIDO]: Generando timbre base con Bark...")
+            print("🎙️ [TIMBRE BARK]: Sintetizando textura vocal base...")
             processor = AutoProcessor.from_pretrained("suno/bark-small")
             model = BarkModel.from_pretrained("suno/bark-small")
             device = "cpu"
@@ -146,37 +200,32 @@ def sintetizar_hibrido_timbre_dinamica(texto, partitura_dinamica, ogg_salida="re
             sf.write(wav_temp_timbre, audio_bark, sample_rate)
             timbre_ok = os.path.exists(wav_temp_timbre)
         except Exception as e:
-            print(f"⚠️ Error generando timbre Bark: {e}")
+            print(f"⚠️ Error en timbre Bark: {e}")
 
-    # Si Bark falla, usamos un tono limpio como base de timbre
     if not timbre_ok:
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=140:duration=3", wav_temp_timbre], check=True)
 
-    # 2. Aplicamos la dinámica cuantitativa (fraseo, envolventes y variaciones de intensidad/pitch)
+    # 2. Aplicar Dinámica Cuantitativa
     try:
-        print("🎛️ [HÍBRIDO]: Aplicando dinámica y fraseo cuantitativo a la voz...")
-        # Cargamos el audio de timbre generado
+        print("🎛️ [DINÁMICA]: Aplicando métricas cuantitativas al fraseo...")
         data_timbre, sr = sf.read(wav_temp_timbre)
-        
-        # Modulamos la dinámica basándonos en la partitura obtenida por IA / Vibe Coding
         audio_dinamico = np.array([], dtype=np.float32)
         
+        indice_audio = 0
         for item in partitura_dinamica:
-            duracion_ms = item.get("duracion_ms", 120)
+            duracion_ms = item.get("duracion_ms", 100)
             intensidad_db = item.get("intensidad_db", 0.0)
             
             muestras_bloque = int(sr * (duracion_ms / 1000.0))
             if muestras_bloque <= 0:
                 continue
                 
-            # Extraemos un fragmento del timbre de Bark o generamos silencio si es pausa
-            if len(data_timbre) > muestras_bloque:
-                fragmento = data_timbre[:muestras_bloque]
-                data_timbre = data_timbre[muestras_bloque:]
+            if indice_audio + muestras_bloque <= len(data_timbre):
+                fragmento = data_timbre[indice_audio:indice_audio + muestras_bloque]
+                indice_audio += muestras_bloque
             else:
                 fragmento = np.zeros(muestras_bloque, dtype=np.float32)
                 
-            # Aplicamos la intensidad cuantitativa (dinámica de fraseo)
             mult_vol = 10 ** (intensidad_db / 20.0)
             fragmento_modulado = fragmento * mult_vol
             audio_dinamico = np.concatenate((audio_dinamico, fragmento_modulado))
@@ -185,12 +234,11 @@ def sintetizar_hibrido_timbre_dinamica(texto, partitura_dinamica, ogg_salida="re
             audio_dinamico = data_timbre
 
         sf.write(wav_temp_final, audio_dinamico, sr)
-
     except Exception as e:
-        print(f"⚠️ Error aplicando dinámica cuantitativa: {e}")
+        print(f"⚠️ Error aplicando dinámica por métricas: {e}")
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
-    # 3. Retoque final con FFmpeg (Estudio FM nocturno)
+    # 3. Masterización FM con FFmpeg
     filtros = [
         "dynaudnorm=f=125:g=15:p=0.9",
         "equalizer=f=90:t=h:w=100:g=3.0",
@@ -208,48 +256,31 @@ def sintetizar_hibrido_timbre_dinamica(texto, partitura_dinamica, ogg_salida="re
     for temp_f in [wav_temp_timbre, wav_temp_final]:
         if os.path.exists(temp_f):
             os.remove(temp_f)
-    print("✅ [HÍBRIDO]: Audio con timbre Bark y dinámica cuantitativa generado con éxito.")
+            
+    print("✅ [PROCESO HÍBRIDO]: Audio final generado con éxito.")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo: Timbre Bark + Dinámica y Fraseo Cuantitativo por Vibe Coding.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo: Timbre Bark + Métricas Web / Gemini.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
     await update.message.chat.send_action(action="record_voice")
     
-    # 1. La IA redacta la respuesta con onda de locutor nocturno
     respuesta_texto = llamar_ia_externa_o_local(texto_usuario)
     texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta_texto)
     texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-    # 2. Pedimos a la IA que genere la partitura cuantitativa de dinámica y fraseo para ese texto
-    prompt_dinamica = (
-        "Analiza este texto y genera EXCLUSIVAMENTE un JSON válido que sea una lista de objetos. "
-        "Cada objeto representa una sílaba o palabra y debe contener: 'palabra' (string), "
-        "'duracion_ms' (entero entre 80 y 250), e 'intensidad_db' (entre -4 y 0 para dar la dinámica de fraseo). "
-        f"Texto: \"{texto_limpio}\""
-    )
-    system_dinamica = "Sos un motor de análisis prosódico y dinámico. Devuelves únicamente JSON puro sin markdown."
-    resp_json = llamar_ia_externa_o_local(prompt_dinamica, system_prompt_custom=system_dinamica)
-    
-    partitura = []
-    try:
-        inicio = resp_json.find('[')
-        fin = resp_json.rfind(']') + 1
-        partitura = json_lib.loads(resp_json[inicio:fin])
-        # Guardamos en el historial de entrenamiento propio del bot
-        guardar_metrica_entrenamiento({"texto": texto_limpio, "partitura": partitura})
-    except:
-        # Partitura por defecto si falla el parseo
-        partitura = [{"palabra": w, "duracion_ms": 120, "intensidad_db": 0.0} for w in texto_limpio.split()]
+    url_potencial = next((w for w in texto_usuario.split() if w.startswith("http")), "sin_url")
+    partitura_dinamica = obtener_wav_de_la_web_o_gemini(url_potencial, texto_limpio)
 
     ogg_f = "resp.ogg"
-    sintetizar_hibrido_timbre_dinamica(texto_limpio, partitura, ogg_f)
+    sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
     with open(ogg_f, "rb") as vf:
-        await update.message.reply_voice(voice=vf, caption="🎙️ *(Timbre Bark + Dinámica Cuantitativa Híbrida)*")
+        caption_txt = "🌐 *(Timbre Bark + Métricas Web/Gemini)*"
+        await update.message.reply_voice(voice=vf, caption=caption_txt)
 
     if os.path.exists(ogg_f): 
         os.remove(ogg_f)
@@ -259,44 +290,33 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async with lock_voz:
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
-        path_in = os.path.join("muestras_voz", f"audio_{update.message.message_id}.ogg")
-        os.makedirs("muestras_voz", exist_ok=True)
+        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
         await file.download_to_drive(path_in)
 
-        # Transcribimos con Whisper
         model = WhisperModel("base", device="cpu", compute_type="int8")
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
         texto_crudo = " ".join([s.text for s in segments]).strip()
 
         if not texto_crudo:
-            await update.message.reply_text("Che, no te capté bien el audio de referencia.")
+            await update.message.reply_text("Che, no te capté bien el audio.")
             return
-
-        # Extraemos métricas del audio enviado para alimentar el entrenamiento de vibe coding
-        metrica_extraida = {
-            "origen": "audio_usuario",
-            "texto": texto_crudo,
-            "timestamp": time.time()
-        }
-        guardar_metrica_entrenamiento(metrica_extraida)
 
         respuesta = llamar_ia_externa_o_local(texto_crudo)
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
+        partitura_dinamica = obtener_wav_de_la_web_o_gemini(path_in, texto_limpio)
+
         ogg_f = "resp.ogg"
-        partitura_base = [{"palabra": w, "duracion_ms": 130, "intensidad_db": -1.0} for w in texto_limpio.split()]
-        sintetizar_hibrido_timbre_dinamica(texto_limpio, partitura_base, ogg_f)
+        sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🧠 Entrenado con tu audio y respondido con timbre híbrido.")
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ Entendido y procesado por métricas híbridas.")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
-        if os.path.exists(path_in): os.remove(path_in)
 
 
 def main():
-    os.makedirs("muestras_voz", exist_ok=True)
     if not TOKEN:
         print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
         return
@@ -307,7 +327,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot Híbrido...")
+    print("🚀 Iniciando Bot Híbrido Completo...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
     
