@@ -33,5 +33,94 @@
         "archivo": "muestras_voz/audio_usuario_1087.wav",
         "texto": "Chien me grabas que da algo en silencio amigo",
         "total_entrenamientos": 5
+    },
+    {
+        "timestamp": "2026-10-11 21:33:34",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1089.wav",
+        "texto": "¿Qué haces, Vort?  Me grabaste algo de silencio, quiero ver si ahora sí te puedo escuchar.",
+        "partitura_metrica": [
+            {
+                "palabra": "¿Qué",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "haces,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "Vort?",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "Me",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "grabaste",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "silencio,",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "quiero",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "ahora",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "sí",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "puedo",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "escuchar.",
+                "duracion_ms": 180,
+                "intensidad_db": 0.0
+            }
+        ],
+        "total_entrenamientos": 6
     }
 ]
