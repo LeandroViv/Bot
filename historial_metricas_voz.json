@@ -256,5 +256,49 @@
             }
         ],
         "total_entrenamientos": 7
+    },
+    {
+        "timestamp": "2026-10-11 22:13:16",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1093.wav",
+        "texto": "A ver, ahí me escuchas bien, amigo.",
+        "partitura_metrica": [
+            {
+                "palabra": "A",
+                "duracion_ms": 660,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 260,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 260,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 160,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "escuchas",
+                "duracion_ms": 460,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "bien,",
+                "duracion_ms": 220,
+                "intensidad_db": -4.0
+            },
+            {
+                "palabra": "amigo.",
+                "duracion_ms": 240,
+                "intensidad_db": -4.0
+            }
+        ],
+        "total_entrenamientos": 8
     }
 ]
