@@ -19,5 +19,12 @@
         "archivo": "muestras_voz/audio_usuario_1083.wav",
         "texto": "¿Qué tal bot? Lo que quiero es que vos vayas entonando y fraseando, generando cadencia  según la intención de lo que decís, por favor.",
         "total_entrenamientos": 3
+    },
+    {
+        "timestamp": "2026-10-11 20:46:20",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1085.wav",
+        "texto": "que me dijiste que me iba a escribir espontáneamente con alguna búsqueda huevo algo  y nada, que me fallaste con eso.",
+        "total_entrenamientos": 4
     }
 ]
