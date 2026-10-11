@@ -1,15 +1,100 @@
+import asyncio
+import json as json_lib
+import os
+import re
+import sys
+import subprocess
+import requests
+import time
+import urllib.request
+import numpy as np
+from datetime import datetime
+
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Archivo JSON Adjunto a Gemini + Git Sync)...")
+
+from telegram import Update
+from telegram.request import HTTPXRequest
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
+from faster_whisper import WhisperModel
+
+try:
+    from transformers import AutoProcessor, BarkModel
+    import torch
+    import soundfile as sf
+    BARK_DISPONIBLE = True
+    print("✅ [INIT]: Motor de timbre Bark disponible.")
+except ImportError:
+    BARK_DISPONIBLE = False
+    print("⚠️ [INIT]: Bark no disponible.")
+
+try:
+    from google import genai
+    GENAI_DISPONIBLE = True
+    print("✅ [INIT]: Google GenAI disponible.")
+except ImportError:
+    GENAI_DISPONIBLE = False
+    print("⚠️ [INIT]: Google GenAI NO disponible.")
+
+TXT_FILE = "conversaciones.txt"
+REGISTRO_METRICAS = "historial_metricas_voz.json"
+CARPETA_MUESTRAS = "muestras_voz"
+
+os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
+
+if not os.path.exists(REGISTRO_METRICAS):
+    with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
+        json_lib.dump([], f, indent=4, ensure_ascii=False)
+
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
+GEMINI_BLOQUEADO_POR_CUOTA = False
+lock_voz = asyncio.Lock()
+
+
+def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicada, tipo="voz_usuario"):
+    """
+    Guarda de forma persistente y continua el flujo de audios, textos 
+    y métricas detalladas palabra por palabra.
+    """
+    try:
+        with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
+            historial = json_lib.load(f)
+    except Exception:
+        historial = []
+
+    nuevo_registro = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "tipo": tipo,
+        "archivo": path_audio,
+        "texto": texto_transcrito,
+        "partitura_metrica": partitura_aplicada,
+        "total_entrenamientos": len(historial) + 1
+    }
+    historial.append(nuevo_registro)
+    
+    with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
+        json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+        
+    print(f"📒 [REGISTRO JSON CONTINUO]: Entrenamiento #{nuevo_registro['total_entrenamientos']} guardado con éxito.")
+
+
 def generar_respuesta_y_partitura_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
-    historial_contexto = extraer_partitura_historica()
     
     system_prompt = (
-        "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo. "
-        "Tenés a tu disposición el historial de notas de voz del usuario para aprender sus métricas rítmicas:\n"
-        f"{historial_contexto}\n\n"
-        "REGLA DE SÍNTESIS DE VOZ:\n"
-        "Generá una respuesta en texto y construí una partitura métrica detallada palabra por palabra. "
-        "Deduce la duración (duracion_ms entre 100 y 350) y la intensidad (intensidad_db entre -2.5 y 1.5) "
-        "de cada palabra analizando su sílaba tónica y el tono de la charla.\n\n"
+        "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
+        "Tenés adjunto el historial JSON completo con todas las métricas acumuladas de las notas de voz previas del usuario. "
+        "Analizá las partituras métricas históricas, abstrae las reglas de variación prosódica según la semántica del español, "
+        "las sílabas tónicas y la posición en la frase, y aplicá ese promedio ponderado orgánico para componer la partitura "
+        "de la nueva respuesta palabra por palabra.\n\n"
         "Devolvé OBLIGATORIAMENTE un JSON estricto con esta estructura exacta, sin texto extra fuera:\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada aquí\",\n"
@@ -21,12 +106,14 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
     )
     
     respuesta_raw = ""
-    # Intentamos con Gemini si no está bloqueado
-    if client and not GEMINI_BLOQUEADO_POR_CUOTA:
+    
+    # 1. Intentamos con Gemini adjuntando el archivo JSON físico acumulado
+    if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         try:
+            archivo_adjunto = client.files.upload(file=REGISTRO_METRICAS)
             res = client.models.generate_content(
-                model="gemini-2.5-flash",  # Usamos una versión estable y liviana
-                contents=f"Mensaje del oyente: \"{prompt_usuario}\"",
+                model="gemini-2.5-flash",
+                contents=[archivo_adjunto, f"Mensaje del oyente: \"{prompt_usuario}\""],
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_prompt,
                     response_mime_type="application/json"
@@ -37,16 +124,16 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-                print("⚠️ [CUOTA EXCEDIDA]: Gemini bloqueado, saltando automáticamente a Llama local (Ollama)...")
+                print("⚠️ [CUOTA EXCEDIDA]: Gemini bloqueado, derivando a Llama local (Ollama)...")
             else:
-                print(f"⚠️ Error en Gemini partitura: {e}")
+                print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
 
-    # Si Gemini falló o está bloqueado por cuota, usamos Ollama (Llama 3.2 local)
+    # 2. Fallback automático a Llama local (Ollama) si Gemini falla o está sin cuota
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
         payload = {
             "model": "llama3.2",
             "messages": [
-                {"role": "system", "content": system_prompt + "\nRespondé ÚNICAMENTE en JSON válido sin markdown extra."},
+                {"role": "system", "content": system_prompt + "\nRespondé ÚNICAMENTE en JSON válido."},
                 {"role": "user", "content": prompt_usuario}
             ],
             "options": {"num_ctx": 16384, "temperature": 0.7},
@@ -56,7 +143,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             res_local = requests.post("http://127.0.0.1:11434/api/chat", json=payload, timeout=20)
             if res_local.status_code == 200:
                 respuesta_raw = res_local.json().get("message", {}).get("content", "").strip()
-                # Limpiamos bloques de código si Llama los llega a agregar por capricho
                 respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw)
                 respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
                 respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
@@ -95,7 +181,6 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
             inputs = processor(f"[es] {texto[:200]}", voice_preset="v2/es_speaker_2").to(device)
             with torch.no_grad():
-                # CORREGIDO: Eliminamos el argumento duplicado max_new_tokens para evitar el crash de transformers
                 audio_bark = model.generate(**inputs)
             
             audio_bark = audio_bark.cpu().numpy().squeeze()
@@ -148,7 +233,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
         sf.write(wav_temp_final, audio_dinamico, sr)
     except Exception as e:
-        print(f"⚠️ Error aplicando partitura segura, usando respaldo: {e}")
+        print(f"⚠️ Error aplicando partitura segura: {e}")
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
     filtros = [
@@ -168,3 +253,103 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
     for temp_f in [wav_temp_timbre, wav_temp_final]:
         if os.path.exists(temp_f):
             os.remove(temp_f)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo con historial JSON adjunto y partituras continuas.")
+
+
+async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    texto_usuario = update.message.text
+    await update.message.chat.send_action(action="record_voice")
+    
+    texto_limpio, partitura = generar_respuesta_y_partitura_ia(texto_usuario)
+    ogg_f = "resp.ogg"
+    
+    sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
+
+    with open(ogg_f, "rb") as vf:
+        await update.message.reply_voice(voice=vf, caption="🎙️ *(Historial JSON Adjunto + Partitura IA)*")
+
+    if os.path.exists(ogg_f): 
+        os.remove(ogg_f)
+
+
+async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async with lock_voz:
+        await update.message.chat.send_action(action="record_voice")
+        file = await update.message.voice.get_file()
+        
+        path_ogg = os.path.join(CARPETA_MUESTRAS, f"audio_usuario_{update.message.message_id}.ogg")
+        path_wav = os.path.join(CARPETA_MUESTRAS, f"audio_usuario_{update.message.message_id}.wav")
+        
+        await file.download_to_drive(path_ogg)
+
+        try:
+            subprocess.run(["ffmpeg", "-y", "-i", path_ogg, "-ar", "22050", "-ac", "1", path_wav], check=True)
+        except Exception as e:
+            print(f"⚠️ Error convirtiendo .ogg a .wav: {e}")
+
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(path_ogg, beam_size=5, language="es")
+        texto_crudo = " ".join([s.text for s in segments]).strip()
+
+        if not texto_crudo:
+            await update.message.reply_text("Che, no te capté bien el audio.")
+            return
+
+        # Generamos una partitura estimada inicial para el registro continuo basada en el texto reconocido
+        partitura_inicial = [{"palabra": w, "duracion_ms": 180, "intensidad_db": 0.0} for w in texto_crudo.split()]
+        registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo, partitura_inicial)
+
+        try:
+            subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
+            subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
+            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS], check=True)
+            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento continuo métricas: {update.message.message_id}"], check=True)
+            subprocess.run(["git", "push"], check=True)
+            print("🚀 [GIT SYNC]: Muestras y JSON acumulado subidos a GitHub.")
+        except Exception as git_err:
+            print(f"⚠️ [GIT SYNC]: Push omitido o sin permisos: {git_err}")
+
+        texto_limpio, partitura = generar_respuesta_y_partitura_ia(texto_crudo)
+        ogg_f = "resp.ogg"
+        
+        sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
+
+        with open(ogg_f, "rb") as vf:
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ ¡Métricas acumuladas y partitura aplicada!")
+
+        if os.path.exists(ogg_f): os.remove(ogg_f)
+
+
+def main():
+    if not TOKEN:
+        print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
+        return
+
+    print("🧹 Limpiando webhooks...")
+    try:
+        requests.get(f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
+    except Exception as e:
+        print(f"⚠️ Aviso webhook: {e}")
+
+    print("🚀 Iniciando Bot Híbrido con Archivo JSON Adjunto...")
+    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
+    app = Application.builder().token(TOKEN).request(request_config).build()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
+
+    while True:
+        try:
+            print("🔄 [POLLING]: Escuchando eventos...")
+            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        except Exception as e:
+            print(f"⚠️ Red interrumpida ({e}). Reconectando en 5 segundos...")
+            time.sleep(5)
+
+
+if __name__ == "__main__":
+    main()
