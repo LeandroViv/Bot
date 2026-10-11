@@ -53,6 +53,8 @@ if not os.path.exists(REGISTRO_METRICAS):
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# Permitimos configurar la URL de Ollama por variable de entorno, fallback a localhost
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 
 client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
@@ -133,7 +135,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
                     break
 
-    # 2. Fallback a Llama local (Ollama) con URL limpia sin corchetes
+    # 2. Fallback a Llama local (Ollama) usando host parametrizado
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
         payload = {
             "model": "llama3.2",
@@ -145,12 +147,12 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             "stream": False,
         }
         try:
-            url_llama = "[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)"
+            url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
             res_local = requests.post(url_llama, json=payload, timeout=60)
             if res_local.status_code == 200:
                 respuesta_raw = res_local.json().get("message", {}).get("content", "").strip()
         except Exception as ex_local:
-            print(f"⚠️ Error conectando con Llama local: {ex_local}")
+            print(f"⚠️ Error conectando con Llama local en {OLLAMA_HOST}: {ex_local}")
 
     # Limpieza total de markdown
     respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
