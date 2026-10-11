@@ -12,5 +12,12 @@
         "archivo": "muestras_voz/audio_usuario_1081.wav",
         "texto": "estás ahí chavón porque sonó un ruidito apenas, pero no te escuché  responderme nada, quería saber si estaba ahí a mío.",
         "total_entrenamientos": 2
+    },
+    {
+        "timestamp": "2026-10-11 20:04:19",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1083.wav",
+        "texto": "¿Qué tal bot? Lo que quiero es que vos vayas entonando y fraseando, generando cadencia  según la intención de lo que decís, por favor.",
+        "total_entrenamientos": 3
     }
 ]
