@@ -1,5 +1,5 @@
 import asyncio
-json_lib = __import__('json')
+import json as json_lib
 import os
 import re
 import sys
@@ -7,8 +7,9 @@ import shutil
 import subprocess
 import requests
 import time
+import numpy as np
 
-print("🚀 [INIT]: Importando librerías y configurando entorno...")
+print("🚀 [INIT]: Importando librerías y configurando entorno con doble motor (Neuronal + Cuantitativo)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -128,9 +129,17 @@ def guardar_en_txt(rol, texto):
         f.write(f"[{rol.upper()}]: {texto}\n---\n")
 
 
-def llamar_ia_externa_o_local(prompt_usuario):
+def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
     global GEMINI_BLOQUEADO_POR_CUOTA
-    system_prompt = "Sos Leandro hablando con un colega por Telegram o un locutor nocturno de radio. Porteño, directo, cálido, usando 'vos' y 'che', con cadencia conversacional natural y fraseada."
+    
+    system_prompt = system_prompt_custom or (
+        "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. "
+        "Porteño, cálido, directo, usando 'vos' y 'che'. "
+        "IMPORTANTE PARA LA VOZ: Escribí tus respuestas con una cadencia conversacional marcada, "
+        "usando puntos suspensivos (...) donde el locutor respira o hace pausas naturales, "
+        "y MAYÚSCULAS en las palabras clave para dar énfasis."
+    )
+    
     respuesta = ""
 
     # 1. Intento con Gemini
@@ -157,7 +166,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_usuario}
             ],
-            "options": {"num_ctx": 16384, "temperature": 0.5},
+            "options": {"num_ctx": 16384, "temperature": 0.6},
             "stream": False,
         }
         try:
@@ -168,7 +177,7 @@ def llamar_ia_externa_o_local(prompt_usuario):
             print(f"⚠️ Error conectando a Ollama local: {ex}")
 
     if not respuesta:
-        respuesta = "Che, me quedé sin conexión por todos lados, tirámela de nuevo en un ratito."
+        respuesta = "Che... me quedé sin conexión por todos lados... tirámela de nuevo en un ratito."
     return respuesta
 
 
@@ -178,19 +187,16 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
 
     if BARK_DISPONIBLE:
         try:
-            print("🎙️ [CLONADOR]: Sintetizando voz en castellano con Bark...")
+            print("🎙️ [CLONADOR]: Sintetizando voz neuronal con Bark...")
             processor = AutoProcessor.from_pretrained("suno/bark-small")
             model = BarkModel.from_pretrained("suno/bark-small")
             
             device = "cpu"
             model = model.to(device)
 
-            # Forzamos etiqueta de idioma [es] y recorte preventivo para CPU
-            texto_procesar = f"[es] {texto[:150]}"
-
+            texto_procesar = f"[es] {texto[:180]}"
             inputs = processor(texto_procesar, voice_preset="v2/es_speaker_2").to(device)
             
-            # Llamada limpia sin duplicar argumentos max_new_tokens
             with torch.no_grad():
                 audio_array = model.generate(**inputs)
             
@@ -198,7 +204,7 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
 
             sf.write(wav_temp, audio_array, model.generation_config.sample_rate)
             generado_ok = os.path.exists(wav_temp)
-            print("✅ [CLONADOR]: Audio en castellano generado con éxito.")
+            print("✅ [CLONADOR]: Audio neuronal generado con éxito.")
         except Exception as e:
             print(f"⚠️ Error en modelo Bark: {e}")
 
@@ -206,7 +212,7 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
         print("⚠️ Usando fallback de emergencia con FFmpeg...")
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=220:duration=2", wav_temp], check=True)
 
-    # Retoque final con FFmpeg para Telegram
+    # Retoque final con FFmpeg (Estudio FM nocturno)
     filtros = [
         "dynaudnorm=f=125:g=15:p=0.9",
         "equalizer=f=90:t=h:w=100:g=3.0",
@@ -225,32 +231,101 @@ def generar_audio_con_clonador(texto, ogg_salida="resp.ogg"):
         os.remove(wav_temp)
 
 
+def generar_audio_cuantitativo(partitura_json, ogg_salida="resp.ogg"):
+    """Motor DSP cuantitativo: renderiza audio matemático milisegundo a milisegundo."""
+    wav_temp = "temp_cuant.wav"
+    sample_rate = 22050
+    audio_total = np.array([], dtype=np.float32)
+
+    try:
+        print("🎛️ [DSP CUANTITATIVO]: Renderizando partitura numérica exacta...")
+        for item in partitura_json:
+            duracion_ms = item.get("duracion_ms", 100)
+            pitch = item.get("pitch_hz", 150)
+            intensidad_db = item.get("intensidad_db", 0.0)
+            
+            num_samples = int(sample_rate * (duracion_ms / 1000.0))
+            if num_samples <= 0:
+                continue
+            
+            t = np.linspace(0, duracion_ms / 1000.0, num_samples, endpoint=False)
+            
+            if pitch == 0:
+                onda = np.zeros(num_samples, dtype=np.float32)
+            else:
+                onda = 0.5 * np.sin(2 * np.pi * pitch * t) + 0.2 * np.sin(2 * np.pi * (pitch * 2) * t)
+                envolvente = np.hanning(num_samples) if num_samples > 1 else np.ones(1)
+                onda = onda * envolvente
+                
+                mult_vol = 10 ** (intensidad_db / 20.0)
+                onda = onda * mult_vol
+
+            audio_total = np.concatenate((audio_total, onda))
+
+        sf.write(wav_temp, audio_total, sample_rate)
+        
+    except Exception as e:
+        print(f"⚠️ Error en motor cuantitativo, usando tono plano: {e}")
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=300:duration=1", wav_temp], check=True)
+
+    subprocess.run([
+        "ffmpeg", "-y", "-i", wav_temp,
+        "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+        ogg_salida
+    ], check=True)
+
+    if os.path.exists(wav_temp):
+        os.remove(wav_temp)
+    print("✅ [DSP CUANTITATIVO]: Audio matemático generado con éxito.")
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con clonador en castellano y respaldo dual Gemini / Llama 3.2.")
+    await update.message.reply_text("¡Buenas che! Bot activo con doble motor: Clonador Neuronal FM y Síntesis Cuantitativa DSP.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
-    quiere_voz = any(w in texto_usuario.lower() for w in ["imitá", "imitar", "voz", "audio", "hablá", "explicame", "chiste", "locutor"])
+    es_cuantitativo = any(w in texto_usuario.lower() for w in ["cuantitativo", "paramétrico", "exacto", "frecuencia", "dsp"])
 
-    if quiere_voz:
-        await update.message.chat.send_action(action="record_voice")
-        respuesta = llamar_ia_externa_o_local(texto_usuario)
+    await update.message.chat.send_action(action="record_voice")
+    ogg_f = "resp.ogg"
+
+    if es_cuantitativo:
+        print("🔬 [MODO]: Activando síntesis cuantitativa paramétrica...")
+        prompt_cuant = (
+            "Analiza esta frase y genera EXCLUSIVAMENTE un JSON válido que sea una lista de objetos. "
+            "Cada objeto debe contener exactamente: 'fonema' (string), 'duracion_ms' (entero entre 50 y 300), "
+            "'pitch_hz' (frecuencia en Hz entre 80 y 300, o 0 para silencios/pausas), "
+            "e 'intensidad_db' (entre -6 y 0). "
+            f"Frase a procesar: \"{texto_usuario}\""
+        )
         
+        system_cuant = "Sos un motor de síntesis de voz paramétrica DSP. Devuelves únicamente JSON puro sin markdown ni texto extra."
+        respuesta_ia = llamar_ia_externa_o_local(prompt_cuant, system_prompt_custom=system_cuant)
+        
+        try:
+            inicio = respuesta_ia.find('[')
+            fin = respuesta_ia.rfind(']') + 1
+            partitura = json_lib.loads(respuesta_ia[inicio:fin])
+            generar_audio_cuantitativo(partitura, ogg_f)
+        except Exception as err:
+            print(f"⚠️ Falló el parseo cuantitativo JSON, usando fallback neuronal: {err}")
+            respuesta_normal = llamar_ia_externa_o_local(texto_usuario)
+            texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta_normal)
+            texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
+            generar_audio_con_clonador(texto_limpio, ogg_f)
+    else:
+        respuesta = llamar_ia_externa_o_local(texto_usuario)
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
-
-        ogg_f = "resp.ogg"
         generar_audio_con_clonador(texto_limpio, ogg_f)
 
-        with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="🎙️ *(Locución nocturna en castellano)*")
+    with open(ogg_f, "rb") as vf:
+        caption_txt = "🔬 *(Modo Cuantitativo DSP Paramétrico)*" if es_cuantitativo else "🎙️ *(Locución Neuronal FM)*"
+        await update.message.reply_voice(voice=vf, caption=caption_txt)
 
-        if os.path.exists(ogg_f): os.remove(ogg_f)
-    else:
-        await update.message.chat.send_action(action="typing")
-        respuesta = llamar_ia_externa_o_local(texto_usuario)
-        await update.message.reply_text(respuesta)
+    if os.path.exists(ogg_f): 
+        os.remove(ogg_f)
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -292,7 +367,7 @@ def main():
     except Exception as e:
         print(f"⚠️ Aviso webhook: {e}")
 
-    print("🚀 Iniciando Bot con clonación en castellano y respaldo local...")
+    print("🚀 Iniciando Bot con doble motor (Neuronal FM + Cuantitativo DSP)...")
     
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
