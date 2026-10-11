@@ -9,7 +9,7 @@ import time
 import urllib.request
 import numpy as np
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Guardado .wav + Dinámica Cuantitativa)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Guardado .wav + Métricas Robustas)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -39,7 +39,7 @@ try:
     print("✅ [INIT]: Librosa disponible para análisis DSP de .wav.")
 except ImportError:
     LIBROSA_DISPONIBLE = False
-    print("⚠️ [INIT]: Librosa NO disponible.")
+    print("⚠️ [INIT]: Librosa NO disponible, se usará análisis de duración por chunks seguros.")
 
 try:
     from google import genai
@@ -112,43 +112,52 @@ def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
     return respuesta or "Che... me quedé sin conexión un toque."
 
 
-def extraer_metricas_de_wav(path_wav):
-    """Extrae métricas cuantitativas reales (duraciones e intensidad en dB) usando librosa."""
-    if not LIBROSA_DISPONIBLE:
-        return []
-    try:
-        y, sr = librosa.load(path_wav, sr=22050)
-        hop_length = 512
-        rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
-        db_values = librosa.amplitude_to_db(rms, ref=np.max)
-        
-        chunk_duration_ms = int((hop_length / sr) * 1000)
-        partitura_extraida = []
-        
-        for i in range(0, len(db_values), 2):
-            intensidad = float(db_values[i])
-            intensidad_normalizada = max(min(intensidad / 6.0, 0.0), -4.0)
-            partitura_extraida.append({
-                "duracion_ms": chunk_duration_ms * 2,
-                "intensidad_db": intensidad_normalizada
-            })
+def extraer_metricas_de_wav(path_wav, cantidad_palabras=10):
+    """Extrae métricas cuantitativas reales usando librosa o genera una partitura proporcional segura."""
+    if LIBROSA_DISPONIBLE:
+        try:
+            y, sr = librosa.load(path_wav, sr=22050)
+            hop_length = 512
+            rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
+            db_values = librosa.amplitude_to_db(rms, ref=np.max)
             
-        print(f"📊 [ANÁLISIS WAV]: Métricas extraídas de {path_wav} ({len(partitura_extraida)} frames).")
-        return partitura_extraida
-    except Exception as e:
-        print(f"⚠️ Error analizando .wav de referencia: {e}")
-        return []
+            chunk_duration_ms = int((hop_length / sr) * 1000)
+            partitura_extraida = []
+            
+            for i in range(0, len(db_values), 2):
+                intensidad = float(db_values[i])
+                intensidad_normalizada = max(min(intensidad / 6.0, 0.0), -4.0)
+                partitura_extraida.append({
+                    "duracion_ms": chunk_duration_ms * 2,
+                    "intensidad_db": intensidad_normalizada
+                })
+                
+            print(f"📊 [ANÁLISIS LIBROSA]: Métricas extraídas de {path_wav} ({len(partitura_extraida)} frames).")
+            if partitura_extraida:
+                return partitura_extraida
+        except Exception as e:
+            print(f"⚠️ Error en librosa, usando fallback proporcional: {e}")
+
+    # Fallback robusto basado en la duración real del archivo si librosa no está o falla
+    try:
+        data_wav, sr_wav = sf.read(path_wav)
+        duracion_total_ms = int((len(data_wav) / sr_wav) * 1000)
+        duracion_chunk = max(int(duracion_total_ms / max(cantidad_palabras, 1)), 150)
+        
+        print(f"⚙️ [FALLBACK MÉTRICAS]: Partitura proporcional generada para {duracion_total_ms}ms.")
+        return [{"duracion_ms": duracion_chunk, "intensidad_db": -0.5} for _ in range(max(cantidad_palabras, 5))]
+    except:
+        return [{"duracion_ms": 180, "intensidad_db": 0.0} for _ in range(15)]
 
 
-def obtener_wav_de_la_web_o_sintetico(query_o_url):
+def obtener_wav_de_la_web_o_sintetico(query_o_url, cantidad_palabras=10):
     """
-    1. Busca y descarga un .wav de referencia de la web y lo guarda en muestras_voz/.
-    2. Si falla o no hay URL, genera un .wav sintético local de respaldo con FFmpeg en muestras_voz/.
+    1. Busca y descarga un .wav de la web y lo guarda en muestras_voz/.
+    2. Si falla o no hay URL, genera un .wav sintético local de respaldo con FFmpeg.
     """
     os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
     wav_referencia = None
     
-    # Intento 1: Descargar de la web si pasaron una URL directa
     if query_o_url.startswith("http"):
         try:
             print(f"🌐 [WEB]: Descargando .wav de referencia...")
@@ -160,9 +169,8 @@ def obtener_wav_de_la_web_o_sintetico(query_o_url):
         except Exception as e:
             print(f"⚠️ [WEB]: Falló la descarga del .wav online: {e}")
 
-    # Intento 2: Fallback a .wav sintético local de 3 segundos reales guardado en muestras_voz/
     if not wav_referencia:
-        print("🛠️ [FALLBACK SINTÉTICO]: Generando .wav local de referencia...")
+        print("🛠️ [FALLBACK SINTÉTICO]: Generando .wav local de referencia con FFmpeg...")
         path_sintetico = os.path.join(CARPETA_MUESTRAS, f"referencia_sintetica_{int(time.time())}.wav")
         try:
             subprocess.run([
@@ -177,11 +185,10 @@ def obtener_wav_de_la_web_o_sintetico(query_o_url):
         except Exception as ex:
             print(f"⚠️ Error generando .wav sintético: {ex}")
 
-    # Extraemos métricas reales del wav obtenido
-    if wav_referencia and LIBROSA_DISPONIBLE:
-        return extraer_metricas_de_wav(wav_referencia)
+    if wav_referencia:
+        return extraer_metricas_de_wav(wav_referencia, cantidad_palabras)
     else:
-        return [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in range(15)]
+        return [{"duracion_ms": 180, "intensidad_db": 0.0} for _ in range(cantidad_palabras)]
 
 
 def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_salida="resp.ogg"):
@@ -213,18 +220,18 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
     if not timbre_ok:
         subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=140:duration=4", wav_temp_timbre], check=True)
 
-    # 2. Aplicar Dinámica Cuantitativa basada en el .wav analizado (con loop circular seguro)
+    # 2. Aplicar Dinámica Cuantitativa con bucle circular seguro
     try:
         print("🎛️ [DINÁMICA]: Aplicando métricas cuantitativas al fraseo...")
         data_timbre, sr = sf.read(wav_temp_timbre)
         audio_dinamico = np.array([], dtype=np.float32)
         
-        if len(partitura_dinamica) < 5:
+        if not partitura_dinamica:
             partitura_dinamica = [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in texto.split()]
 
         indice_audio = 0
         for item in partitura_dinamica:
-            duracion_ms = item.get("duracion_ms", 120)
+            duracion_ms = item.get("duracion_ms", 150)
             intensidad_db = item.get("intensidad_db", 0.0)
             
             muestras_bloque = int(sr * (duracion_ms / 1000.0))
@@ -274,7 +281,7 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo con guardado de .wav y timbre de Bark.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo con timbre de Bark y métricas robustas de .wav.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -286,7 +293,8 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
     url_potencial = next((w for w in texto_usuario.split() if w.startswith("http")), "sin_url")
-    partitura_dinamica = obtener_wav_de_la_web_o_sintetico(url_potencial)
+    cantidad_palabras = len(texto_limpio.split())
+    partitura_dinamica = obtener_wav_de_la_web_o_sintetico(url_potencial, cantidad_palabras)
 
     ogg_f = "resp.ogg"
     sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
@@ -318,9 +326,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
-        partitura_dinamica = extraer_metricas_de_wav(path_in)
-        if not partitura_dinamica:
-            partitura_dinamica = [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in range(15)]
+        cantidad_palabras = len(texto_limpio.split())
+        partitura_dinamica = extraer_metricas_de_wav(path_in, cantidad_palabras)
 
         ogg_f = "resp.ogg"
         sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
