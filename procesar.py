@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Registro JSON + Métricas Nativas)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Partitura Robusta + Git Sync)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -56,7 +56,6 @@ CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
-# Inicializar JSON de registro si no existe
 if not os.path.exists(REGISTRO_METRICAS):
     with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
         json_lib.dump([], f, indent=4, ensure_ascii=False)
@@ -70,7 +69,6 @@ lock_voz = asyncio.Lock()
 
 
 def registrar_entrenamiento_json(path_audio, texto_transcrito, tipo="voz_usuario"):
-    """Registra de forma persistente cada entrenamiento en el historial JSON."""
     try:
         with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
             historial = json_lib.load(f)
@@ -84,22 +82,21 @@ def registrar_entrenamiento_json(path_audio, texto_transcrito, tipo="voz_usuario
         "texto": texto_transcrito,
         "total_entrenamientos": len(historial) + 1
     }
-    
     historial.append(nuevo_registro)
     
     with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
         json_lib.dump(historial, f, indent=4, ensure_ascii=False)
         
-    print(f"📒 [REGISTRO JSON]: Entrenamiento #{nuevo_registro['total_entrenamientos']} guardado correctamente.")
+    print(f"📒 [REGISTRO JSON]: Entrenamiento #{nuevo_registro['total_entrenamientos']} guardado.")
 
 
-def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
+def llamar_ia_con_contexto_emocional(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
-    system_prompt = system_prompt_custom or (
+    system_prompt = (
         "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. "
         "Porteño, cálido, directo, usando 'vos' y 'che'. "
-        "Dinamizá tus textos con pausas y énfasis para que la cadencia sea perfecta."
+        "Captá el clima de lo que te dice el usuario y respondé adaptando tu tono emocional de forma fluida y natural."
     )
     
     respuesta = ""
@@ -107,7 +104,7 @@ def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
         try:
             res = client.models.generate_content(
                 model="gemini-3.5-flash",
-                contents=f"Solicitud: \"{prompt_usuario}\"",
+                contents=f"Mensaje del oyente: \"{prompt_usuario}\"",
                 config=genai.types.GenerateContentConfig(system_instruction=system_prompt)
             )
             if res and res.text:
@@ -123,7 +120,7 @@ def llamar_ia_externa_o_local(prompt_usuario, system_prompt_custom=None):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_usuario}
             ],
-            "options": {"num_ctx": 16384, "temperature": 0.6},
+            "options": {"num_ctx": 16384, "temperature": 0.7},
             "stream": False,
         }
         try:
@@ -149,7 +146,7 @@ def extraer_metricas_de_wav(path_wav, cantidad_palabras=10):
                 intensidad = float(db_values[i])
                 intensidad_normalizada = max(min(intensidad / 6.0, 0.0), -4.0)
                 partitura_extraida.append({
-                    "duracion_ms": chunk_duration_ms * 2,
+                    "duracion_ms": max(chunk_duration_ms * 2, 90),
                     "intensidad_db": intensidad_normalizada
                 })
             if partitura_extraida:
@@ -162,9 +159,9 @@ def extraer_metricas_de_wav(path_wav, cantidad_palabras=10):
         if len(data.shape) > 1:
             data = np.mean(data, axis=1)
             
-        frame_length = int(sr * 0.05)
+        frame_length = int(sr * 0.1)
         if frame_length <= 0:
-            frame_length = 1000
+            frame_length = 2200
             
         partitura_extraida = []
         for i in range(0, len(data), frame_length):
@@ -176,15 +173,15 @@ def extraer_metricas_de_wav(path_wav, cantidad_palabras=10):
             db_norm = max(min(db_val / 6.0, 0.0), -4.0)
             
             partitura_extraida.append({
-                "duracion_ms": 50,
+                "duracion_ms": 110,
                 "intensidad_db": float(db_norm)
             })
-            if partitura_extraida:
-                return partitura_extraida
+        if partitura_extraida:
+            return partitura_extraida
     except Exception as e:
         print(f"⚠️ Error en análisis nativo RMS: {e}")
 
-    return [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in range(max(cantidad_palabras, 5))]
+    return [{"duracion_ms": 160, "intensidad_db": 0.0} for _ in range(max(cantidad_palabras, 10))]
 
 
 def obtener_wav_de_la_web_o_sintetico(query_o_url, cantidad_palabras=10):
@@ -217,7 +214,7 @@ def obtener_wav_de_la_web_o_sintetico(query_o_url, cantidad_palabras=10):
     if wav_referencia:
         return extraer_metricas_de_wav(wav_referencia, cantidad_palabras)
     else:
-        return [{"duracion_ms": 180, "intensidad_db": 0.0} for _ in range(cantidad_palabras)]
+        return [{"duracion_ms": 160, "intensidad_db": 0.0} for _ in range(max(cantidad_palabras, 10))]
 
 
 def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_salida="resp.ogg"):
@@ -233,58 +230,63 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
             device = "cpu"
             model = model.to(device)
 
-            inputs = processor(f"[es] {texto[:180]}", voice_preset="v2/es_speaker_2").to(device)
+            inputs = processor(f"[es] {texto[:250]}", voice_preset="v2/es_speaker_2").to(device)
             with torch.no_grad():
                 audio_bark = model.generate(**inputs)
             
             audio_bark = audio_bark.cpu().numpy().squeeze()
-            sf.write(wav_temp_timbre, audio_bark, sample_rate)
-            timbre_ok = os.path.exists(wav_temp_timbre)
+            if len(audio_bark) > 1000:
+                sf.write(wav_temp_timbre, audio_bark, sample_rate)
+                timbre_ok = os.path.exists(wav_temp_timbre)
         except Exception as e:
             print(f"⚠️ Error en timbre Bark: {e}")
 
     if not timbre_ok:
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=140:duration=4", wav_temp_timbre], check=True)
+        print("⚠️ [FALLBACK TIMBRE]: Usando tono base seguro.")
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=150:duration=4", wav_temp_timbre], check=True)
 
     try:
         data_timbre, sr = sf.read(wav_temp_timbre)
+        if len(data_timbre.shape) > 1:
+            data_timbre = np.mean(data_timbre, axis=1)
+
+        palabras = texto.split()
+        num_palabras = max(len(palabras), 4)
+        
         audio_dinamico = np.array([], dtype=np.float32)
         
-        if not partitura_dinamica:
-            partitura_dinamica = [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in texto.split()]
+        if not partitura_dinamica or len(partitura_dinamica) < num_palabras:
+            factor = (num_palabras // max(len(partitura_dinamica), 1)) + 1
+            partitura_dinamica = (partitura_dinamica or [{"duracion_ms": 150, "intensidad_db": 0.0}]) * factor
 
-        indice_audio = 0
-        for item in partitura_dinamica:
-            duracion_ms = item.get("duracion_ms", 150)
+        chunk_size = max(len(data_timbre) // num_palabras, int(sr * 0.1))
+        
+        for i, item in enumerate(partitura_dinamica[:num_palabras]):
             intensidad_db = item.get("intensidad_db", 0.0)
             
-            muestras_bloque = int(sr * (duracion_ms / 1000.0))
-            if muestras_bloque <= 0:
-                continue
-                
-            if indice_audio + muestras_bloque <= len(data_timbre):
-                fragmento = data_timbre[indice_audio:indice_audio + muestras_bloque]
-                indice_audio += muestras_bloque
+            start_idx = (i * chunk_size) % len(data_timbre)
+            end_idx = min(start_idx + chunk_size, len(data_timbre))
+            
+            if start_idx >= end_idx or (end_idx - start_idx) < 100:
+                fragmento = data_timbre[:chunk_size] if len(data_timbre) >= chunk_size else data_timbre
             else:
-                indice_audio = 0
-                fragmento = data_timbre[indice_audio:indice_audio + muestras_bloque]
-                indice_audio += muestras_bloque
-                
+                fragmento = data_timbre[start_idx:end_idx]
+
             mult_vol = 10 ** (intensidad_db / 20.0)
             audio_dinamico = np.concatenate((audio_dinamico, fragmento * mult_vol))
 
-        if len(audio_dinamico) == 0:
+        if len(audio_dinamico) < sr * 0.5:
             audio_dinamico = data_timbre
 
         sf.write(wav_temp_final, audio_dinamico, sr)
     except Exception as e:
-        print(f"⚠️ Error aplicando dinámica: {e}")
+        print(f"⚠️ Error aplicando dinámica, usando respaldo: {e}")
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
     filtros = [
-        "dynaudnorm=f=125:g=15:p=0.9",
-        "equalizer=f=90:t=h:w=100:g=3.0",
-        "equalizer=f=3500:t=h:w=300:g=4.0",
+        "highpass=f=80",
+        "lowpass=f=7500",
+        "dynaudnorm=f=150:g=15:p=0.9",
         "volume=0.95"
     ]
 
@@ -301,14 +303,14 @@ def sintetizar_hibrido_con_referencia_dinamica(texto, partitura_dinamica, ogg_sa
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo con registro JSON de entrenamiento.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo con partitura robusta y timbre Bark.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
     await update.message.chat.send_action(action="record_voice")
     
-    respuesta_texto = llamar_ia_externa_o_local(texto_usuario)
+    respuesta_texto = llamar_ia_con_contexto_emocional(texto_usuario)
     texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta_texto)
     texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
@@ -320,7 +322,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
     with open(ogg_f, "rb") as vf:
-        await update.message.reply_voice(voice=vf, caption="🎙️ *(Timbre Bark + Métricas Dinámicas)*")
+        await update.message.reply_voice(voice=vf, caption="🎙️ *(Timbre Bark + Audio Entero)*")
 
     if os.path.exists(ogg_f): 
         os.remove(ogg_f)
@@ -349,10 +351,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Che, no te capté bien el audio.")
             return
 
-        # Registrar en JSON
         registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo)
 
-        # Sincronización automática con Git para que persista en GitHub Actions
         try:
             subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
             subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
@@ -363,7 +363,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as git_err:
             print(f"⚠️ [GIT SYNC]: Push omitido o sin permisos: {git_err}")
 
-        respuesta = llamar_ia_externa_o_local(texto_crudo)
+        respuesta = llamar_ia_con_contexto_emocional(texto_crudo)
         texto_limpio = re.sub(r'http\S+|www\S+|https\S+', '', respuesta)
         texto_limpio = re.sub(r'[*_#`\[\]()~>+-]', '', texto_limpio).strip()
 
@@ -371,13 +371,13 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if os.path.exists(path_wav):
             partitura_dinamica = extraer_metricas_de_wav(path_wav, cantidad_palabras)
         else:
-            partitura_dinamica = [{"duracion_ms": 150, "intensidad_db": 0.0} for _ in range(cantidad_palabras)]
+            partitura_dinamica = [{"duracion_ms": 160, "intensidad_db": 0.0} for _ in range(cantidad_palabras)]
 
         ogg_f = "resp.ogg"
         sintetizar_hibrido_con_referencia_dinamica(texto_limpio, partitura_dinamica, ogg_f)
 
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🗣️ ¡Entrenamiento guardado y sincronizado!")
+            await update.message.reply_voice(voice=vf, caption=f"🗣️ ¡Entrenamiento registrado y respuesta con audio completo!")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
