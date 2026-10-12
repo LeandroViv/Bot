@@ -645,5 +645,19 @@
             }
         ],
         "total_entrenamientos": 13
+    },
+    {
+        "timestamp": "2026-10-12 01:11:22",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1105.wav",
+        "texto": "Gracias",
+        "partitura_metrica": [
+            {
+                "palabra": "Gracias",
+                "duracion_ms": 1720,
+                "intensidad_db": 0.92
+            }
+        ],
+        "total_entrenamientos": 14
     }
 ]
