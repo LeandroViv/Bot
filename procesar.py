@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo para GitHub Actions (Polling + Gemini + Edge-TTS): procesar.py
+Script definitivo y completo (Gemini TTS + Edge-TTS + Whisper + Ollama): procesar.py
 """
 
 import asyncio
@@ -163,7 +163,9 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
 
     return respuesta
 
-# Configuración de voz
+# ==========================================
+# SISTEMA DE VOCES: GEMINI TTS + EDGE-TTS
+# ==========================================
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
     "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
@@ -182,77 +184,4 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
             contents=[{"role": "user", "parts": [{"text": texto, "speechMetadata": {"style": VOZ_ESTILO_PERSONALIZADO}}] }],
             config=dict(
                 response_modalities=["AUDIO"],
-                speech_config={"voice_config": {"prebuilt_voice_config": {"voice_name": VOZ_BASE_NOMBRE}}}
-            )
-        )
-        b64 = response.candidates[0].content.parts[0].inline_data.data
-        import base64
-        wav_bytes = base64.b64decode(b64)
-        
-        proc = subprocess.Popen([
-            "ffmpeg", "-y", "-f", "wav", "-i", "-",
-            "-c:a", "libopus", "-b:a", "48k", ogg_salida
-        ], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        proc.communicate(input=wav_bytes)
-        return os.path.exists(ogg_salida)
-    except Exception as e:
-        print(f"⚠️ Gemini TTS falló: {e}")
-        return False
-
-async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
-    try:
-        communicate = edge_tts.Communicate(
-            texto, voice=EDGE_VOICE, pitch=EDGE_PITCH, rate=EDGE_RATE
-        )
-        mp3_tmp = "tmp_edge.mp3"
-        await communicate.save(mp3_tmp)
-        
-        subprocess.run([
-            "ffmpeg", "-y", "-i", mp3_tmp, "-c:a", "libopus", "-b:a", "48k", ogg_salida
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        if os.path.exists(mp3_tmp):
-            os.remove(mp3_tmp)
-        return os.path.exists(ogg_salida)
-    except Exception as e:
-        print(f"⚠️ Edge-TTS falló: {e}")
-        return False
-
-async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
-    if client:
-        try:
-            if sintetizar_voz_gemini(texto, ogg_salida):
-                return True
-        except Exception:
-            pass
-    return await sintetizar_voz_edge_tts(texto, ogg_salida)
-
-# Motor Proactivo Autónomo
-async def bucle_proactivo_autonomo(bot_app: Application):
-    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...", flush=True)
-    await asyncio.sleep(15)
-
-    while True:
-        try:
-            await asyncio.sleep(180)
-            global CHAT_ID_ACTIVO
-            if not CHAT_ID_ACTIVO:
-                continue
-
-            motivo = "Reflexión nocturna de radio FM espontánea"
-            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo al chat {CHAT_ID_ACTIVO}...", flush=True)
-
-            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
-            registrar_conversacion("Leandro (Proactivo)", texto_spont)
-
-            await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
-
-            ogg_f = "proactivo.ogg"
-            if await sintetizar_voz(texto_spont, ogg_f):
-                with open(ogg_f, "rb") as vf:
-                    await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
-                if os.path.exists(ogg_f):
-                    os.remove(ogg_f)
-
-        except Exception as e:
-            print(f"⚠️ Error en bucle proactivo: {e}", flush=True)
-            await
+                speech_config={"voice_config": {"prebuilt_voice_config": {"voice_name
