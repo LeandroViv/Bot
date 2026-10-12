@@ -16,5 +16,11 @@
         "usuario": "Bueno, durante el día me puedes hacer esa búsqueda, por favor, gracias.",
         "bot": "Dale, quedate tranquilo, che. Durante el día me pongo a rastrear data fresca sobre agentes y LLM en la web, y en cuanto cace algo piola te lo mando de una. Descansá tranquilo.",
         "id_entrenamiento": 3
+    },
+    {
+        "timestamp": "2026-10-12 05:14:49",
+        "usuario": "¿Qué tal? A ver si te entiendo ahora lo que me decís de si me cualquier cosa simplemente quiero ver si te comprendo.",
+        "bot": "Che, te escuché perfecto, acá sintonizamos de nuevo. Te voy a pasar los links de langchain.com y crewai.com, chusmeate y aguá, fijate, y después me contás. Te los voy a dejo acá, crewai.com y langchain.com, aguá, fijate y después me contás",
+        "id_entrenamiento": 4
     }
 ]
