@@ -1,14 +1,5 @@
-"""
-Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo: procesar.py
-Mejoras integradas:
-1. Gemini TTS y Edge-TTS (es-AR-TomasNeural) para notas de voz y audios.
-2. Motor autónomo proactivo en segundo plano leyendo memoria_tareas.json.
-3. Jerarquía de IA: Gemini -> Fallback estricto a Llama (Ollama local) -> Radio FM.
-"""
-
 import asyncio
-import json as json_lib
+json_lib = __import__('json')
 import os
 import re
 import sys
@@ -25,8 +16,9 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from faster_whisper import WhisperModel
 
-print("🚀 [INIT]: Inicializando LeandroBot definitivo (TTS + Proactivo + Gemini ➔ Llama Local)...")
+print("🚀 [INIT]: Inicializando LeandroBot definitivo con Faster-Whisper y Respaldo Local...")
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_METRICAS = "historial_metricas_voz.json"
@@ -93,19 +85,13 @@ def registrar_tarea_pendiente(instruccion):
         print(f"⚠️ Error tarea: {e}")
 
 def generar_texto_ia(prompt_usuario, es_proactivo=False):
-    """
-    Jerarquía estricta recuperada de tu versión estable:
-    1. Gemini (gemini-2.0-flash)
-    2. Fallback estricto a Llama (Ollama local /api/chat)
-    3. Comodín local de radio FM
-    """
     p = prompt_usuario
     if es_proactivo:
         p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
 
     respuesta = ""
 
-    # 1. Intentar con Gemini
+    # 1. Gemini
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             print("🤖 [IA GEMINI]: Generando respuesta...")
@@ -129,7 +115,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
             print(f"⚠️ Gemini falló, conmutando a Ollama (Llama): {e}")
 
-    # 2. Fallback estricto a Llama (Ollama local) si Gemini no responde
+    # 2. Fallback estricto a Llama (Ollama local)
     if not respuesta:
         print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...")
         payload = {
@@ -159,7 +145,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
         except Exception as ex_local:
             print(f"⚠️ Error en Llama local: {ex_local}")
 
-    # 3. Comodín de radio FM garantizado
+    # 3. Comodín de radio FM
     if not respuesta or not str(respuesta).strip():
         print("⚠️ [RADIO FM]: Usando comodín de respaldo local.")
         import random
@@ -173,7 +159,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
 
     return respuesta
 
-# Configuración de voz (Gemini TTS + Edge-TTS)
+# Configuración de voz
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
     "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
@@ -316,25 +302,42 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if os.path.exists(ogg_f):
             os.remove(ogg_f)
 
-async def manejar_voz_o_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
+async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
-    CHAT_ID_ACTIVO = update.message.chat_id
-    
-    registrar_conversacion("Usuario", "[Nota de voz / Audio recibido]")
-    print("🎙️ [AUDIO]: Audio recibido de Telegram.")
+    async with lock_voz:
+        if not update.message:
+            return
+        CHAT_ID_ACTIVO = update.message.chat_id
 
-    resp = generar_texto_ia("El usuario te mandó una nota de voz saludándote o comentándote algo. Respondile de forma cálida como locutor.")
-    registrar_conversacion("LeandroBot", resp)
-    await update.message.reply_text(resp)
+        await update.message.chat.send_action(action="record_voice")
+        file = await update.message.voice.get_file()
+        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
+        await file.download_to_drive(path_in)
 
-    ogg_f = "resp.ogg"
-    if await sintetizar_voz(resp, ogg_f):
-        with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf)
-        if os.path.exists(ogg_f):
-            os.remove(ogg_f)
+        print("🎙️ [AUDIO]: Transcribiendo nota de voz con Faster-Whisper...")
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(path_in, beam_size=5, language="es")
+        texto_crudo = " ".join([s.text for s in segments]).strip()
+
+        if not texto_crudo:
+            texto_crudo = "Che, te mandé un audio pero no te capté bien."
+
+        print(f"📝 [WHISPER TRANSCRIBIÓ]: {texto_crudo}")
+        registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
+
+        resp = generar_texto_ia(texto_crudo)
+        registrar_conversacion("LeandroBot", resp)
+        await update.message.reply_text(resp)
+
+        ogg_f = "resp.ogg"
+        if await sintetizar_voz(resp, ogg_f):
+            with open(ogg_f, "rb") as vf:
+                await update.message.reply_voice(voice=vf, caption=f"*(Interpretado: {texto_crudo})*")
+            if os.path.exists(ogg_f):
+                os.remove(ogg_f)
+        
+        if os.path.exists(path_in):
+            os.remove(path_in)
 
 def asegurar_e_iniciar_ollama():
     print("🦙 [OLLAMA CHECK]: Verificando entorno local de Ollama...")
@@ -360,7 +363,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini, Llama y TTS...")
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini, Llama, Whisper y TTS...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     async def post_init(application: Application):
@@ -374,7 +377,7 @@ def main():
     app.add_error_handler(error_handler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("corregir", corregir))
-    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz_o_audio))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
     print("🔄 [POLLING]: Bot escuchando en Telegram y motor proactivo activo...")
