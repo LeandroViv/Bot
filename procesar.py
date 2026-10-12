@@ -2,10 +2,9 @@
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo: procesar.py
 Mejoras integradas:
-1. Jerarquía de IA estricta: Gemini -> Fallback directo a Llama (Ollama local) -> Comodín de Radio FM.
-2. Manejador de notas de voz y audios de Telegram integrado.
-3. Voz natural con Gemini TTS y fallback neuronal con Edge-TTS (es-AR-TomasNeural).
-4. Motor proactivo en segundo plano leyendo memoria_tareas.json.
+1. Gemini TTS y Edge-TTS (es-AR-TomasNeural) para notas de voz y audios.
+2. Motor autónomo proactivo en segundo plano leyendo memoria_tareas.json.
+3. Jerarquía de IA: Gemini -> Fallback estricto a Llama (Ollama local) -> Radio FM.
 """
 
 import asyncio
@@ -27,7 +26,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot definitivo (Gemini -> Llama Local -> Edge-TTS)...")
+print("🚀 [INIT]: Inicializando LeandroBot definitivo (TTS + Proactivo + Gemini ➔ Llama Local)...")
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_METRICAS = "historial_metricas_voz.json"
@@ -51,6 +50,7 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 
 CHAT_ID_ACTIVO = None
 lock_voz = asyncio.Lock()
+GEMINI_BLOQUEADO_POR_CUOTA = False
 
 try:
     from google import genai
@@ -94,19 +94,21 @@ def registrar_tarea_pendiente(instruccion):
 
 def generar_texto_ia(prompt_usuario, es_proactivo=False):
     """
-    Jerarquía estricta:
+    Jerarquía estricta recuperada de tu versión estable:
     1. Gemini (gemini-2.0-flash)
-    2. Fallback a Llama (Ollama local /api/chat)
-    3. Comodín de radio FM garantizado
+    2. Fallback estricto a Llama (Ollama local /api/chat)
+    3. Comodín local de radio FM
     """
     p = prompt_usuario
     if es_proactivo:
         p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
 
+    respuesta = ""
+
     # 1. Intentar con Gemini
-    if client:
+    if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
-            print("🤖 [IA GEMINI]: Intentando generar con Gemini...")
+            print("🤖 [IA GEMINI]: Generando respuesta...")
             res = client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=p,
@@ -114,61 +116,64 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
             )
             raw = (res.text or "").strip()
             if raw:
-                # Limpiar si trae markdown por error
                 raw = re.sub(r'^```json\s*', '', raw, flags=re.IGNORECASE)
                 raw = re.sub(r'^```\s*', '', raw)
                 raw = re.sub(r'\s*```$', '', raw).strip()
-                
                 data = json_lib.loads(raw)
                 texto = data.get("texto_completo")
                 if texto and str(texto).strip():
+                    respuesta = str(texto).strip()
                     print("✅ [IA GEMINI]: Éxito.")
-                    return str(texto).strip()
         except Exception as e:
-            print(f"⚠️ [IA GEMINI] Falló: {e}. Conmutando a Llama local...")
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                GEMINI_BLOQUEADO_POR_CUOTA = True
+            print(f"⚠️ Gemini falló, conmutando a Ollama (Llama): {e}")
 
-    # 2. Fallback estricto a Llama (Ollama local)
-    try:
+    # 2. Fallback estricto a Llama (Ollama local) si Gemini no responde
+    if not respuesta:
         print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...")
-        r = requests.post(
-            f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={
-                "model": "llama3.2",
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": p}
-                ],
-                "format": "json",
-                "options": {"temperature": 0.7}
-            },
-            timeout=30
-        )
-        if r.status_code == 200:
-            content_str = r.json().get("message", {}).get("content", "{}")
-            content_str = re.sub(r'^```json\s*', '', content_str, flags=re.IGNORECASE)
-            content_str = re.sub(r'^```\s*', '', content_str)
-            content_str = re.sub(r'\s*```$', '', content_str).strip()
-            
-            data = json_lib.loads(content_str)
-            texto = data.get("texto_completo")
-            if texto and str(texto).strip():
-                print("✅ [IA LLAMA]: Respuesta obtenida con éxito.")
-                return str(texto).strip()
-    except Exception as ex_llama:
-        print(f"⚠️ [IA LLAMA] Falló también: {ex_llama}")
+        payload = {
+            "model": "llama3.2",
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": p}
+            ],
+            "format": "json",
+            "options": {"num_ctx": 4096, "temperature": 0.7},
+            "stream": False,
+        }
+        try:
+            url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
+            res_local = requests.post(url_llama, json=payload, timeout=15)
+            if res_local.status_code == 200:
+                content_str = res_local.json().get("message", {}).get("content", "{}")
+                content_str = re.sub(r'^```json\s*', '', content_str, flags=re.IGNORECASE)
+                content_str = re.sub(r'^```\s*', '', content_str)
+                content_str = re.sub(r'\s*```$', '', content_str).strip()
+                
+                data = json_lib.loads(content_str)
+                texto = data.get("texto_completo")
+                if texto and str(texto).strip():
+                    respuesta = str(texto).strip()
+                    print("✅ [IA LLAMA]: Respuesta obtenida con éxito.")
+        except Exception as ex_local:
+            print(f"⚠️ Error en Llama local: {ex_local}")
 
-    # 3. Fallback local garantizado de radio FM
-    print("⚠️ [RADIO FM]: Usando comodín de respaldo local.")
-    import random
-    respuestas_radio = [
-        "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
-        "Qué hacés che, de una. Anotado acá en la consola de la radio.",
-        "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire.",
-        "Posta che, ya lo fiché en la memoria de la cabina. ¡Un abrazo grande!"
-    ]
-    return random.choice(respuestas_radio)
+    # 3. Comodín de radio FM garantizado
+    if not respuesta or not str(respuesta).strip():
+        print("⚠️ [RADIO FM]: Usando comodín de respaldo local.")
+        import random
+        respuestas_radio = [
+            "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
+            "Qué hacés che, de una. Anotado acá en la consola de la radio.",
+            "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire.",
+            "Posta che, ya lo fiché en la memoria de la cabina. ¡Un abrazo grande!"
+        ]
+        respuesta = random.choice(respuestas_radio)
 
-# Configuración de voz
+    return respuesta
+
+# Configuración de voz (Gemini TTS + Edge-TTS)
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
     "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
@@ -202,7 +207,7 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         proc.communicate(input=wav_bytes)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Gemini TTS error: {e}")
+        print(f"⚠️ Error sintetizando con Gemini TTS: {e}")
         return False
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
@@ -221,7 +226,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Edge-tts error: {e}")
+        print(f"⚠️ Aviso edge-tts: {e}")
         return False
 
 async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
@@ -233,6 +238,7 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
             pass
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
+# Motor Proactivo Autónomo
 async def bucle_proactivo_autonomo(bot_app: Application):
     print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...")
     await asyncio.sleep(15)
@@ -259,12 +265,11 @@ async def bucle_proactivo_autonomo(bot_app: Application):
                 pass
 
             motivo = f"Cumpliendo lo que me pediste: '{tarea_pendiente['instruccion']}'" if tarea_pendiente else "Reflexión nocturna de radio FM espontánea"
-            
-            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
-            if not texto_spont or not str(texto_spont).strip():
-                texto_spont = "Che, qué hacés. Me quedé pensando en lo que hablábamos. Sintonizamos en un toque."
+            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo: {motivo}")
 
+            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
             registrar_conversacion("Leandro (Proactivo)", texto_spont)
+
             await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
 
             ogg_f = "proactivo.ogg"
@@ -301,9 +306,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_tarea_pendiente(u_text)
 
     resp = generar_texto_ia(u_text)
-    if not resp or not str(resp).strip():
-        resp = "¡Buenas che! Te capté perfecto. Sintonizamos en un toque."
-
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
@@ -324,9 +326,6 @@ async def manejar_voz_o_audio(update: Update, context: ContextTypes.DEFAULT_TYPE
     print("🎙️ [AUDIO]: Audio recibido de Telegram.")
 
     resp = generar_texto_ia("El usuario te mandó una nota de voz saludándote o comentándote algo. Respondile de forma cálida como locutor.")
-    if not resp or not str(resp).strip():
-        resp = "¡Buenas che! Te escuché el audio perfecto. Sintonizamos en un toque."
-
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
@@ -347,17 +346,12 @@ def asegurar_e_iniciar_ollama():
     except Exception:
         print("⚠️ [OLLAMA]: No se detectó servicio activo. Iniciando configuración automática...")
 
-    if subprocess.run(["which", "ollama"], capture_output=True).returncode != 0:
-        print("📥 [OLLAMA]: Instalando Ollama en el runner...")
-        subprocess.run("curl -fsSL https://ollama.com/install.sh | sh", shell=True, check=True)
-
-    print("🚀 [OLLAMA]: Levantando demonio 'ollama serve'...")
-    subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(5)
-
-    print("📥 [OLLAMA]: Verificando modelo llama3.2...")
-    subprocess.run(["ollama", "pull", "llama3.2"], check=True)
-    print("✅ [OLLAMA]: Entorno local listo y modelo cargado.")
+    try:
+        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(4)
+        print("✅ [OLLAMA]: Demonio iniciado en segundo plano.")
+    except Exception as e:
+        print(f"⚠️ No se pudo iniciar Ollama automáticamente: {e}")
 
 def main():
     if not TOKEN:
@@ -366,7 +360,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini, Llama local y Edge-TTS...")
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini, Llama y TTS...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     async def post_init(application: Application):
@@ -383,7 +377,7 @@ def main():
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz_o_audio))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
-    print("🔄 [POLLING]: Bot escuchando en Telegram...")
+    print("🔄 [POLLING]: Bot escuchando en Telegram y motor proactivo activo...")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
