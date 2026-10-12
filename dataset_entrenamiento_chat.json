@@ -1,0 +1,14 @@
+[
+    {
+        "timestamp": "2026-10-12 04:13:14",
+        "usuario": "me pones por escrito los links?",
+        "bot": "Che, te los dejo acá, mirá, en el chat bien a mano, crewai.com y langchain.com, aguá, fijate y después me contás",
+        "id_entrenamiento": 1
+    },
+    {
+        "timestamp": "2026-10-12 04:15:33",
+        "usuario": "Gracias, y acordate, bueno, durante el día, seguir buscando lo que encontrás, por favor.  Bueno, gracias.",
+        "bot": "Che, te escuché perfecto, acá sintonizamos de nuevo.",
+        "id_entrenamiento": 2
+    }
+]

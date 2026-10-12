@@ -1502,5 +1502,94 @@
             }
         ],
         "total_entrenamientos": 21
+    },
+    {
+        "timestamp": "2026-10-12 04:14:28",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1128.wav",
+        "texto": "Gracias, y acordate, bueno, durante el día, seguir buscando lo que encontrás, por favor.  Bueno, gracias.",
+        "partitura_metrica": [
+            {
+                "palabra": "Gracias,",
+                "duracion_ms": 681,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 60,
+                "intensidad_db": -3.95
+            },
+            {
+                "palabra": "acordate,",
+                "duracion_ms": 600,
+                "intensidad_db": -3.27
+            },
+            {
+                "palabra": "bueno,",
+                "duracion_ms": 260,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "durante",
+                "duracion_ms": 260,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 160,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "día,",
+                "duracion_ms": 280,
+                "intensidad_db": -1.44
+            },
+            {
+                "palabra": "seguir",
+                "duracion_ms": 380,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "buscando",
+                "duracion_ms": 540,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 660,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 160,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "encontrás,",
+                "duracion_ms": 520,
+                "intensidad_db": 1.8
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 60,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 340,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "Bueno,",
+                "duracion_ms": 640,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "gracias.",
+                "duracion_ms": 440,
+                "intensidad_db": 2.03
+            }
+        ],
+        "total_entrenamientos": 22
     }
 ]
