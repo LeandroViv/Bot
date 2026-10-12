@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo con síntesis directa Ogg y métricas...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo optimizado...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -160,7 +160,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
         "utilizando el voseo natural ('vós sabés', 'vení', 'fijate', 'escuchá'), lunfardo sutil y la entonación de Buenos Aires.\n"
         "INTELIGENCIA DE CANAL: Analizá el mensaje del usuario y determiná si la respuesta va en 'texto', 'voz' o 'ambos'.\n"
-        "ANÁLISIS DE MÉTRICAS OBLIGATORIO: Analizá las métricas del historial para estructurar una 'partitura' ultra precisa.\n\n"
         "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown, solo el JSON crudo):\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada o escrita aquí con acentuación porteña\",\n"
@@ -172,13 +171,14 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "}"
     )
     
+    # 1. Intentar con Gemini si está disponible
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
-                print("🤖 [IA]: Enviando prompt junto con el archivo de métricas de voz a Gemini...")
+                print("🤖 [IA]: Enviando prompt a Gemini...")
                 adjunto_metricas = client.files.upload(file=REGISTRO_METRICAS)
                 res = client.models.generate_content(
-                    model="gemini-3.8-flash",
+                    model="gemini-2.0-flash",
                     contents=[adjunto_metricas, f"Mensaje del oyente: \"{prompt_usuario}\""],
                     config=genai.types.GenerateContentConfig(
                         system_instruction=system_prompt,
@@ -187,7 +187,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 )
                 if res and res.text:
                     respuesta_raw = str(res.text).strip()
-                    print("✅ [IA CONECTADA]: Gemini respondió con éxito.")
+                    print("✅ [IA GEMINI]: Respuesta obtenida con éxito.")
                     break
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -195,38 +195,28 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     break
                 time.sleep(2)
 
+    # 2. Fallback robusto a Ollama local
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
-        print(f"🦙 [IA LOCAL]: Usando Llama local (Ollama) con timeout extendido de 120s...")
-        
-        res_metricas_resumen = ""
-        if os.path.exists(REGISTRO_METRICAS):
-            try:
-                with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
-                    m_data = json_lib.load(f)
-                    res_metricas_resumen = json_lib.dumps(m_data[-5:], ensure_ascii=False)
-            except Exception:
-                pass
-
-        prompt_con_contexto = f"Métricas recientes:\n{res_metricas_resumen}\nMensaje actual: {prompt_usuario}"
+        print(f"🦙 [IA LOCAL]: Conectando a Ollama en {OLLAMA_HOST}...")
         
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt_con_contexto}
+                {"role": "user", "content": prompt_usuario}
             ],
             "format": "json",
-            "options": {"num_ctx": 8192, "temperature": 0.7},
+            "options": {"num_ctx": 4096, "temperature": 0.7},
             "stream": False,
         }
         try:
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-            res_local = requests.post(url_llama, json=payload, timeout=120)
+            res_local = requests.post(url_llama, json=payload, timeout=90)
             if res_local.status_code == 200:
                 respuesta_raw = str(res_local.json().get("message", {}).get("content", "")).strip()
-                print("✅ [IA LOCAL]: Llama respondió correctamente.")
+                print("✅ [IA LOCAL]: Ollama respondió correctamente.")
         except Exception as ex_local:
-            print(f"⚠️ Error Llama local: {ex_local}")
+            print(f"⚠️ Error conectando con Ollama: {ex_local}")
 
     if not isinstance(respuesta_raw, str):
         respuesta_raw = str(respuesta_raw or "")
@@ -333,7 +323,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con métricas y síntesis directa.")
+    await update.message.reply_text("¡Buenas che! Bot activo con soporte dual para Gemini y Ollama.")
 
 
 async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -501,7 +491,7 @@ def main():
         print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
         return
 
-    print("🚀 Iniciando Bot Híbrido Definitivo...")
+    print("🚀 Iniciando Bot Híbrido con Soporte Dual...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
     
