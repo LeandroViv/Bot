@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo con Edge-TTS (Fix 403 / IP Bypass): procesar.py
+Script definitivo con Edge-TTS (Bypass de Error 403 / WebSocket Fix): procesar.py
 """
 
 import asyncio
@@ -201,16 +201,21 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         print(f"⚠️ Gemini TTS falló: {e}")
         return False
 
-# Edge-TTS adaptado para evitar bloqueos 403 en GitHub Actions
+# Edge-TTS optimizado vía CLI subprocess (Evita bloqueo WebSocket/403 de la librería directa)
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
     voces = ["es-AR-TomasNeural", "es-AR-ElenaNeural", "es-ES-AlvaroNeural"]
+    mp3_tmp = "tmp_edge.mp3"
+
     for v in voces:
         try:
-            print(f"🎙️ [EDGE-TTS]: Intentando síntesis con voz {v}...", flush=True)
-            communicate = edge_tts.Communicate(texto, voice=v)
-            mp3_tmp = "tmp_edge.mp3"
-            await communicate.save(mp3_tmp)
+            print(f"🎙️ [EDGE-TTS]: Generando audio con voz {v} via CLI...", flush=True)
+            cmd = ["edge-tts", "--voice", v, "--text", texto, "--write-media", mp3_tmp]
             
+            process = await asyncio.create_subprocess_exec(
+                *cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            await asyncio.wait_for(process.communicate(), timeout=12)
+
             if os.path.exists(mp3_tmp) and os.path.getsize(mp3_tmp) > 0:
                 subprocess.run([
                     "ffmpeg", "-y", "-i", mp3_tmp, "-c:a", "libopus", "-b:a", "48k", ogg_salida
@@ -219,11 +224,11 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
                     os.remove(mp3_tmp)
                 return os.path.exists(ogg_salida)
         except Exception as e:
-            print(f"⚠️ Edge-TTS ({v}) rebotó: {e}", flush=True)
-            if os.path.exists("tmp_edge.mp3"):
-                os.remove("tmp_edge.mp3")
+            print(f"⚠️ Edge-TTS CLI ({v}) rebotó: {e}", flush=True)
+            if os.path.exists(mp3_tmp):
+                os.remove(mp3_tmp)
             await asyncio.sleep(1)
-            
+
     return False
 
 def sintetizar_voz_gtts(texto, ogg_salida="resp.ogg"):
