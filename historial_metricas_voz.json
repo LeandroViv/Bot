@@ -626,5 +626,24 @@
             }
         ],
         "total_entrenamientos": 12
+    },
+    {
+        "timestamp": "2026-10-12 00:11:36",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1103.wav",
+        "texto": "¡Sí, gracias!",
+        "partitura_metrica": [
+            {
+                "palabra": "¡Sí,",
+                "duracion_ms": 520,
+                "intensidad_db": 0.03
+            },
+            {
+                "palabra": "gracias!",
+                "duracion_ms": 120,
+                "intensidad_db": 3.0
+            }
+        ],
+        "total_entrenamientos": 13
     }
 ]
