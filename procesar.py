@@ -95,7 +95,7 @@ def registrar_tarea_pendiente(instruccion):
         print(f"⚠️ Error tarea: {e}")
 
 def generar_texto_ia(prompt_usuario, es_proactivo=False):
-    """Genera el texto usando Gemini (Prioridad 1) con fallback a Llama (Prioridad 2)."""
+    """Genera el texto usando Gemini (Prioridad 1) con fallback a Llama y fallback local de radio garantizado."""
     p = prompt_usuario
     if es_proactivo:
         p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
@@ -107,24 +107,39 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
                 contents=p,
                 config=dict(system_instruction=SYSTEM_PROMPT, response_mime_type="application/json")
             )
-            raw = res.text.strip()
-            data = json_lib.loads(raw)
-            return data.get("texto_completo", "Che, todo bien por acá.")
+            raw = (res.text or "").strip()
+            if raw:
+                data = json_lib.loads(raw)
+                texto = data.get("texto_completo")
+                if texto and str(texto).strip():
+                    return str(texto).strip()
         except Exception as e:
-            print(f"⚠️ Gemini fallback a Llama: {e}")
+            print(f"⚠️ Gemini fallback: {e}")
 
-    # Fallback Ollama
+    # Fallback Ollama (si está disponible)
     try:
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
             json={"model": "llama3.2", "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": p}], "format": "json"},
-            timeout=60
+            timeout=10
         )
         if r.status_code == 200:
             data = json_lib.loads(r.json().get("message", {}).get("content", "{}"))
-            return data.get("texto_completo", "Che, sintonizamos en un toque.")
-    except Exception as ex:
-        print(f"⚠️ Error Ollama: {ex}")
+            texto = data.get("texto_completo")
+            if texto and str(texto).strip():
+                return str(texto).strip()
+    except Exception:
+        pass
+
+    # Fallback local garantizado de radio FM (NUNCA devuelve None ni cadena vacía)
+    import random
+    respuestas_radio = [
+        "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
+        "Qué hacés che, de una. Anotado acá en la consola de la radio.",
+        "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire.",
+        "Posta che, ya lo fiché en la memoria de la cabina. ¡Un abrazo grande!"
+    ]
+    return random.choice(respuestas_radio)
 
 # Configuración de voz modelada por características (Voice Design)
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
@@ -132,6 +147,12 @@ VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, con pequeñas respiraciones naturales, acústica de cabina de radio y voseo de Buenos Aires"
 )
 VOZ_BASE_NOMBRE = os.environ.get("VOZ_BASE", "Charon")
+
+# Tuneo avanzado de Edge-TTS (sin hardcodeo: configurable por variables de entorno o Secrets)
+EDGE_VOICE = os.environ.get("EDGE_VOICE", "es-AR-TomasNeural") # Voz argentina porteña masculina
+EDGE_PITCH = os.environ.get("EDGE_PITCH", "-4Hz")             # -4Hz a -8Hz para voz grave de trasnoche
+EDGE_RATE = os.environ.get("EDGE_RATE", "-5%")                # -5% a -10% para cadencia pausada y reflexiva
+EDGE_VOLUME = os.environ.get("EDGE_VOLUME", "+10%")           # Presencia de micrófono de cabina
 
 def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
     """
@@ -166,12 +187,18 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
     """
-    Fallback 100% gratuito e ilimitado usando la voz neuronal argentina Tomas (es-AR-TomasNeural).
-    No requiere API key ni cuotas diarias.
+    Sintetizador neuronal ilimitado con Edge-TTS 100% tuneable.
+    Variables configurables: EDGE_VOICE, EDGE_PITCH, EDGE_RATE, EDGE_VOLUME.
     """
     try:
         import edge_tts
-        communicate = edge_tts.Communicate(texto, "es-AR-TomasNeural", pitch="-2Hz", rate="+0%")
+        communicate = edge_tts.Communicate(
+            texto,
+            voice=EDGE_VOICE,
+            pitch=EDGE_PITCH,
+            rate=EDGE_RATE,
+            volume=EDGE_VOLUME
+        )
         mp3_tmp = "tmp_edge.mp3"
         await communicate.save(mp3_tmp)
         
@@ -190,7 +217,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
 async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
     """
     Intenta primero Gemini TTS. Si la cuota se agota (429) o no responde,
-    conmuta automáticamente a edge-tts con la voz neuronal argentina Tomas (es-AR-TomasNeural).
+    conmuta automáticamente a edge-tts tuneado (es-AR-TomasNeural) de forma ilimitada.
     """
     if client:
         try:
@@ -199,7 +226,7 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
         except Exception as e:
             print(f"⚠️ Gemini TTS falló ({e}), conmutando a Edge TTS...")
 
-    print("🎙️ [EDGE-TTS]: Sintetizando con voz neuronal argentina es-AR-TomasNeural...")
+    print(f"🎙️ [EDGE-TTS]: Sintetizando con voz neuronal tuneada ({EDGE_VOICE}, pitch={EDGE_PITCH}, rate={EDGE_RATE})...")
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
 # BUCLE AUTÓNOMO PROACTIVO: Escribe sin que el usuario le escriba
@@ -234,6 +261,9 @@ async def bucle_proactivo_autonomo(bot_app: Application):
             print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo: {motivo}")
 
             texto_spont = generar_texto_ia(motivo, es_proactivo=True)
+            if not texto_spont or not str(texto_spont).strip():
+                texto_spont = "Che, qué hacés. Me quedé pensando en lo que hablábamos. Sintonizamos en un toque."
+
             registrar_conversacion("Leandro (Proactivo)", texto_spont)
 
             # Mandar texto a Telegram
@@ -253,17 +283,21 @@ async def bucle_proactivo_autonomo(bot_app: Application):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
-    CHAT_ID_ACTIVO = update.message.chat_id
-    await update.message.reply_text("¡Buenas che! Acá Leandro. Ya sintonicé tu chat: ahora te voy a hablar por cuenta propia a lo largo del día.")
+    if update.message:
+        CHAT_ID_ACTIVO = update.message.chat_id
+        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter de la radio. Ya sintonicé tu chat: ahora te voy a hablar por cuenta propia a lo largo del día.")
 
 async def corregir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     corr = " ".join(context.args).strip()
-    await update.message.reply_text(f"✅ ¡Entendido che! Corrección guardada: '{corr}'.")
+    if update.message:
+        await update.message.reply_text(f"✅ ¡Entendido che! Corrección guardada: '{corr}'.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
-    u_text = update.message.text
+    u_text = update.message.text or update.message.caption or "[Audio/Nota de voz]"
     registrar_conversacion("Usuario", u_text)
 
     # Detectar recordatorio
@@ -271,6 +305,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_tarea_pendiente(u_text)
 
     resp = generar_texto_ia(u_text)
+    if not resp or not str(resp).strip():
+        resp = "Te capté perfecto, che. Sintonizamos en un toque."
+
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
@@ -278,7 +315,8 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await sintetizar_voz(resp, ogg_f):
         with open(ogg_f, "rb") as vf:
             await update.message.reply_voice(voice=vf)
-        if os.path.exists(ogg_f): os.remove(ogg_f)
+        if os.path.exists(ogg_f):
+            os.remove(ogg_f)
 
 def main():
     if not TOKEN:
@@ -287,7 +325,7 @@ def main():
         print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
         return
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram y Gemini...")
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini y Edge-TTS tuneado...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     # post_init garantiza que el bucle proactivo corra adentro del event loop oficial
@@ -295,12 +333,17 @@ def main():
         print("⚡ [PROACTIVO]: Registrando bucle autónomo en segundo plano...")
         asyncio.create_task(bucle_proactivo_autonomo(application))
 
+    # Error handler global para evitar caídas silenciosas
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        print(f"⚠️ [Telegram Error]: {context.error}")
+
     app = Application.builder().token(TOKEN).request(request_config).post_init(post_init).build()
+    app.add_error_handler(error_handler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("corregir", corregir))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
 
-    print("🔄 [POLLING]: Bot escuchando en Telegram y motor proactivo activo...")
+    print(f"🔄 [POLLING]: Bot escuchando en Telegram y motor proactivo activo (Voz Edge: {EDGE_VOICE})...")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
