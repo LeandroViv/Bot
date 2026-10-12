@@ -1239,5 +1239,139 @@
             }
         ],
         "total_entrenamientos": 19
+    },
+    {
+        "timestamp": "2026-10-12 02:57:25",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1116.wav",
+        "texto": "perdón no te entendí lo que me estaba diciendo y te pido por favor si me podés  pasar links de eso que te estaba preguntando",
+        "partitura_metrica": [
+            {
+                "palabra": "perdón",
+                "duracion_ms": 1160,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 380,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 180,
+                "intensidad_db": 2.13
+            },
+            {
+                "palabra": "entendí",
+                "duracion_ms": 380,
+                "intensidad_db": 1.86
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 140,
+                "intensidad_db": -0.47
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 140,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 100,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "estaba",
+                "duracion_ms": 280,
+                "intensidad_db": -3.95
+            },
+            {
+                "palabra": "diciendo",
+                "duracion_ms": 400,
+                "intensidad_db": -3.21
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 1200,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 220,
+                "intensidad_db": -2.18
+            },
+            {
+                "palabra": "pido",
+                "duracion_ms": 320,
+                "intensidad_db": 0.14
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 220,
+                "intensidad_db": 0.49
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 380,
+                "intensidad_db": 1.91
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 320,
+                "intensidad_db": -4.91
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 180,
+                "intensidad_db": -2.9
+            },
+            {
+                "palabra": "podés",
+                "duracion_ms": 360,
+                "intensidad_db": -3.55
+            },
+            {
+                "palabra": "pasar",
+                "duracion_ms": 540,
+                "intensidad_db": -2.75
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 1040,
+                "intensidad_db": -0.7
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 880,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 480,
+                "intensidad_db": -3.1
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 660,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 120,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "estaba",
+                "duracion_ms": 320,
+                "intensidad_db": -2.26
+            },
+            {
+                "palabra": "preguntando",
+                "duracion_ms": 880,
+                "intensidad_db": -1.99
+            }
+        ],
+        "total_entrenamientos": 20
     }
 ]
