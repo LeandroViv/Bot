@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo y completo (Gemini TTS + Edge-TTS + Whisper + Ollama): procesar.py
+Script definitivo y corregido para GitHub Actions: procesar.py
 """
 
 import asyncio
@@ -33,6 +33,7 @@ from telegram.ext import (
 )
 from faster_whisper import WhisperModel
 import edge_tts
+from gtts import gTTS
 
 TXT_FILE = "conversaciones.txt"
 MEMORIA_TAREAS = "memoria_tareas.json"
@@ -58,6 +59,7 @@ else:
 
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
+MODELO_GEMINI = "gemini-3.8-flash"  # Actualizado según requerimiento del API
 
 client = None
 try:
@@ -100,9 +102,9 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
     # 1. Gemini
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
-            print("🤖 [IA GEMINI]: Generando respuesta...", flush=True)
+            print(f"🤖 [IA GEMINI]: Generando respuesta con {MODELO_GEMINI}...", flush=True)
             res = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model=MODELO_GEMINI,
                 contents=p,
                 config=dict(system_instruction=SYSTEM_PROMPT, response_mime_type="application/json")
             )
@@ -136,7 +138,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
         }
         try:
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-            res_local = requests.post(url_llama, json=payload, timeout=15)
+            res_local = requests.post(url_llama, json=payload, timeout=20)
             if res_local.status_code == 200:
                 content_str = res_local.json().get("message", {}).get("content", "{}")
                 content_str = re.sub(r'^```json\s*', '', content_str, flags=re.IGNORECASE)
@@ -164,7 +166,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
     return respuesta
 
 # ==========================================
-# SISTEMA DE VOCES: GEMINI TTS + EDGE-TTS
+# SISTEMA DE VOCES: GEMINI TTS + EDGE-TTS + GTTS
 # ==========================================
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
@@ -172,15 +174,13 @@ VOZ_ESTILO_PERSONALIZADO = os.environ.get(
 )
 VOZ_BASE_NOMBRE = os.environ.get("VOZ_BASE", "Charon")
 EDGE_VOICE = os.environ.get("EDGE_VOICE", "es-AR-TomasNeural")
-EDGE_PITCH = os.environ.get("EDGE_PITCH", "-4Hz")
-EDGE_RATE = os.environ.get("EDGE_RATE", "-5%")
 
 def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
     if not client:
         return False
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model=MODELO_GEMINI,
             contents=[{"role": "user", "parts": [{"text": texto, "speechMetadata": {"style": VOZ_ESTILO_PERSONALIZADO}}] }],
             config=dict(
                 response_modalities=["AUDIO"],
@@ -203,9 +203,7 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
     try:
-        communicate = edge_tts.Communicate(
-            texto, voice=EDGE_VOICE, pitch=EDGE_PITCH, rate=EDGE_RATE
-        )
+        communicate = edge_tts.Communicate(texto, voice=EDGE_VOICE)
         mp3_tmp = "tmp_edge.mp3"
         await communicate.save(mp3_tmp)
         
@@ -219,8 +217,22 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
         print(f"⚠️ Edge-TTS falló: {e}")
         return False
 
+def sintetizar_voz_gtts(texto, ogg_salida="resp.ogg"):
+    try:
+        mp3_tmp = "tmp_gtts.mp3"
+        gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
+        subprocess.run([
+            "ffmpeg", "-y", "-i", mp3_tmp, "-c:a", "libopus", "-b:a", "48k", ogg_salida
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        if os.path.exists(mp3_tmp):
+            os.remove(mp3_tmp)
+        return os.path.exists(ogg_salida)
+    except Exception as e:
+        print(f"⚠️ gTTS falló: {e}")
+        return False
+
 async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
-    # 1. Intento principal con Gemini TTS
+    # 1. Gemini TTS
     if client:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
@@ -229,9 +241,17 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
         except Exception:
             pass
     
-    # 2. Fallback neuronal con Edge-TTS
-    print("🎙️ [EDGE-TTS]: Conmutando a Edge-TTS (es-AR-TomasNeural)...")
-    return await sintetizar_voz_edge_tts(texto, ogg_salida)
+    # 2. Edge-TTS Neuronal
+    try:
+        if await sintetizar_voz_edge_tts(texto, ogg_salida):
+            print("🎙️ [EDGE-TTS]: Audio sintetizado con éxito.")
+            return True
+    except Exception:
+        pass
+
+    # 3. Respaldo definitivo con gTTS (Argentino)
+    print("🎙️ [GTTS FALLBACK]: Usando gTTS local...")
+    return sintetizar_voz_gtts(texto, ogg_salida)
 
 # Motor Proactivo Autónomo
 async def bucle_proactivo_autonomo(bot_app: Application):
