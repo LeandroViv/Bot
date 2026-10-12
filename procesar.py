@@ -163,8 +163,8 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
         "utilizando el voseo natural ('vós sabés', 'vení', 'fijate', 'escuchá'), lunfardo sutil y la grafía o fonética "
         "que refleje la entonación de Buenos Aires (énfasis en imperativos agudos y cadencia porteña).\n"
-        "INSTRUCCIÓN DE APRENDIZAJE CRÍTICA: Tenés adjuntos 'conversaciones.txt', 'dataset_entrenamiento_chat.json' y 'historial_metricas_voz.json'. "
-        "Analizá detalladamente las interacciones previas para responder con el mismo tono y contexto exacto.\n\n"
+        "INSTRUCCIÓN DE APRENDIZAJE CRÍTICA: Tenés adjuntos 'conversaciones.txt', 'dataset_entrenamiento_chat.json', 'historial_metricas_voz.json' y 'memoria_tareas.json'. "
+        "Analizá detalladamente las interacciones y tareas pendientes previas para responder con el mismo tono y contexto exacto.\n\n"
         "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown tipo ```json, solo el JSON crudo):\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada aquí con acentuación porteña\",\n"
@@ -178,20 +178,23 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
-                print("🤖 [IA]: Intentando conectar con Gemini analizando historial y dataset...")
+                print("🤖 [IA]: Intentando conectar con Gemini analizando historial, tareas y dataset...")
                 adjunto_metricas = client.files.upload(file=REGISTRO_METRICAS)
                 adjunto_conversaciones = client.files.upload(file=TXT_FILE) if os.path.exists(TXT_FILE) else None
                 adjunto_dataset = client.files.upload(file=DATASET_ENTRENAMIENTO) if os.path.exists(DATASET_ENTRENAMIENTO) else None
+                adjunto_tareas = client.files.upload(file=MEMORIA_TAREAS) if os.path.exists(MEMORIA_TAREAS) else None
                 
                 contents_payload = [adjunto_metricas]
                 if adjunto_conversaciones:
                     contents_payload.append(adjunto_conversaciones)
                 if adjunto_dataset:
                     contents_payload.append(adjunto_dataset)
+                if adjunto_tareas:
+                    contents_payload.append(adjunto_tareas)
                 contents_payload.append(f"Mensaje del oyente: \"{prompt_usuario}\"")
 
                 res = client.models.generate_content(
-                    model="gemini-3.8-flash",  # Modelo actualizado para evitar 404
+                    model="gemini-3.8-flash",
                     contents=contents_payload,
                     config=genai.types.GenerateContentConfig(
                         system_instruction=system_prompt,
@@ -283,12 +286,12 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             device = "cpu"
             model = model.to(device)
 
-            texto_corto = texto.strip()[:280]
+            texto_corto = texto.strip()[:350]
             texto_para_bark = f"[es] {texto_corto}"
             inputs = processor(texto_para_bark, voice_preset="v2/es_speaker_2").to(device)
             
             with torch.no_grad():
-                audio_bark = model.generate(**inputs)
+                audio_bark = model.generate(**inputs, max_new_tokens=512)
             
             audio_bark = audio_bark.cpu().numpy().squeeze()
             if len(audio_bark) > 5000:
@@ -310,24 +313,36 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         if max_val > 0:
             data_timbre = data_timbre / max_val
 
-        audio_dinamico = np.array([], dtype=np.float32)
         if not partitura:
             partitura = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto.split()]
 
-        for item in partitura:
+        audio_dinamico = np.array([], dtype=np.float32)
+        total_muestras_audio = len(data_timbre)
+        paso_base = max(1, total_muestras_audio // max(1, len(partitura)))
+
+        for i, item in enumerate(partitura):
             duracion_ms = item.get("duracion_ms", 200)
-            duracion_ms = max(100, min(int(duracion_ms), 450))
+            duracion_ms = max(120, min(int(duracion_ms), 600))
             
             intensidad_db = item.get("intensidad_db", 0.0)
             intensidad_db_segura = max(min(float(intensidad_db), 2.0), -3.0)
             mult_vol = 10 ** (intensidad_db_segura / 20.0)
 
             muestras_bloque = int(sr * (duracion_ms / 1000.0))
-            if len(data_timbre) >= muestras_bloque:
-                start_idx = np.random.randint(0, len(data_timbre) - muestras_bloque)
-                fragmento = data_timbre[start_idx : start_idx + muestras_bloque]
-            else:
-                fragmento = data_timbre
+            start_idx = min(i * paso_base, max(0, total_muestras_audio - muestras_bloque))
+            end_idx = min(start_idx + muestras_bloque, total_muestras_audio)
+            
+            fragmento = data_timbre[start_idx:end_idx]
+            if len(fragmento) == 0:
+                fragmento = data_timbre[:muestras_bloque]
+
+            # Fundidos cruzados (Crossfades) de 5ms para eliminar chasquidos digitales
+            fade_samples = int(sr * 0.005)
+            if len(fragmento) > fade_samples * 2:
+                fade_in = np.linspace(0.0, 1.0, fade_samples)
+                fade_out = np.linspace(1.0, 0.0, fade_samples)
+                fragmento[:fade_samples] *= fade_in
+                fragmento[-fade_samples:] *= fade_out
 
             audio_dinamico = np.concatenate((audio_dinamico, fragmento * mult_vol))
 
@@ -336,14 +351,14 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
         sf.write(wav_temp_final, audio_dinamico, sr)
     except Exception as e:
-        print(f"⚠️ Error procesando partitura dinámica: {e}")
+        print(f"⚠️ Error procesando partitura cuantitativa: {e}")
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
     filtros = [
         "highpass=f=80",
         "lowpass=f=7600",
         "dynaudnorm=f=150:g=15:p=0.9",
-        "volume=1.2"
+        "volume=1.3"
     ]
 
     subprocess.run([
