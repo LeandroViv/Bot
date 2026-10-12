@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + JSON Adjunto a Gemini 3.8 + Git Sync)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Archivos Adjuntos a Gemini 3.8 + Memoria + Git Sync)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -43,12 +43,21 @@ except ImportError:
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_METRICAS = "historial_metricas_voz.json"
+MEMORIA_TAREAS = "memoria_tareas.json"
 CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
+if not os.path.exists(TXT_FILE):
+    with open(TXT_FILE, "w", encoding="utf-8") as f:
+        f.write("--- HISTORIAL DE CONVERSACIONES ---\n")
+
 if not os.path.exists(REGISTRO_METRICAS):
     with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
+        json_lib.dump([], f, indent=4, ensure_ascii=False)
+
+if not os.path.exists(MEMORIA_TAREAS):
+    with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
         json_lib.dump([], f, indent=4, ensure_ascii=False)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -58,6 +67,14 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 client = genai.Client(api_key=GEMINI_API_KEY) if (GENAI_DISPONIBLE and GEMINI_API_KEY) else None
 GEMINI_BLOQUEADO_POR_CUOTA = False
 lock_voz = asyncio.Lock()
+
+
+def registrar_conversacion(remitente, texto):
+    try:
+        with open(TXT_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {remitente}: {texto}\n")
+    except Exception as e:
+        print(f"⚠️ Error escribiendo en conversaciones.txt: {e}")
 
 
 def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicada, tipo="voz_usuario"):
@@ -83,18 +100,38 @@ def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicad
     print(f"📒 [REGISTRO JSON CONTINUO]: Entrenamiento #{nuevo_registro['total_entrenamientos']} guardado con éxito.")
 
 
+def registrar_tarea_pendiente(instruccion):
+    try:
+        with open(MEMORIA_TAREAS, "r", encoding="utf-8") as f:
+            tareas = json_lib.load(f)
+    except Exception:
+        tareas = []
+    
+    tareas.append({
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "instruccion": instruccion,
+        "pendiente": True
+    })
+    
+    with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
+        json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
+    print(f"📝 [MEMORIA DE TAREAS]: Instrucción guardada: '{instruccion}'")
+
+
 def generar_respuesta_y_partitura_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     respuesta_raw = ""
     
     system_prompt = (
         "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
-        "Tenés adjunto el historial JSON completo con todas las métricas acumuladas de las notas de voz previas. "
-        "Analizá las duraciones e intensidades reales guardadas, abstrae las reglas de variación prosódica "
-        "según la semántica del español, y aplicá ese ritmo para componer la partitura de la respuesta palabra por palabra.\n\n"
+        "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
+        "utilizando el voseo natural ('vós sabés', 'vení', 'fijate', 'escuchá'), lunfardo sutil y la grafía o fonética "
+        "que refleje la entonación de Buenos Aires (énfasis en imperativos agudos y cadencia porteña).\n"
+        "Tenés adjuntos los archivos 'conversaciones.txt' (con el hilo histórico completo de dónde arrancamos) y 'historial_metricas_voz.json' "
+        "(con las métricas acústicas limpias). Analizá el contexto completo para comprender de dónde venimos y componé la partitura palabra por palabra.\n\n"
         "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown tipo ```json, solo el JSON crudo):\n"
         "{\n"
-        "  \"texto_completo\": \"Tu respuesta hablada aquí\",\n"
+        "  \"texto_completo\": \"Tu respuesta hablada aquí con acentuación porteña\",\n"
         "  \"partitura\": [\n"
         "    {\"palabra\": \"Che,\", \"duracion_ms\": 120, \"intensidad_db\": -1.0},\n"
         "    {\"palabra\": \"escuchá\", \"duracion_ms\": 250, \"intensidad_db\": 0.0}\n"
@@ -105,10 +142,18 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
-                archivo_adjunto = client.files.upload(file=REGISTRO_METRICAS)
+                print("🤖 [IA]: Intentando conectar con Gemini (gemini-3.8-flash) adjuntando contexto limpio y métricas...")
+                adjunto_metricas = client.files.upload(file=REGISTRO_METRICAS)
+                adjunto_conversaciones = client.files.upload(file=TXT_FILE) if os.path.exists(TXT_FILE) else None
+                
+                contents_payload = [adjunto_metricas]
+                if adjunto_conversaciones:
+                    contents_payload.append(adjunto_conversaciones)
+                contents_payload.append(f"Mensaje del oyente: \"{prompt_usuario}\"")
+
                 res = client.models.generate_content(
                     model="gemini-3.8-flash",
-                    contents=[archivo_adjunto, f"Mensaje del oyente: \"{prompt_usuario}\""],
+                    contents=contents_payload,
                     config=genai.types.GenerateContentConfig(
                         system_instruction=system_prompt,
                         response_mime_type="application/json"
@@ -116,6 +161,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 )
                 if res and res.text:
                     respuesta_raw = res.text.strip()
+                    print("✅ [IA CONECTADA]: ¡Gemini respondió con éxito usando archivos adjuntos!")
                     break
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -123,18 +169,31 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     print("⚠️ [CUOTA EXCEDIDA]: Gemini bloqueado, derivando a Llama local...")
                     break
                 elif "503" in str(e) and intento == 0:
-                    print("⚠️ [503 UNAVAILABLE]: Reintentando llamada a Gemini en 2 segundos...")
+                    print("⚠️ [503 UNAVAILABLE]: Gemini con alta demanda. Reintentando en 2 segundos...")
                     time.sleep(2)
                 else:
-                    print(f"⚠️ Error con Gemini adjuntando archivo: {e}")
+                    print(f"⚠️ Error con Gemini: {e}")
                     break
 
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
+        print(f"🦙 [IA CONECTADA]: Usando Llama local (Ollama) en {OLLAMA_HOST}...")
+        
+        historial_reciente = ""
+        if os.path.exists(TXT_FILE):
+            try:
+                with open(TXT_FILE, "r", encoding="utf-8") as f:
+                    lineas = f.readlines()
+                    historial_reciente = "".join(lineas[-15:])
+            except Exception:
+                pass
+
+        prompt_con_historial = f"Historial reciente:\n{historial_reciente}\nMensaje actual: {prompt_usuario}"
+        
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt_usuario}
+                {"role": "user", "content": prompt_con_historial}
             ],
             "options": {"num_ctx": 16384, "temperature": 0.7},
             "stream": False,
@@ -178,7 +237,6 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             device = "cpu"
             model = model.to(device)
 
-            # Generación limpia para que Bark hable con palabras claras y comprensibles
             texto_para_bark = f"[es] {texto.strip()}"
             inputs = processor(texto_para_bark, voice_preset="v2/es_speaker_2").to(device)
             
@@ -205,7 +263,6 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         if max_val > 0:
             data_timbre = data_timbre / max_val
 
-        # Usamos el audio de Bark directamente asegurando articulación clara de palabras
         audio_dinamico = data_timbre.copy()
         sf.write(wav_temp_final, audio_dinamico, sr)
     except Exception as e:
@@ -232,20 +289,79 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo con historial JSON adjunto y partituras continuas reales.")
+    await update.message.reply_text("¡Buenas che! Bot híbrido activo con historial limpio, adjuntos y fonética porteña.")
+
+
+async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Che, respondé al mensaje donde te mostré la transcripción para poder corregirlo.")
+        return
+
+    texto_corregido = " ".join(context.args).strip()
+    if not texto_corregido:
+        await update.message.reply_text("Pasame el texto correcto después del comando, ej:\n`/corregir quería ver si había podido incorporar`", parse_mode="Markdown")
+        return
+
+    try:
+        with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
+            historial = json_lib.load(f)
+
+        if historial:
+            ultimo_registro = historial[-1]
+            texto_anterior = ultimo_registro.get("texto", "")
+            ultimo_registro["texto_whisper_original"] = texto_anterior
+            ultimo_registro["texto"] = texto_corregido
+            ultimo_registro["corregido_por_usuario"] = True
+
+            palabras_nuevas = texto_corregido.split()
+            partitura_anterior = ultimo_registro.get("partitura_metrica", [])
+            nueva_partitura = []
+
+            for i, p_nueva in enumerate(palabras_nuevas):
+                if i < len(partitura_anterior):
+                    item = partitura_anterior[i].copy()
+                    item["palabra"] = p_nueva
+                else:
+                    item = {"palabra": p_nueva, "duracion_ms": 200, "intensidad_db": 0.0}
+                nueva_partitura.append(item)
+
+            ultimo_registro["partitura_metrica"] = nueva_partitura
+
+            with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
+                json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+
+            try:
+                subprocess.run(["git", "add", REGISTRO_METRICAS], check=True)
+                subprocess.run(["git", "commit", "-m", f"✏️ Corrección humana transcripción: {texto_corregido[:30]}..."], check=True)
+                subprocess.run(["git", "push"], check=True)
+            except Exception as e_git:
+                print(f"⚠️ Error al pushear corrección: {e_git}")
+
+            await update.message.reply_text(f"✅ ¡Entendido! Registrada la corrección:\n\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"\n\n🧠 *Guardado en dataset y sincronizado en Git.*", parse_mode="Markdown")
+        else:
+            await update.message.reply_text("No encontré registros previos para corregir.")
+    except Exception as e:
+        print(f"⚠️ Error guardando corrección: {e}")
+        await update.message.reply_text("Patinó el guardado de la corrección.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text
+    registrar_conversacion("Usuario", texto_usuario)
+
+    if "durante el día" in texto_usuario.lower() or "escribime" in texto_usuario.lower() or "recordá" in texto_usuario.lower():
+        registrar_tarea_pendiente(texto_usuario)
+
     await update.message.chat.send_action(action="record_voice")
     
     texto_limpio, partitura = generar_respuesta_y_partitura_ia(texto_usuario)
+    registrar_conversacion("LeandroBot", texto_limpio)
+
     ogg_f = "resp.ogg"
-    
     sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
 
     with open(ogg_f, "rb") as vf:
-        await update.message.reply_voice(voice=vf, caption="🎙️ *(Historial JSON Adjunto + Partitura IA)*")
+        await update.message.reply_voice(voice=vf, caption="🎙️ *(Contexto Limpio + Fonética Porteña)*")
 
     if os.path.exists(ogg_f): 
         os.remove(ogg_f)
@@ -314,25 +430,36 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not partitura_real:
             partitura_real = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto_crudo.split()]
 
+        registrar_conversacion("Usuario", texto_crudo)
+
+        if "durante el día" in texto_crudo.lower() or "escribime" in texto_crudo.lower() or "recordá" in texto_crudo.lower():
+            registrar_tarea_pendiente(texto_crudo)
+
         registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo, partitura_real)
+
+        texto_limpio, partitura_respuesta = generar_respuesta_y_partitura_ia(texto_crudo)
+        registrar_conversacion("LeandroBot", texto_limpio)
 
         try:
             subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
             subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
-            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS], check=True)
-            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento métricas reales: {update.message.message_id}"], check=True)
+            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS, MEMORIA_TAREAS, TXT_FILE], check=True)
+            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento métricas limpias y tareas: {update.message.message_id}"], check=True)
             subprocess.run(["git", "push"], check=True)
-            print("🚀 [GIT SYNC]: Muestras y métricas detalladas reales subidas a GitHub.")
+            print("🚀 [GIT SYNC]: Archivos limpios subidos a GitHub.")
         except Exception as git_err:
             print(f"⚠️ [GIT SYNC]: Push omitido o sin permisos: {git_err}")
 
-        texto_limpio, partitura_respuesta = generar_respuesta_y_partitura_ia(texto_crudo)
         ogg_f = "resp.ogg"
-        
         sintetizar_con_partitura_de_ia(texto_limpio, partitura_respuesta, ogg_f)
 
+        caption_texto = (
+            f"🎙️ *Lo que captó Whisper:*\n\"{texto_crudo}\"\n\n"
+            f"💡 _Si le pifió, respondé a este mensaje con:_\n`/corregir [texto real]`"
+        )
+
         with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🗣️ ¡Métricas reales guardadas y respuesta lista!")
+            await update.message.reply_voice(voice=vf, caption=caption_texto, parse_mode="Markdown")
 
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
@@ -353,6 +480,7 @@ def main():
     app = Application.builder().token(TOKEN).request(request_config).build()
     
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("corregir", corregir_transcripcion))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
     app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
 
