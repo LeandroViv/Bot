@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Texto condicional + Escritura inmediata + Audio optimizado)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Blindaje contra TypeError + Canales separados + Audio optimizado)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -156,7 +156,7 @@ def registrar_tarea_pendiente(instruccion):
 
 def generar_respuesta_y_partitura_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
-    respuesta_raw = []
+    respuesta_raw = ""  # Inicializado estrictamente como string vacío
     
     system_prompt = (
         "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
@@ -199,7 +199,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     )
                 )
                 if res and res.text:
-                    respuesta_raw = res.text.strip()
+                    respuesta_raw = str(res.text).strip()
                     print("✅ [IA CONECTADA]: ¡Gemini respondió con éxito!")
                     break
             except Exception as e:
@@ -241,9 +241,13 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
             res_local = requests.post(url_llama, json=payload, timeout=60)
             if res_local.status_code == 200:
-                respuesta_raw = res_local.json().get("message", {}).get("content", "").strip()
+                respuesta_raw = str(res_local.json().get("message", {}).get("content", "")).strip()
         except Exception as ex_local:
             print(f"⚠️ Error conectando con Llama local: {ex_local}")
+
+    # Blindaje extra por si acaso
+    if not isinstance(respuesta_raw, str):
+        respuesta_raw = str(respuesta_raw or "")
 
     respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
     respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
@@ -339,7 +343,6 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         "volume=1.2"
     ]
 
-    # FFmpeg optimizado con Opus 64k y 48kHz nativos para Telegram
     subprocess.run([
         "ffmpeg", "-y", "-i", wav_temp_final,
         "-filter:a", ",".join(filtros),
@@ -353,7 +356,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo con canales separados (Texto -> Texto / Voz -> Voz).")
+    await update.message.reply_text("¡Buenas che! Bot activo con canales separados y sincronización instantánea.")
 
 
 async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -405,7 +408,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "durante el día" in texto_usuario.lower() or "escribime" in texto_usuario.lower() or "recordá" in texto_usuario.lower():
         registrar_tarea_pendiente(texto_usuario)
 
-    # Si es mensaje de texto, respondemos ÚNICAMENTE con texto plano
     texto_limpio, partitura = generar_respuesta_y_partitura_ia(texto_usuario)
     registrar_conversacion("LeandroBot", texto_limpio)
     registrar_entrenamiento_chat(texto_usuario, texto_limpio)
