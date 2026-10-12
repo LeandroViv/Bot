@@ -1,7 +1,7 @@
 name: Ejecutar LeandroBot
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * * * *' # O el horario que uses
   workflow_dispatch:
 
 jobs:
@@ -21,18 +21,19 @@ jobs:
       - name: Instalar Dependencias
         run: pip install -r requirements.txt
 
-      - name: Instalar y Levantar Ollama en Background
+      - name: Instalar y Levantar Ollama
         run: |
-          echo "📥 Instalando Ollama..."
-          curl -fsSL https://ollama.com/install.sh | sh
+          echo "📥 Descargando binario oficial de Ollama..."
+          curl -L https://github.com/ollama/ollama/releases/download/v0.5.7/ollama-linux-amd64.tgz -o ollama.tgz
+          sudo tar -C /usr/local -xzf ollama.tgz
           
-          echo "🚀 Lanzando servidor Ollama con nohup..."
+          echo "🚀 Lanzando servidor Ollama..."
           nohup ollama serve > ollama.log 2>&1 &
           
-          echo "⏳ Esperando a que Ollama levante el puerto 11434..."
+          echo "⏳ Esperando a que responda el puerto 11434..."
           for i in {1..30}; do
             if curl -s http://127.0.0.1:11434/api/tags > /dev/null; then
-              echo "✅ ¡Ollama está activo y respondiendo!"
+              echo "✅ ¡Ollama está activo!"
               break
             fi
             sleep 2
