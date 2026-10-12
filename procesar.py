@@ -221,12 +221,38 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
     if client:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
-                print("🎙️ [AUDIO]: Sintetizado con Gemini TTS.")
                 return True
         except Exception:
             pass
-    
-    print("🎙️ [EDGE-TTS]: Usando respaldo Edge-TTS (es-AR-TomasNeural)...")
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
-# Motor Pro
+# Motor Proactivo Autónomo
+async def bucle_proactivo_autonomo(bot_app: Application):
+    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...", flush=True)
+    await asyncio.sleep(15)
+
+    while True:
+        try:
+            await asyncio.sleep(180)
+            global CHAT_ID_ACTIVO
+            if not CHAT_ID_ACTIVO:
+                continue
+
+            motivo = "Reflexión nocturna de radio FM espontánea"
+            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo al chat {CHAT_ID_ACTIVO}...", flush=True)
+
+            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
+            registrar_conversacion("Leandro (Proactivo)", texto_spont)
+
+            await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
+
+            ogg_f = "proactivo.ogg"
+            if await sintetizar_voz(texto_spont, ogg_f):
+                with open(ogg_f, "rb") as vf:
+                    await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
+                if os.path.exists(ogg_f):
+                    os.remove(ogg_f)
+
+        except Exception as e:
+            print(f"⚠️ Error en bucle proactivo: {e}", flush=True)
+            await
