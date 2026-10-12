@@ -34,5 +34,11 @@
         "usuario": "Me pones por escrito por favor esos links que me dijiste gracias",
         "bot": "Che, estuve analizando lo que tiraste sobre 'Me pones por escrito por favor...', sintonizamos en un rato.",
         "id_entrenamiento": 6
+    },
+    {
+        "timestamp": "2026-10-12 05:51:29",
+        "usuario": "que me pasas por el quinto de esos links que me había dicho gracias",
+        "bot": "De una, che, acá te los dejo bien a mano por escrito para que cliquees directo: crewai.com y langchain.com. Chusmealos tranquilo y después me contás.",
+        "id_entrenamiento": 7
     }
 ]

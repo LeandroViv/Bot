@@ -1423,5 +1423,84 @@
             }
         ],
         "total_entrenamientos": 15
+    },
+    {
+        "timestamp": "2026-10-12 05:51:13",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1139.wav",
+        "texto": "que me pasas por el quinto de esos links que me había dicho gracias",
+        "partitura_metrica": [
+            {
+                "palabra": "que",
+                "duracion_ms": 1360,
+                "intensidad_db": -4.93
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 260,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "pasas",
+                "duracion_ms": 440,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 180,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 160,
+                "intensidad_db": -0.83
+            },
+            {
+                "palabra": "quinto",
+                "duracion_ms": 380,
+                "intensidad_db": -4.78
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 200,
+                "intensidad_db": 2.32
+            },
+            {
+                "palabra": "esos",
+                "duracion_ms": 200,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 460,
+                "intensidad_db": -5.51
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 600,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 220,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "había",
+                "duracion_ms": 480,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "dicho",
+                "duracion_ms": 340,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "gracias",
+                "duracion_ms": 460,
+                "intensidad_db": -1.81
+            }
+        ],
+        "total_entrenamientos": 16
     }
 ]
