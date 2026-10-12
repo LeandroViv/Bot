@@ -1354,5 +1354,74 @@
             }
         ],
         "total_entrenamientos": 14
+    },
+    {
+        "timestamp": "2026-10-12 05:34:27",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1137.wav",
+        "texto": "Me pones por escrito por favor esos links que me dijiste gracias",
+        "partitura_metrica": [
+            {
+                "palabra": "Me",
+                "duracion_ms": 760,
+                "intensidad_db": -4.11
+            },
+            {
+                "palabra": "pones",
+                "duracion_ms": 440,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 620,
+                "intensidad_db": 0.38
+            },
+            {
+                "palabra": "escrito",
+                "duracion_ms": 660,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 680,
+                "intensidad_db": 1.54
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 420,
+                "intensidad_db": -0.58
+            },
+            {
+                "palabra": "esos",
+                "duracion_ms": 540,
+                "intensidad_db": -2.0
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 420,
+                "intensidad_db": 0.24
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 380,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 140,
+                "intensidad_db": -2.98
+            },
+            {
+                "palabra": "dijiste",
+                "duracion_ms": 540,
+                "intensidad_db": -4.63
+            },
+            {
+                "palabra": "gracias",
+                "duracion_ms": 620,
+                "intensidad_db": -3.64
+            }
+        ],
+        "total_entrenamientos": 15
     }
 ]
