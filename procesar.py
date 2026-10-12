@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark Optimizado + Lectura de Correcciones + Git Sync)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Texto condicional + Escritura inmediata + Audio optimizado)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -44,6 +44,7 @@ except ImportError:
 TXT_FILE = "conversaciones.txt"
 REGISTRO_METRICAS = "historial_metricas_voz.json"
 MEMORIA_TAREAS = "memoria_tareas.json"
+DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
@@ -60,6 +61,10 @@ if not os.path.exists(MEMORIA_TAREAS):
     with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
         json_lib.dump([], f, indent=4, ensure_ascii=False)
 
+if not os.path.exists(DATASET_ENTRENAMIENTO):
+    with open(DATASET_ENTRENAMIENTO, "w", encoding="utf-8") as f:
+        json_lib.dump([], f, indent=4, ensure_ascii=False)
+
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
@@ -71,10 +76,37 @@ lock_voz = asyncio.Lock()
 
 def registrar_conversacion(remitente, texto):
     try:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {remitente}: {texto}\n")
+            f.write(f"[{timestamp}] {remitente}: {texto}\n")
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"📝 [TXT SYNC]: Mensaje de {remitente} guardado al instante.")
     except Exception as e:
         print(f"⚠️ Error escribiendo en conversaciones.txt: {e}")
+
+
+def registrar_entrenamiento_chat(texto_usuario, texto_bot):
+    try:
+        with open(DATASET_ENTRENAMIENTO, "r", encoding="utf-8") as f:
+            dataset = json_lib.load(f)
+    except Exception:
+        dataset = []
+
+    nuevo_par = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "usuario": texto_usuario,
+        "bot": texto_bot,
+        "id_entrenamiento": len(dataset) + 1
+    }
+    dataset.append(nuevo_par)
+
+    with open(DATASET_ENTRENAMIENTO, "w", encoding="utf-8") as f:
+        json_lib.dump(dataset, f, indent=4, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())
+
+    print(f"🧠 [DATASET ENTRENAMIENTO]: Par #{nuevo_par['id_entrenamiento']} guardado en JSON.")
 
 
 def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicada, tipo="voz_usuario"):
@@ -96,6 +128,8 @@ def registrar_entrenamiento_json(path_audio, texto_transcrito, partitura_aplicad
     
     with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
         json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())
         
     print(f"📒 [REGISTRO JSON CONTINUO]: Entrenamiento #{nuevo_registro['total_entrenamientos']} guardado con éxito.")
 
@@ -115,6 +149,8 @@ def registrar_tarea_pendiente(instruccion):
     
     with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
         json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())
     print(f"📝 [MEMORIA DE TAREAS]: Instrucción guardada: '{instruccion}'")
 
 
@@ -127,10 +163,8 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
         "utilizando el voseo natural ('vós sabés', 'vení', 'fijate', 'escuchá'), lunfardo sutil y la grafía o fonética "
         "que refleje la entonación de Buenos Aires (énfasis en imperativos agudos y cadencia porteña).\n"
-        "INSTRUCCIÓN DE APRENDIZAJE CRÍTICA: Tenés adjuntos 'conversaciones.txt' y 'historial_metricas_voz.json'. "
-        "Analizá detalladamente las correcciones humanas previas ('corregido_por_usuario': true, 'texto_whisper_original' vs 'texto') "
-        "para comprender dónde Whisper suele pifiar en la interpretación fonética de los audios del usuario. "
-        "Aprendé de esas correcciones para entender con máxima precisión el sentido real de los mensajes y componé la partitura palabra por palabra.\n\n"
+        "INSTRUCCIÓN DE APRENDIZAJE CRÍTICA: Tenés adjuntos 'conversaciones.txt', 'dataset_entrenamiento_chat.json' y 'historial_metricas_voz.json'. "
+        "Analizá detalladamente las interacciones previas para responder con el mismo tono y contexto exacto.\n\n"
         "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown tipo ```json, solo el JSON crudo):\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada aquí con acentuación porteña\",\n"
@@ -144,17 +178,20 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
-                print("🤖 [IA]: Intentando conectar con Gemini (gemini-3.8-flash) analizando correcciones y contexto...")
+                print("🤖 [IA]: Intentando conectar con Gemini analizando historial y dataset...")
                 adjunto_metricas = client.files.upload(file=REGISTRO_METRICAS)
                 adjunto_conversaciones = client.files.upload(file=TXT_FILE) if os.path.exists(TXT_FILE) else None
+                adjunto_dataset = client.files.upload(file=DATASET_ENTRENAMIENTO) if os.path.exists(DATASET_ENTRENAMIENTO) else None
                 
                 contents_payload = [adjunto_metricas]
                 if adjunto_conversaciones:
                     contents_payload.append(adjunto_conversaciones)
+                if adjunto_dataset:
+                    contents_payload.append(adjunto_dataset)
                 contents_payload.append(f"Mensaje del oyente: \"{prompt_usuario}\"")
 
                 res = client.models.generate_content(
-                    model="gemini-3.8-flash",
+                    model="gemini-2.5-flash",
                     contents=contents_payload,
                     config=genai.types.GenerateContentConfig(
                         system_instruction=system_prompt,
@@ -163,7 +200,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 )
                 if res and res.text:
                     respuesta_raw = res.text.strip()
-                    print("✅ [IA CONECTADA]: ¡Gemini respondió con éxito analizando el historial corregido!")
+                    print("✅ [IA CONECTADA]: ¡Gemini respondió con éxito!")
                     break
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -171,7 +208,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     print("⚠️ [CUOTA EXCEDIDA]: Gemini bloqueado, derivando a Llama local...")
                     break
                 elif "503" in str(e) and intento == 0:
-                    print("⚠️ [503 UNAVAILABLE]: Gemini con alta demanda. Reintentando en 2 segundos...")
+                    print("⚠️ [503 UNAVAILABLE]: Reintentando en 2 segundos...")
                     time.sleep(2)
                 else:
                     print(f"⚠️ Error con Gemini: {e}")
@@ -206,7 +243,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             if res_local.status_code == 200:
                 respuesta_raw = res_local.json().get("message", {}).get("content", "").strip()
         except Exception as ex_local:
-            print(f"⚠️ Error conectando con Llama local en {OLLAMA_HOST}: {ex_local}")
+            print(f"⚠️ Error conectando con Llama local: {ex_local}")
 
     respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
     respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
@@ -239,8 +276,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             device = "cpu"
             model = model.to(device)
 
-            # Limitamos el texto a procesar para evitar que Bark genere bolas incomprensibles de audio
-            texto_corto = texto.strip()[:180]
+            texto_corto = texto.strip()[:280]
             texto_para_bark = f"[es] {texto_corto}"
             inputs = processor(texto_para_bark, voice_preset="v2/es_speaker_2").to(device)
             
@@ -273,7 +309,6 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
         for item in partitura:
             duracion_ms = item.get("duracion_ms", 200)
-            # Acotamos los milisegundos por palabra para evitar ecos y solapamientos
             duracion_ms = max(100, min(int(duracion_ms), 450))
             
             intensidad_db = item.get("intensidad_db", 0.0)
@@ -298,16 +333,17 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
     filtros = [
-        "highpass=f=100",
-        "lowpass=f=7000",
+        "highpass=f=80",
+        "lowpass=f=7600",
         "dynaudnorm=f=150:g=15:p=0.9",
-        "volume=1.3"
+        "volume=1.2"
     ]
 
+    # FFmpeg optimizado con Opus 64k y 48kHz nativos para Telegram
     subprocess.run([
         "ffmpeg", "-y", "-i", wav_temp_final,
         "-filter:a", ",".join(filtros),
-        "-c:a", "libopus", "-b:a", "48k", "-ar", "24000",
+        "-c:a", "libopus", "-b:a", "64k", "-ar", "48000",
         ogg_salida
     ], check=True)
 
@@ -317,7 +353,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo aprendiendo de tus correcciones y con síntesis limpia.")
+    await update.message.reply_text("¡Buenas che! Bot activo con canales separados (Texto -> Texto / Voz -> Voz).")
 
 
 async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -327,7 +363,7 @@ async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_T
 
     texto_corregido = " ".join(context.args).strip()
     if not texto_corregido:
-        await update.message.reply_text("Pasame el texto correcto después del comando, ej:\n`/corregir quería ver si había podido incorporar`", parse_mode="Markdown")
+        await update.message.reply_text("Pasame el texto correcto después del comando.")
         return
 
     try:
@@ -341,38 +377,25 @@ async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_T
             ultimo_registro["texto"] = texto_corregido
             ultimo_registro["corregido_por_usuario"] = True
 
-            palabras_nuevas = texto_corregido.split()
-            partitura_anterior = ultimo_registro.get("partitura_metrica", [])
-            nueva_partitura = []
-
-            for i, p_nueva in enumerate(palabras_nuevas):
-                if i < len(partitura_anterior):
-                    item = partitura_anterior[i].copy()
-                    item["palabra"] = p_nueva
-                else:
-                    item = {"palabra": p_nueva, "duracion_ms": 200, "intensidad_db": 0.0}
-                nueva_partitura.append(item)
-
-            ultimo_registro["partitura_metrica"] = nueva_partitura
-
             with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
                 json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+                f.flush()
+                os.fsync(f.fileno())
 
             try:
                 subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
                 subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
                 subprocess.run(["git", "add", REGISTRO_METRICAS], check=True)
-                subprocess.run(["git", "commit", "-m", f"✏️ Corrección humana de transcripción registrada: {texto_corregido[:30]}..."], check=True)
+                subprocess.run(["git", "commit", "-m", f"✏️ Corrección registrada: {texto_corregido[:30]}..."], check=True)
                 subprocess.run(["git", "push"], check=True)
             except Exception as e_git:
                 print(f"⚠️ Error al pushear corrección: {e_git}")
 
-            await update.message.reply_text(f"✅ ¡Entendido y aprendido! Registrada la corrección para futuras lecturas:\n\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"\n\n🧠 *Guardado en dataset y sincronizado en Git.*", parse_mode="Markdown")
+            await update.message.reply_text(f"✅ ¡Entendido y aprendido!\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"", parse_mode="Markdown")
         else:
             await update.message.reply_text("No encontré registros previos para corregir.")
     except Exception as e:
         print(f"⚠️ Error guardando corrección: {e}")
-        await update.message.reply_text("Patinó el guardado de la corrección.")
 
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -382,19 +405,12 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "durante el día" in texto_usuario.lower() or "escribime" in texto_usuario.lower() or "recordá" in texto_usuario.lower():
         registrar_tarea_pendiente(texto_usuario)
 
-    await update.message.chat.send_action(action="record_voice")
-    
+    # Si es mensaje de texto, respondemos ÚNICAMENTE con texto plano
     texto_limpio, partitura = generar_respuesta_y_partitura_ia(texto_usuario)
     registrar_conversacion("LeandroBot", texto_limpio)
+    registrar_entrenamiento_chat(texto_usuario, texto_limpio)
 
-    ogg_f = "resp.ogg"
-    sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
-
-    with open(ogg_f, "rb") as vf:
-        await update.message.reply_voice(voice=vf, caption="🎙️ *(Aprendiendo de correcciones + Audio Limpio)*")
-
-    if os.path.exists(ogg_f): 
-        os.remove(ogg_f)
+    await update.message.reply_text(texto_limpio)
 
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -469,14 +485,15 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         texto_limpio, partitura_respuesta = generar_respuesta_y_partitura_ia(texto_crudo)
         registrar_conversacion("LeandroBot", texto_limpio)
+        registrar_entrenamiento_chat(texto_crudo, texto_limpio)
 
         try:
             subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
             subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
-            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS, MEMORIA_TAREAS, TXT_FILE], check=True)
-            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento y lectura de correcciones: {update.message.message_id}"], check=True)
+            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS, MEMORIA_TAREAS, TXT_FILE, DATASET_ENTRENAMIENTO], check=True)
+            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento chat y voz: {update.message.message_id}"], check=True)
             subprocess.run(["git", "push"], check=True)
-            print("🚀 [GIT SYNC]: Muestras, métricas y correcciones subidas a GitHub.")
+            print("🚀 [GIT SYNC]: Dataset y métricas sincronizados en GitHub.")
         except Exception as git_err:
             print(f"⚠️ [GIT SYNC]: Push omitido o sin permisos: {git_err}")
 
@@ -485,7 +502,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         caption_texto = (
             f"🎙️ *Lo que captó Whisper:*\n\"{texto_crudo}\"\n\n"
-            f"💡 _Si le pifió, respondé a este mensaje con:_\n`/corregir [texto real]`"
+            f"💡 _Si le pifió, respondé con:_\n`/corregir [texto real]`"
         )
 
         with open(ogg_f, "rb") as vf:
