@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo con Edge-TTS blindado (Headers antistatus 403) + gTTS de respaldo: procesar.py
+Script definitivo con Edge-TTS (Fix 403 / IP Bypass): procesar.py
 """
 
 import asyncio
@@ -48,7 +48,6 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 
-# CHAT_ID desde Secrets
 ENV_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit() else None
 
@@ -72,7 +71,7 @@ except Exception as e:
 
 SYSTEM_PROMPT = (
     "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
-    "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando strictly el español rioplatense (porteño), "
+    "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
     "utilizando el voseo natural ('che', 'vós sabés', 'vení', 'fijate', 'escuchá', 'sintonizamos en un toque', 'posta'), "
     "lunfardo sutil y la entonación de Buenos Aires.\n"
     "INTELIGENCIA AUTÓNOMA: Iniciás charlas por propia cuenta, compartís pensamientos nocturnos y chequeás tareas pendientes.\n"
@@ -120,7 +119,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
                     print("✅ [IA GEMINI]: Éxito.")
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
-                print("⚠️ [GEMINI CUOTA EXCEDIDA]: Conmutando permanentemente a Llama para esta sesión.")
+                print("⚠️ [GEMINI CUOTA EXCEDIDA]: Conmutando a Llama para esta sesión.")
                 GEMINI_BLOQUEADO_POR_CUOTA = True
             else:
                 print(f"⚠️ Gemini falló, conmutando a Llama: {e}")
@@ -202,18 +201,12 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         print(f"⚠️ Gemini TTS falló: {e}")
         return False
 
-# Edge-TTS con Bypass de Error 403 usando headers de Edge
+# Edge-TTS adaptado para evitar bloqueos 403 en GitHub Actions
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
-    voces_probar = ["es-AR-TomasNeural", "es-AR-ElenaNeural", "es-CL-LorenzoNeural"]
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
-        "Accept": "*/*",
-        "Accept-Language": "es-419,es;q=0.9"
-    }
-
-    for v in voces_probar:
+    voces = ["es-AR-TomasNeural", "es-AR-ElenaNeural", "es-ES-AlvaroNeural"]
+    for v in voces:
         try:
-            print(f"🎙️ [EDGE-TTS]: Probando voz {v} con headers personalizados...")
+            print(f"🎙️ [EDGE-TTS]: Intentando síntesis con voz {v}...", flush=True)
             communicate = edge_tts.Communicate(texto, voice=v)
             mp3_tmp = "tmp_edge.mp3"
             await communicate.save(mp3_tmp)
@@ -226,7 +219,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
                     os.remove(mp3_tmp)
                 return os.path.exists(ogg_salida)
         except Exception as e:
-            print(f"⚠️ Edge-TTS error con voz {v}: {e}")
+            print(f"⚠️ Edge-TTS ({v}) rebotó: {e}", flush=True)
             if os.path.exists("tmp_edge.mp3"):
                 os.remove("tmp_edge.mp3")
             await asyncio.sleep(1)
@@ -257,7 +250,7 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
         except Exception:
             pass
     
-    # 2. Edge-TTS
+    # 2. Edge-TTS Fallback
     try:
         if await sintetizar_voz_edge_tts(texto, ogg_salida):
             print("🎙️ [EDGE-TTS]: Audio sintetizado con éxito.")
