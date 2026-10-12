@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema con análisis estricto de métricas de voz...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo con síntesis directa Ogg y métricas...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -160,8 +160,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
         "utilizando el voseo natural ('vós sabés', 'vení', 'fijate', 'escuchá'), lunfardo sutil y la entonación de Buenos Aires.\n"
         "INTELIGENCIA DE CANAL: Analizá el mensaje del usuario y determiná si la respuesta va en 'texto', 'voz' o 'ambos'.\n"
-        "ANÁLISIS DE MÉTRICAS OBLIGATORIO: Tenés adjunto 'historial_metricas_voz.json'. Analizá las métricas pasadas (duración, intensidad en dB y pausas de las palabras del usuario) "
-        "para estructurar una 'partitura' ultra precisa y coherente con el estilo de voz registrado.\n\n"
+        "ANÁLISIS DE MÉTRICAS OBLIGATORIO: Analizá las métricas del historial para estructurar una 'partitura' ultra precisa.\n\n"
         "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown, solo el JSON crudo):\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada o escrita aquí con acentuación porteña\",\n"
@@ -178,19 +177,9 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             try:
                 print("🤖 [IA]: Enviando prompt junto con el archivo de métricas de voz a Gemini...")
                 adjunto_metricas = client.files.upload(file=REGISTRO_METRICAS)
-                adjunto_conversaciones = client.files.upload(file=TXT_FILE) if os.path.exists(TXT_FILE) else None
-                adjunto_dataset = client.files.upload(file=DATASET_ENTRENAMIENTO) if os.path.exists(DATASET_ENTRENAMIENTO) else None
-                adjunto_tareas = client.files.upload(file=MEMORIA_TAREAS) if os.path.exists(MEMORIA_TAREAS) else None
-                
-                contents_payload = [adjunto_metricas]
-                if adjunto_conversaciones: contents_payload.append(adjunto_conversaciones)
-                if adjunto_dataset: contents_payload.append(adjunto_dataset)
-                if adjunto_tareas: contents_payload.append(adjunto_tareas)
-                contents_payload.append(f"Mensaje del oyente: \"{prompt_usuario}\"")
-
                 res = client.models.generate_content(
                     model="gemini-3.8-flash",
-                    contents=contents_payload,
+                    contents=[adjunto_metricas, f"Mensaje del oyente: \"{prompt_usuario}\""],
                     config=genai.types.GenerateContentConfig(
                         system_instruction=system_prompt,
                         response_mime_type="application/json"
@@ -198,20 +187,16 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 )
                 if res and res.text:
                     respuesta_raw = str(res.text).strip()
-                    print("✅ [IA CONECTADA]: Gemini procesó las métricas y respondió con éxito.")
+                    print("✅ [IA CONECTADA]: Gemini respondió con éxito.")
                     break
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                     GEMINI_BLOQUEADO_POR_CUOTA = True
-                    print("⚠️ [CUOTA EXCEDIDA]: Derivando a Llama local...")
                     break
-                elif "503" in str(e) and intento == 0:
-                    time.sleep(2)
-                else:
-                    break
+                time.sleep(2)
 
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
-        print(f"🦙 [IA LOCAL]: Usando Llama local (Ollama) con historial de métricas...")
+        print(f"🦙 [IA LOCAL]: Usando Llama local (Ollama) con timeout extendido de 120s...")
         
         res_metricas_resumen = ""
         if os.path.exists(REGISTRO_METRICAS):
@@ -222,7 +207,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             except Exception:
                 pass
 
-        prompt_con_contexto = f"Últimas métricas de voz registradas:\n{res_metricas_resumen}\nMensaje actual: {prompt_usuario}"
+        prompt_con_contexto = f"Métricas recientes:\n{res_metricas_resumen}\nMensaje actual: {prompt_usuario}"
         
         payload = {
             "model": "llama3.2",
@@ -231,14 +216,15 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 {"role": "user", "content": prompt_con_contexto}
             ],
             "format": "json",
-            "options": {"num_ctx": 16384, "temperature": 0.7},
+            "options": {"num_ctx": 8192, "temperature": 0.7},
             "stream": False,
         }
         try:
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-            res_local = requests.post(url_llama, json=payload, timeout=60)
+            res_local = requests.post(url_llama, json=payload, timeout=120)
             if res_local.status_code == 200:
                 respuesta_raw = str(res_local.json().get("message", {}).get("content", "")).strip()
+                print("✅ [IA LOCAL]: Llama respondió correctamente.")
         except Exception as ex_local:
             print(f"⚠️ Error Llama local: {ex_local}")
 
@@ -258,17 +244,16 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             partitura = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto.split()]
         return texto, canal_salida, partitura
     except Exception as e:
-        print(f"⚠️ Error parseando JSON: {e}")
+        print(f"⚠️ Error parseando JSON: {e}. Respuesta cruda: {respuesta_raw}")
         texto_fb = "Che, te capté perfecto, sintonizamos en un toque."
         return texto_fb, "ambos", [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto_fb.split()]
 
 
 def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
     wav_temp_timbre = "temp_timbre_bark.wav"
-    wav_temp_final = "temp_dinamica_final.wav"
     sample_rate = 24000
-
     timbre_ok = False
+
     if BARK_DISPONIBLE:
         try:
             processor = AutoProcessor.from_pretrained("suno/bark-small")
@@ -276,9 +261,8 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             device = "cpu"
             model = model.to(device)
 
-            texto_corto = texto.strip()[:300]
-            texto_para_bark = f"[es] {texto_corto}"
-            inputs = processor(texto_para_bark, voice_preset="v2/es_speaker_2").to(device)
+            texto_corto = texto.strip()[:250]
+            inputs = processor(f"[es] {texto_corto}", voice_preset="v2/es_speaker_2").to(device)
             
             with torch.no_grad():
                 audio_bark = model.generate(**inputs, max_new_tokens=256)
@@ -291,7 +275,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             print(f"⚠️ Error timbre Bark: {e}")
 
     if not timbre_ok:
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=180:duration=3", wav_temp_timbre], check=True)
+        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=180:duration=2", wav_temp_timbre], check=True)
 
     try:
         data_timbre, sr = sf.read(wav_temp_timbre)
@@ -310,12 +294,9 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         paso_base = max(1, total_muestras_audio // max(1, len(partitura)))
 
         for i, item in enumerate(partitura):
-            duracion_ms = item.get("duracion_ms", 200)
-            duracion_ms = max(120, min(int(duracion_ms), 600))
-            
-            intensidad_db = item.get("intensidad_db", 0.0)
-            intensidad_db_segura = max(min(float(intensidad_db), 2.0), -3.0)
-            mult_vol = 10 ** (intensidad_db_segura / 20.0)
+            duracion_ms = max(100, min(int(item.get("duracion_ms", 200)), 600))
+            intensidad_db = max(min(float(item.get("intensidad_db", 0.0)), 2.0), -3.0)
+            mult_vol = 10 ** (intensidad_db / 20.0)
 
             muestras_bloque = int(sr * (duracion_ms / 1000.0))
             start_idx = min(i * paso_base, max(0, total_muestras_audio - muestras_bloque))
@@ -325,43 +306,40 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             if len(fragmento) == 0:
                 fragmento = data_timbre[:muestras_bloque]
 
-            fade_samples = int(sr * 0.01)
+            fade_samples = int(sr * 0.008)
             if len(fragmento) > fade_samples * 2:
-                fade_in = np.linspace(0.0, 1.0, fade_samples)
-                fade_out = np.linspace(1.0, 0.0, fade_samples)
-                fragmento[:fade_samples] *= fade_in
-                fragmento[-fade_samples:] *= fade_out
+                fragmento[:fade_samples] *= np.linspace(0.0, 1.0, fade_samples)
+                fragmento[-fade_samples:] *= np.linspace(1.0, 0.0, fade_samples)
 
             audio_dinamico = np.concatenate((audio_dinamico, fragmento * mult_vol))
 
         if len(audio_dinamico) < sr * 0.5:
             audio_dinamico = data_timbre
 
-        sf.write(wav_temp_final, audio_dinamico, sr)
+        # Síntesis directa a Ogg/Opus sin archivos WAV intermedios
+        proceso_ffmpeg = subprocess.Popen([
+            "ffmpeg", "-y",
+            "-f", "f32le", "-ar", str(sr), "-ac", "1", "-i", "-",
+            "-c:a", "libopus", "-b:a", "48k", "-ar", "48000",
+            ogg_salida
+        ], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        proceso_ffmpeg.communicate(input=audio_dinamico.astype(np.float32).tobytes())
     except Exception as e:
-        subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
+        print(f"⚠️ Error en síntesis directa Ogg: {e}")
+        subprocess.run(["ffmpeg", "-y", "-i", wav_temp_timbre, "-c:a", "libopus", ogg_salida], check=True)
 
-    filtros = ["highpass=f=100", "lowpass=f=7000", "volume=1.2"]
-
-    subprocess.run([
-        "ffmpeg", "-y", "-i", wav_temp_final,
-        "-filter:a", ",".join(filtros),
-        "-c:a", "libopus", "-b:a", "64k", "-ar", "48000",
-        ogg_salida
-    ], check=True)
-
-    for temp_f in [wav_temp_timbre, wav_temp_final]:
-        if os.path.exists(temp_f):
-            os.remove(temp_f)
+    if os.path.exists(wav_temp_timbre):
+        os.remove(wav_temp_timbre)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo analizando métricas de voz y canales inteligentes.")
+    await update.message.reply_text("¡Buenas che! Bot activo con métricas y síntesis directa.")
 
 
 async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.reply_to_message:
-        await update.message.reply_text("Che, respondé al mensaje donde te mostré la transcripción para corregirlo.")
+        await update.message.reply_text("Che, respondé al mensaje para corregir.")
         return
 
     texto_corregido = " ".join(context.args).strip()
@@ -389,169 +367,9 @@ async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_T
                 subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
                 subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
                 subprocess.run(["git", "add", REGISTRO_METRICAS], check=True)
-                subprocess.run(["git", "commit", "-m", f"✏️ Corrección métricas registrada: {texto_corregido[:30]}..."], check=True)
+                subprocess.run(["git", "commit", "-m", f"✏️ Corrección: {texto_corregido[:30]}..."], check=True)
                 subprocess.run(["git", "push"], check=True)
             except Exception as e_git:
                 print(f"⚠️ Error git: {e_git}")
 
-            await update.message.reply_text(f"✅ ¡Métrica corregida y aprendida!\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"", parse_mode="Markdown")
-        else:
-            await update.message.reply_text("No encontré registros previos.")
-    except Exception as e:
-        print(f"⚠️ Error: {e}")
-
-
-async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto_usuario = update.message.text
-    registrar_conversacion("Usuario", texto_usuario)
-
-    if "durante el día" in texto_usuario.lower() or "escribime" in texto_usuario.lower() or "recordá" in texto_usuario.lower():
-        registrar_tarea_pendiente(texto_usuario)
-
-    texto_limpio, canal_salida, partitura = generar_respuesta_y_partitura_ia(texto_usuario)
-    registrar_conversacion("LeandroBot", texto_limpio)
-    registrar_entrenamiento_chat(texto_usuario, texto_limpio)
-
-    if canal_salida in ["texto", "ambos"]:
-        await update.message.reply_text(texto_limpio)
-    
-    if canal_salida in ["voz", "ambos"]:
-        ogg_f = "resp.ogg"
-        sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
-        with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf)
-        if os.path.exists(ogg_f): os.remove(ogg_f)
-
-
-async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    async with lock_voz:
-        await update.message.chat.send_action(action="record_voice")
-        file = await update.message.voice.get_file()
-        
-        path_ogg = os.path.join(CARPETA_MUESTRAS, f"audio_usuario_{update.message.message_id}.ogg")
-        path_wav = os.path.join(CARPETA_MUESTRAS, f"audio_usuario_{update.message.message_id}.wav")
-        
-        await file.download_to_drive(path_ogg)
-
-        try:
-            subprocess.run(["ffmpeg", "-y", "-i", path_ogg, "-ar", "22050", "-ac", "1", path_wav], check=True)
-        except Exception as e:
-            print(f"⚠️ Error ffmpeg: {e}")
-
-        model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, _ = model.transcribe(path_ogg, beam_size=5, language="es", word_timestamps=True)
-        
-        texto_crudo = ""
-        partitura_real = []
-
-        data_wav, sr_wav = sf.read(path_wav) if os.path.exists(path_wav) else (None, 22050)
-        if data_wav is not None and len(data_wav.shape) > 1:
-            data_wav = np.mean(data_wav, axis=1)
-
-        rms_total = np.sqrt(np.mean(data_wav**2)) if (data_wav is not None and len(data_wav) > 0) else 0
-
-        for segment in segments:
-            texto_crudo += segment.text + " "
-            if hasattr(segment, 'words') and segment.words:
-                for w_info in segment.words:
-                    palabra = w_info.word.strip()
-                    inicio_ms = int(w_info.start * 1000)
-                    fin_ms = int(w_info.end * 1000)
-                    duracion_ms = max(50, fin_ms - inicio_ms)
-                    
-                    intensidad_db = 0.0
-                    if data_wav is not None and len(data_wav) > 0 and rms_total > 0:
-                        idx_ini = int(w_info.start * sr_wav)
-                        idx_fin = int(w_info.end * sr_wav)
-                        fragmento = data_wav[max(0, idx_ini):min(len(data_wav), idx_fin)]
-                        if len(fragmento) > 0:
-                            rms = np.sqrt(np.mean(fragmento**2))
-                            if rms > 0:
-                                relacion = rms / rms_total
-                                intensidad_db = round(float(20 * np.log10(max(0.01, relacion))), 2)
-                                intensidad_db = max(min(intensidad_db, 3.0), -6.0)
-
-                    partitura_real.append({
-                        "palabra": palabra,
-                        "duracion_ms": duracion_ms,
-                        "intensidad_db": intensidad_db
-                    })
-
-        texto_crudo = texto_crudo.strip()
-
-        silencios_o_ruido = ["", "you", "acias", ".", "-", "hmm", "ehh"]
-        if not texto_crudo or texto_crudo.lower() in silencios_o_ruido or len(texto_crudo) < 2:
-            await update.message.reply_text("Che, el audio salió incomprensible o con ruido. ¿Me lo repetís?")
-            return
-
-        if not partitura_real:
-            partitura_real = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto_crudo.split()]
-
-        registrar_conversacion("Usuario", texto_crudo)
-
-        if "durante el día" in texto_crudo.lower() or "escribime" in texto_crudo.lower() or "recordá" in texto_crudo.lower():
-            registrar_tarea_pendiente(texto_crudo)
-
-        # Aquí se registran estrictamente las métricas de voz extraídas al JSON
-        registrar_entrenamiento_json(path_wav if os.path.exists(path_wav) else path_ogg, texto_crudo, partitura_real)
-
-        texto_limpio, canal_salida, partitura_respuesta = generar_respuesta_y_partitura_ia(texto_crudo)
-        registrar_conversacion("LeandroBot", texto_limpio)
-        registrar_entrenamiento_chat(texto_crudo, texto_limpio)
-
-        try:
-            subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
-            subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
-            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS, MEMORIA_TAREAS, TXT_FILE, DATASET_ENTRENAMIENTO], check=True)
-            subprocess.run(["git", "commit", -m, f"🧠 Auto-entrenamiento métricas voz: {update.message.message_id}"], check=True)
-            subprocess.run(["git", "push"], check=True)
-        except Exception as git_err:
-            print(f"⚠️ Git push omitido: {git_err}")
-
-        if canal_salida in ["texto", "ambos"]:
-            await update.message.reply_text(f"💬 *Respuesta por escrito:*\n\n{texto_limpio}", parse_mode="Markdown")
-
-        if canal_salida in ["voz", "ambos"]:
-            ogg_f = "resp.ogg"
-            sintetizar_con_partitura_de_ia(texto_limpio, partitura_respuesta, ogg_f)
-            
-            caption_texto = (
-                f"🎙️ *Lo que captó Whisper:*\n\"{texto_crudo}\"\n\n"
-                f"💡 _Si le pifió, respondé con:_\n`/corregir [texto real]`"
-            )
-            with open(ogg_f, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption=caption_texto, parse_mode="Markdown")
-            if os.path.exists(ogg_f): os.remove(ogg_f)
-
-
-def main():
-    if not TOKEN:
-        print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
-        return
-
-    print("🧹 Limpiando webhooks...")
-    try:
-        requests.get(f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/deleteWebhook?drop_pending_updates=true", timeout=10)
-    except Exception as e:
-        print(f"⚠️ Webhook: {e}")
-
-    print("🚀 Iniciando Bot Híbrido con Métricas...")
-    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
-    app = Application.builder().token(TOKEN).request(request_config).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("corregir", corregir_transcripcion))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
-
-    while True:
-        try:
-            print("🔄 [POLLING]: Escuchando eventos...")
-            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
-        except Exception as e:
-            print(f"⚠️ Reconectando en 5 segundos...")
-            time.sleep(5)
-
-
-if __name__ == "__main__":
-    main()
+            await update.message.reply_text(f"✅ ¡Aprendido!\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real
