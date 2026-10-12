@@ -1215,5 +1215,29 @@
             }
         ],
         "total_entrenamientos": 18
+    },
+    {
+        "timestamp": "2026-10-12 02:24:20",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1115.wav",
+        "texto": "¿Qué dijiste, perdón?",
+        "partitura_metrica": [
+            {
+                "palabra": "¿Qué",
+                "duracion_ms": 840,
+                "intensidad_db": 0.02
+            },
+            {
+                "palabra": "dijiste,",
+                "duracion_ms": 580,
+                "intensidad_db": -0.2
+            },
+            {
+                "palabra": "perdón?",
+                "duracion_ms": 300,
+                "intensidad_db": 2.72
+            }
+        ],
+        "total_entrenamientos": 19
     }
 ]
