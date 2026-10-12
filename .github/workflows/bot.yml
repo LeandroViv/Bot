@@ -1,7 +1,7 @@
 name: Ejecutar LeandroBot
 on:
   schedule:
-    - cron: '*/30 * * * *' # O el horario que uses
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -46,6 +46,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           VOZ_ESTILO: ${{ secrets.VOZ_ESTILO }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
         run: python procesar.py
