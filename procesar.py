@@ -175,7 +175,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         "}"
     )
     
-    # 1. Intentar con Gemini usando el modelo actualizado
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
@@ -192,7 +191,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 contents_payload.append(f"Mensaje del oyente: \"{prompt_usuario}\"")
 
                 res = client.models.generate_content(
-                    model="gemini-3.8-flash",  # Modelo actualizado para evitar el error 404
+                    model="gemini-3.8-flash",  # Modelo actualizado para evitar 404
                     contents=contents_payload,
                     config=genai.types.GenerateContentConfig(
                         system_instruction=system_prompt,
@@ -215,7 +214,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     print(f"⚠️ Error con Gemini: {e}")
                     break
 
-    # 2. Respaldo con Ollama local (si está disponible en el entorno)
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
         print(f"🦙 [IA CONECTADA]: Intentando usar Llama local (Ollama) en {OLLAMA_HOST}...")
         
@@ -245,12 +243,11 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
             if res_local.status_code == 200:
                 respuesta_raw = str(res_local.json().get("message", {}).get("content", "")).strip()
         except Exception as ex_local:
-            print(f"⚠️ Aviso: Llama local no disponible en el runner ({ex_local}). Usando texto dinámico de respaldo.")
+            print(f"⚠️ Aviso: Llama local no disponible en el runner ({ex_local}).")
 
     if not isinstance(respuesta_raw, str):
         respuesta_raw = str(respuesta_raw or "")
 
-    # Limpieza de bloques markdown por si la IA devuelve ```json ... ```
     respuesta_raw = re.sub(r'^```json\s*', '', respuesta_raw, flags=re.IGNORECASE)
     respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
     respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
@@ -264,8 +261,6 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
         return texto, partitura
     except Exception as parse_err:
         print(f"⚠️ Error parseando JSON de la IA ({parse_err}). Respuesta cruda fue: {respuesta_raw}")
-        
-        # Fallback dinámico inteligente basado en lo que mandó el usuario (evita que responda siempre lo mismo)
         if prompt_usuario and len(prompt_usuario) > 3:
             texto_fallback = f"Che, estuve analizando lo que tiraste sobre '{prompt_usuario[:30]}...', sintonizamos en un rato."
         else:
