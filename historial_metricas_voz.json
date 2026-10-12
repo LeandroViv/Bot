@@ -1546,5 +1546,39 @@
             }
         ],
         "total_entrenamientos": 17
+    },
+    {
+        "timestamp": "2026-10-12 06:49:23",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1147.ogg",
+        "texto": "¿Cómo estar tiene esta saída?",
+        "partitura_metrica": [
+            {
+                "palabra": "¿Cómo",
+                "duracion_ms": 1120,
+                "intensidad_db": -3.47
+            },
+            {
+                "palabra": "estar",
+                "duracion_ms": 240,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "tiene",
+                "duracion_ms": 440,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "esta",
+                "duracion_ms": 480,
+                "intensidad_db": -5.44
+            },
+            {
+                "palabra": "saída?",
+                "duracion_ms": 340,
+                "intensidad_db": -3.41
+            }
+        ],
+        "total_entrenamientos": 18
     }
 ]

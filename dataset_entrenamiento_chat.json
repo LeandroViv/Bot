@@ -46,5 +46,11 @@
         "usuario": "el que anda, su amigo, está ahí",
         "bot": "Che, te capté perfecto, sintonizamos en un toque.",
         "id_entrenamiento": 8
+    },
+    {
+        "timestamp": "2026-10-12 06:49:53",
+        "usuario": "¿Cómo estar tiene esta saída?",
+        "bot": "Fijate, che, no sé nada de la saída de este celular, pero sos sabés que es un aparato muy complicado. Vení a verme y le aclarás las cosas.",
+        "id_entrenamiento": 9
     }
 ]
