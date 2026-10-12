@@ -10,5 +10,11 @@
         "usuario": "Gracias, y acordate, bueno, durante el día, seguir buscando lo que encontrás, por favor.  Bueno, gracias.",
         "bot": "Che, te escuché perfecto, acá sintonizamos de nuevo.",
         "id_entrenamiento": 2
+    },
+    {
+        "timestamp": "2026-10-12 04:45:22",
+        "usuario": "Bueno, durante el día me puedes hacer esa búsqueda, por favor, gracias.",
+        "bot": "Dale, quedate tranquilo, che. Durante el día me pongo a rastrear data fresca sobre agentes y LLM en la web, y en cuanto cace algo piola te lo mando de una. Descansá tranquilo.",
+        "id_entrenamiento": 3
     }
 ]

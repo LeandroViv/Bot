@@ -3,5 +3,10 @@
         "timestamp": "2026-10-12 04:14:28",
         "instruccion": "Gracias, y acordate, bueno, durante el día, seguir buscando lo que encontrás, por favor.  Bueno, gracias.",
         "pendiente": true
+    },
+    {
+        "timestamp": "2026-10-12 04:45:04",
+        "instruccion": "Bueno, durante el día me puedes hacer esa búsqueda, por favor, gracias.",
+        "pendiente": true
     }
 ]
