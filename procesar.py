@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo para Webhooks: procesar.py
+Script definitivo sin Coqui XTTS (Gemini TTS + Edge-TTS): procesar.py
 """
 
 import asyncio
@@ -22,7 +22,7 @@ else:
     print("⚠️ [HUGGING FACE]: No se encontró HF_TOKEN en el entorno.")
 # -------------------------------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con arquitectura WEBHOOK...")
+print("🚀 [INIT]: Inicializando LeandroBot (Whisper + Gemini/Llama + Gemini TTS / Edge-TTS)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -36,28 +36,18 @@ from telegram.ext import (
 from faster_whisper import WhisperModel
 
 TXT_FILE = "conversaciones.txt"
-REGISTRO_METRICAS = "historial_metricas_voz.json"
 MEMORIA_TAREAS = "memoria_tareas.json"
-DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CARPETA_MUESTRAS = "muestras_voz"
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
-for f_path, default_val in [
-    (REGISTRO_METRICAS, []),
-    (MEMORIA_TAREAS, []),
-    (DATASET_ENTRENAMIENTO, []),
-]:
-    if not os.path.exists(f_path):
-        with open(f_path, "w", encoding="utf-8") as f:
-            json_lib.dump(default_val, f, indent=4, ensure_ascii=False)
+if not os.path.exists(MEMORIA_TAREAS):
+    with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
+        json_lib.dump([], f, indent=4, ensure_ascii=False)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
-PORT = int(os.environ.get("PORT", "8443"))
 
-CHAT_ID_ACTIVO = None
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
 
@@ -90,22 +80,8 @@ def registrar_conversacion(remitente, texto):
     except Exception as e:
         print(f"⚠️ Error conversacion: {e}")
 
-def registrar_tarea_pendiente(instruccion):
-    try:
-        with open(MEMORIA_TAREAS, "r", encoding="utf-8") as f:
-            tareas = json_lib.load(f)
-        tareas.append({"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "instruccion": instruccion, "pendiente": True})
-        with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
-            json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
-        print(f"📒 [MEMORIA TAREAS]: Tarea guardada: {instruccion}")
-    except Exception as e:
-        print(f"⚠️ Error tarea: {e}")
-
-def generar_texto_ia(prompt_usuario, es_proactivo=False):
-    p = prompt_usuario
-    if es_proactivo:
-        p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
-
+def generar_texto_ia(prompt_usuario):
+    global GEMINI_BLOQUEADO_POR_CUOTA
     respuesta = ""
 
     # 1. Gemini
@@ -114,7 +90,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
             print("🤖 [IA GEMINI]: Generando respuesta...")
             res = client.models.generate_content(
                 model="gemini-2.0-flash",
-                contents=p,
+                contents=prompt_usuario,
                 config=dict(system_instruction=SYSTEM_PROMPT, response_mime_type="application/json")
             )
             raw = (res.text or "").strip()
@@ -130,16 +106,16 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-            print(f"⚠️ Gemini falló, conmutando a Ollama (Llama): {e}")
+            print(f"⚠️ Gemini falló, conmutando a Llama: {e}")
 
-    # 2. Fallback estricto a Llama (Ollama local)
+    # 2. Fallback a Llama local (Ollama)
     if not respuesta:
         print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...")
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": p}
+                {"role": "user", "content": prompt_usuario}
             ],
             "format": "json",
             "options": {"num_ctx": 4096, "temperature": 0.7},
@@ -153,7 +129,6 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
                 content_str = re.sub(r'^```json\s*', '', content_str, flags=re.IGNORECASE)
                 content_str = re.sub(r'^```\s*', '', content_str)
                 content_str = re.sub(r'\s*```$', '', content_str).strip()
-                
                 data = json_lib.loads(content_str)
                 texto = data.get("texto_completo")
                 if texto and str(texto).strip():
@@ -169,8 +144,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
         respuestas_radio = [
             "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
             "Qué hacés che, de una. Anotado acá en la consola de la radio.",
-            "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire.",
-            "Posta che, ya lo fiché en la memoria de la cabina. ¡Un abrazo grande!"
+            "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire."
         ]
         respuesta = random.choice(respuestas_radio)
 
@@ -185,7 +159,6 @@ VOZ_BASE_NOMBRE = os.environ.get("VOZ_BASE", "Charon")
 EDGE_VOICE = os.environ.get("EDGE_VOICE", "es-AR-TomasNeural")
 EDGE_PITCH = os.environ.get("EDGE_PITCH", "-4Hz")
 EDGE_RATE = os.environ.get("EDGE_RATE", "-5%")
-EDGE_VOLUME = os.environ.get("EDGE_VOLUME", "+10%")
 
 def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
     if not client:
@@ -210,14 +183,14 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         proc.communicate(input=wav_bytes)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Error sintetizando con Gemini TTS: {e}")
+        print(f"⚠️ Gemini TTS falló: {e}")
         return False
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
     try:
         import edge_tts
         communicate = edge_tts.Communicate(
-            texto, voice=EDGE_VOICE, pitch=EDGE_PITCH, rate=EDGE_RATE, volume=EDGE_VOLUME
+            texto, voice=EDGE_VOICE, pitch=EDGE_PITCH, rate=EDGE_RATE
         )
         mp3_tmp = "tmp_edge.mp3"
         await communicate.save(mp3_tmp)
@@ -229,85 +202,30 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Aviso edge-tts: {e}")
+        print(f"⚠️ Edge-TTS falló: {e}")
         return False
 
 async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
     if client:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
+                print("🎙️ [AUDIO]: Audio sintetizado con Gemini TTS.")
                 return True
         except Exception:
             pass
-    print("🎙️ [EDGE-TTS]: Conmutando a Edge-TTS neuronal...")
+    
+    print("🎙️ [EDGE-TTS]: Conmutando a Edge-TTS neuronal argentino...")
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
-# Motor Proactivo Autónomo
-async def bucle_proactivo_autonomo(bot_app: Application):
-    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...")
-    await asyncio.sleep(15)
-
-    while True:
-        try:
-            await asyncio.sleep(180)
-            global CHAT_ID_ACTIVO
-            if not CHAT_ID_ACTIVO:
-                continue
-
-            tarea_pendiente = None
-            try:
-                with open(MEMORIA_TAREAS, "r", encoding="utf-8") as f:
-                    tareas = json_lib.load(f)
-                for t in tareas:
-                    if t.get("pendiente"):
-                        tarea_pendiente = t
-                        t["pendiente"] = False
-                        break
-                with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
-                    json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
-            except Exception:
-                pass
-
-            motivo = f"Cumpliendo lo que me pediste: '{tarea_pendiente['instruccion']}'" if tarea_pendiente else "Reflexión nocturna de radio FM espontánea"
-            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo: {motivo}")
-
-            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
-            registrar_conversacion("Leandro (Proactivo)", texto_spont)
-
-            await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
-
-            ogg_f = "proactivo.ogg"
-            if await sintetizar_voz(texto_spont, ogg_f):
-                with open(ogg_f, "rb") as vf:
-                    await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
-                if os.path.exists(ogg_f):
-                    os.remove(ogg_f)
-
-        except Exception as e:
-            print(f"⚠️ Error en bucle proactivo: {e}")
-            await asyncio.sleep(10)
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID_ACTIVO
     if update.message:
-        CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter. Webhook activado.")
-
-async def corregir(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    corr = " ".join(context.args).strip()
-    if update.message:
-        await update.message.reply_text(f"✅ ¡Entendido che! Corrección guardada: '{corr}'.")
+        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter. Chat sintonizado correctamente.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
-    global CHAT_ID_ACTIVO
-    CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto recibido]"
     registrar_conversacion("Usuario", u_text)
-
-    if any(k in u_text.lower() for k in ["durante el día", "escribime", "recordá", "acordate"]):
-        registrar_tarea_pendiente(u_text)
 
     resp = generar_texto_ia(u_text)
     registrar_conversacion("LeandroBot", resp)
@@ -321,12 +239,9 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             os.remove(ogg_f)
 
 async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID_ACTIVO
     async with lock_voz:
         if not update.message:
             return
-        CHAT_ID_ACTIVO = update.message.chat_id
-
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
         path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
@@ -335,14 +250,9 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("🎙️ [AUDIO]: Transcribiendo nota de voz con Faster-Whisper...")
         model = WhisperModel("base", device="cpu", compute_type="int8")
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
-        texto_crudo = " ".join([s.text for s in segments]).strip()
+        texto_crudo = " ".join([s.text for s in segments]).strip() or "Che, te mandé un audio."
 
-        if not texto_crudo:
-            texto_crudo = "Che, te mandé un audio pero no te capté bien."
-
-        print(f"📝 [WHISPER TRANSCRIBIÓ]: {texto_crudo}")
         registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
-
         resp = generar_texto_ia(texto_crudo)
         registrar_conversacion("LeandroBot", resp)
         await update.message.reply_text(resp)
@@ -362,17 +272,16 @@ def asegurar_e_iniciar_ollama():
     try:
         res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
         if res.status_code == 200:
-            print("✅ [OLLAMA]: El servicio ya está activo y respondiendo.")
+            print("✅ [OLLAMA]: El servicio ya está activo.")
             return
     except Exception:
-        print("⚠️ [OLLAMA]: No se detectó servicio activo. Iniciando configuración automática...")
+        print("⚠️ [OLLAMA]: Iniciando demonio en segundo plano...")
 
     try:
         subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(4)
-        print("✅ [OLLAMA]: Demonio iniciado en segundo plano.")
     except Exception as e:
-        print(f"⚠️ No se pudo iniciar Ollama automáticamente: {e}")
+        print(f"⚠️ Error iniciando Ollama: {e}")
 
 def main():
     if not TOKEN:
@@ -381,36 +290,21 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Polling anticorte)...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
-    async def post_init(application: Application):
-        print("⚡ [PROACTIVO]: Registrando bucle autónomo en segundo plano...")
-        asyncio.create_task(bucle_proactivo_autonomo(application))
-
-    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        print(f"⚠️ [Telegram Error]: {context.error}")
-
-    app = Application.builder().token(TOKEN).request(request_config).post_init(post_init).build()
-    app.add_error_handler(error_handler)
+    app = Application.builder().token(TOKEN).request(request_config).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("corregir", corregir))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
-    if WEBHOOK_URL:
-        webhook_path = f"webhook/{TOKEN}"
-        url_completa = f"{WEBHOOK_URL.rstrip('/')}/{webhook_path}"
-        print(f"🌐 [WEBHOOK]: Levantando webhook en {url_completa} (Puerto {PORT})...")
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path=webhook_path,
-            webhook_url=url_completa,
-            drop_pending_updates=True
-        )
-    else:
-        print("🔄 [POLLING]: WEBHOOK_URL no definida. Iniciando polling...")
-        app.run_polling(drop_pending_updates=True)
+    while True:
+        try:
+            print("🔄 [POLLING]: Escuchando eventos de Telegram...")
+            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        except Exception as e:
+            print(f"⚠️ Conexión interrumpida ({e}). Reconectando en 5 segundos...")
+            time.sleep(5)
 
 if __name__ == "__main__":
     main()
