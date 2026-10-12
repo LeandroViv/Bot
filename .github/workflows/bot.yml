@@ -1,58 +1,30 @@
-name: Leandro Bot 24/7
-
+name: Ejecutar LeandroBot
 on:
   schedule:
-    - cron: '0 */4 * * *'
-  push:
-    branches:
-      - main
-      - master
+    - cron: '*/30 * * * *' # O el horario que uses
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
-      - name: Instalar FFmpeg y dependencias del sistema
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+      - name: Instalar FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Instalar Ollama y descargar modelo local
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          nohup ollama serve > ollama.log 2>&1 &
-          sleep 5
-          ollama pull llama3.2
+      - name: Instalar Dependencias
+        run: pip install -r requirements.txt
 
-      - name: Instalar dependencias de Python y Clonador Liviano
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests python-telegram-bot faster-whisper google-genai soundfile torch transformers scipy
-
-      - name: Ejecutar el Bot
+      - name: Correr LeandroBot con Secrets
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: ${{ secrets.HF_DATASET_REPO }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VOZ_ESTILO: ${{ secrets.VOZ_ESTILO }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
-        run: |
-          python procesar.py
+        run: python procesar.py
