@@ -997,5 +997,54 @@
             }
         ],
         "total_entrenamientos": 16
+    },
+    {
+        "timestamp": "2026-10-12 01:30:08",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1111.wav",
+        "texto": "A ver, decimito, yo me llamo el voto.",
+        "partitura_metrica": [
+            {
+                "palabra": "A",
+                "duracion_ms": 740,
+                "intensidad_db": -3.9
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 200,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "decimito,",
+                "duracion_ms": 780,
+                "intensidad_db": 1.39
+            },
+            {
+                "palabra": "yo",
+                "duracion_ms": 380,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 460,
+                "intensidad_db": 1.44
+            },
+            {
+                "palabra": "llamo",
+                "duracion_ms": 540,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 740,
+                "intensidad_db": -2.46
+            },
+            {
+                "palabra": "voto.",
+                "duracion_ms": 680,
+                "intensidad_db": -0.32
+            }
+        ],
+        "total_entrenamientos": 17
     }
 ]
