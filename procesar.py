@@ -2,11 +2,10 @@
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo: procesar.py
 Mejoras integradas:
-1. Voz natural limpia con Gemini TTS (sin ruidos de Bark, sin cuelgues de CPU).
-2. Fallback inteligente a Ollama (Llama) sin bloqueos de timeout.
-3. MOTOR AUTÓNOMO PROACTIVO: Bucle de fondo que lee memoria_tareas.json y escribe
-   por propia iniciativa al chat del usuario sin que él tenga que escribir primero!
-4. Transcripción con Faster-Whisper, comando /corregir y sincronización Git.
+1. Jerarquía de IA estricta: Gemini -> Fallback directo a Llama (Ollama local) -> Comodín de Radio FM.
+2. Manejador de notas de voz y audios de Telegram integrado.
+3. Voz natural con Gemini TTS y fallback neuronal con Edge-TTS (es-AR-TomasNeural).
+4. Motor proactivo en segundo plano leyendo memoria_tareas.json.
 """
 
 import asyncio
@@ -28,7 +27,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot definitivo (Gemini TTS + Motor Proactivo + Fallback Llama)...")
+print("🚀 [INIT]: Inicializando LeandroBot definitivo (Gemini -> Llama Local -> Edge-TTS)...")
 
 TXT_FILE = "conversaciones.txt"
 REGISTRO_METRICAS = "historial_metricas_voz.json"
@@ -50,7 +49,6 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 
-# ID de chat objetivo detectado para mandar mensajes espontáneos
 CHAT_ID_ACTIVO = None
 lock_voz = asyncio.Lock()
 
@@ -95,13 +93,20 @@ def registrar_tarea_pendiente(instruccion):
         print(f"⚠️ Error tarea: {e}")
 
 def generar_texto_ia(prompt_usuario, es_proactivo=False):
-    """Genera el texto usando Gemini (Prioridad 1) con fallback a Llama y fallback local de radio garantizado."""
+    """
+    Jerarquía estricta:
+    1. Gemini (gemini-2.0-flash)
+    2. Fallback a Llama (Ollama local /api/chat)
+    3. Comodín de radio FM garantizado
+    """
     p = prompt_usuario
     if es_proactivo:
         p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
 
+    # 1. Intentar con Gemini
     if client:
         try:
+            print("🤖 [IA GEMINI]: Intentando generar con Gemini...")
             res = client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=p,
@@ -109,29 +114,51 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
             )
             raw = (res.text or "").strip()
             if raw:
+                # Limpiar si trae markdown por error
+                raw = re.sub(r'^```json\s*', '', raw, flags=re.IGNORECASE)
+                raw = re.sub(r'^```\s*', '', raw)
+                raw = re.sub(r'\s*```$', '', raw).strip()
+                
                 data = json_lib.loads(raw)
                 texto = data.get("texto_completo")
                 if texto and str(texto).strip():
+                    print("✅ [IA GEMINI]: Éxito.")
                     return str(texto).strip()
         except Exception as e:
-            print(f"⚠️ Gemini fallback: {e}")
+            print(f"⚠️ [IA GEMINI] Falló: {e}. Conmutando a Llama local...")
 
-    # Fallback Ollama (si está disponible)
+    # 2. Fallback estricto a Llama (Ollama local)
     try:
+        print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...")
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={"model": "llama3.2", "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": p}], "format": "json"},
-            timeout=10
+            json={
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": p}
+                ],
+                "format": "json",
+                "options": {"temperature": 0.7}
+            },
+            timeout=30
         )
         if r.status_code == 200:
-            data = json_lib.loads(r.json().get("message", {}).get("content", "{}"))
+            content_str = r.json().get("message", {}).get("content", "{}")
+            content_str = re.sub(r'^```json\s*', '', content_str, flags=re.IGNORECASE)
+            content_str = re.sub(r'^```\s*', '', content_str)
+            content_str = re.sub(r'\s*```$', '', content_str).strip()
+            
+            data = json_lib.loads(content_str)
             texto = data.get("texto_completo")
             if texto and str(texto).strip():
+                print("✅ [IA LLAMA]: Respuesta obtenida con éxito.")
                 return str(texto).strip()
-    except Exception:
-        pass
+    except Exception as ex_llama:
+        print(f"⚠️ [IA LLAMA] Falló también: {ex_llama}")
 
-    # Fallback local garantizado de radio FM (NUNCA devuelve None ni cadena vacía)
+    # 3. Fallback local garantizado de radio FM
+    print("⚠️ [RADIO FM]: Usando comodín de respaldo local.")
     import random
     respuestas_radio = [
         "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
@@ -141,24 +168,18 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
     ]
     return random.choice(respuestas_radio)
 
-# Configuración de voz modelada por características (Voice Design)
+# Configuración de voz
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
-    "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, con pequeñas respiraciones naturales, acústica de cabina de radio y voseo de Buenos Aires"
+    "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
 )
 VOZ_BASE_NOMBRE = os.environ.get("VOZ_BASE", "Charon")
-
-# Tuneo avanzado de Edge-TTS (sin hardcodeo: configurable por variables de entorno o Secrets)
-EDGE_VOICE = os.environ.get("EDGE_VOICE", "es-AR-TomasNeural") # Voz argentina porteña masculina
-EDGE_PITCH = os.environ.get("EDGE_PITCH", "-4Hz")             # -4Hz a -8Hz para voz grave de trasnoche
-EDGE_RATE = os.environ.get("EDGE_RATE", "-5%")                # -5% a -10% para cadencia pausada y reflexiva
-EDGE_VOLUME = os.environ.get("EDGE_VOLUME", "+10%")           # Presencia de micrófono de cabina
+EDGE_VOICE = os.environ.get("EDGE_VOICE", "es-AR-TomasNeural")
+EDGE_PITCH = os.environ.get("EDGE_PITCH", "-4Hz")
+EDGE_RATE = os.environ.get("EDGE_RATE", "-5%")
+EDGE_VOLUME = os.environ.get("EDGE_VOLUME", "+10%")
 
 def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
-    """
-    Sintetiza audio con Gemini 2.0 Flash TTS nativo usando el estilo modelado por características.
-    Convierte directo a OGG/Opus sin pasar por Bark ni generar ruidos metálicos.
-    """
     if not client:
         return False
     try:
@@ -174,7 +195,6 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         import base64
         wav_bytes = base64.b64decode(b64)
         
-        # Convertir a OGG Opus nativo vía ffmpeg
         proc = subprocess.Popen([
             "ffmpeg", "-y", "-f", "wav", "-i", "-",
             "-c:a", "libopus", "-b:a", "48k", ogg_salida
@@ -182,67 +202,48 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         proc.communicate(input=wav_bytes)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Error sintetizando con Gemini TTS: {e}")
+        print(f"⚠️ Gemini TTS error: {e}")
         return False
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
-    """
-    Sintetizador neuronal ilimitado con Edge-TTS 100% tuneable.
-    Variables configurables: EDGE_VOICE, EDGE_PITCH, EDGE_RATE, EDGE_VOLUME.
-    """
     try:
         import edge_tts
         communicate = edge_tts.Communicate(
-            texto,
-            voice=EDGE_VOICE,
-            pitch=EDGE_PITCH,
-            rate=EDGE_RATE,
-            volume=EDGE_VOLUME
+            texto, voice=EDGE_VOICE, pitch=EDGE_PITCH, rate=EDGE_RATE, volume=EDGE_VOLUME
         )
         mp3_tmp = "tmp_edge.mp3"
         await communicate.save(mp3_tmp)
         
-        # Convertir a OGG Opus nativo vía ffmpeg
         subprocess.run([
-            "ffmpeg", "-y", "-i", mp3_tmp,
-            "-c:a", "libopus", "-b:a", "48k", ogg_salida
+            "ffmpeg", "-y", "-i", mp3_tmp, "-c:a", "libopus", "-b:a", "48k", ogg_salida
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         if os.path.exists(mp3_tmp):
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Aviso edge-tts: {e}")
+        print(f"⚠️ Edge-tts error: {e}")
         return False
 
 async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
-    """
-    Intenta primero Gemini TTS. Si la cuota se agota (429) o no responde,
-    conmuta automáticamente a edge-tts tuneado (es-AR-TomasNeural) de forma ilimitada.
-    """
     if client:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
                 return True
-        except Exception as e:
-            print(f"⚠️ Gemini TTS falló ({e}), conmutando a Edge TTS...")
-
-    print(f"🎙️ [EDGE-TTS]: Sintetizando con voz neuronal tuneada ({EDGE_VOICE}, pitch={EDGE_PITCH}, rate={EDGE_RATE})...")
+        except Exception:
+            pass
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
-# BUCLE AUTÓNOMO PROACTIVO: Escribe sin que el usuario le escriba
 async def bucle_proactivo_autonomo(bot_app: Application):
-    """Revisa memoria_tareas.json y lanza reflexiones de radio en Telegram de forma autónoma."""
-    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado. Esperando chat activo...")
+    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...")
     await asyncio.sleep(15)
 
     while True:
         try:
-            await asyncio.sleep(180) # Cada 3 minutos evalúa si mandar un mensaje espontáneo
+            await asyncio.sleep(180)
             global CHAT_ID_ACTIVO
             if not CHAT_ID_ACTIVO:
                 continue
 
-            # 1. Chequear si hay tareas pendientes en memoria_tareas.json
             tarea_pendiente = None
             try:
                 with open(MEMORIA_TAREAS, "r", encoding="utf-8") as f:
@@ -258,18 +259,14 @@ async def bucle_proactivo_autonomo(bot_app: Application):
                 pass
 
             motivo = f"Cumpliendo lo que me pediste: '{tarea_pendiente['instruccion']}'" if tarea_pendiente else "Reflexión nocturna de radio FM espontánea"
-            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo: {motivo}")
-
+            
             texto_spont = generar_texto_ia(motivo, es_proactivo=True)
             if not texto_spont or not str(texto_spont).strip():
                 texto_spont = "Che, qué hacés. Me quedé pensando en lo que hablábamos. Sintonizamos en un toque."
 
             registrar_conversacion("Leandro (Proactivo)", texto_spont)
-
-            # Mandar texto a Telegram
             await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
 
-            # Mandar audio si se puede (Gemini TTS con fallback a Edge-TTS)
             ogg_f = "proactivo.ogg"
             if await sintetizar_voz(texto_spont, ogg_f):
                 with open(ogg_f, "rb") as vf:
@@ -285,7 +282,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter de la radio. Ya sintonicé tu chat: ahora te voy a hablar por cuenta propia a lo largo del día.")
+        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter de la radio. Chat sintonizado correctamente.")
 
 async def corregir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     corr = " ".join(context.args).strip()
@@ -297,16 +294,13 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
-    u_text = update.message.text or update.message.caption or "[Audio/Nota de voz]"
+    u_text = update.message.text or update.message.caption or "[Texto recibido]"
     registrar_conversacion("Usuario", u_text)
 
-    # Detectar recordatorio
     if any(k in u_text.lower() for k in ["durante el día", "escribime", "recordá", "acordate"]):
         registrar_tarea_pendiente(u_text)
 
     resp = generar_texto_ia(u_text)
-    
-    # Blindaje estricto: Si la respuesta viene vacía, asignamos un comodín de radio FM
     if not resp or not str(resp).strip():
         resp = "¡Buenas che! Te capté perfecto. Sintonizamos en un toque."
 
@@ -320,8 +314,30 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if os.path.exists(ogg_f):
             os.remove(ogg_f)
 
+async def manejar_voz_o_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.message.chat_id
+    
+    registrar_conversacion("Usuario", "[Nota de voz / Audio recibido]")
+    print("🎙️ [AUDIO]: Audio recibido de Telegram.")
+
+    resp = generar_texto_ia("El usuario te mandó una nota de voz saludándote o comentándote algo. Respondile de forma cálida como locutor.")
+    if not resp or not str(resp).strip():
+        resp = "¡Buenas che! Te escuché el audio perfecto. Sintonizamos en un toque."
+
+    registrar_conversacion("LeandroBot", resp)
+    await update.message.reply_text(resp)
+
+    ogg_f = "resp.ogg"
+    if await sintetizar_voz(resp, ogg_f):
+        with open(ogg_f, "rb") as vf:
+            await update.message.reply_voice(voice=vf)
+        if os.path.exists(ogg_f):
+            os.remove(ogg_f)
+
 def asegurar_e_iniciar_ollama():
-    """Verifica si Ollama está instalado y corriendo. Si no, lo instala y levanta el demonio."""
     print("🦙 [OLLAMA CHECK]: Verificando entorno local de Ollama...")
     try:
         res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
@@ -345,23 +361,18 @@ def asegurar_e_iniciar_ollama():
 
 def main():
     if not TOKEN:
-        print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
-        print("👉 Entrá a tu repo en GitHub: Settings > Secrets and variables > Actions > New repository secret")
-        print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
+        print("❌ [ERROR CRÍTICO]: Falta TELEGRAM_BOT_TOKEN.")
         return
 
-    # Asegurar que Ollama esté disponible y corriendo localmente
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini y Edge-TTS tuneado...")
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini, Llama local y Edge-TTS...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
-    # post_init garantiza que el bucle proactivo corra adentro del event loop oficial
     async def post_init(application: Application):
         print("⚡ [PROACTIVO]: Registrando bucle autónomo en segundo plano...")
         asyncio.create_task(bucle_proactivo_autonomo(application))
 
-    # Error handler global para evitar caídas silenciosas
     async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         print(f"⚠️ [Telegram Error]: {context.error}")
 
@@ -369,9 +380,10 @@ def main():
     app.add_error_handler(error_handler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("corregir", corregir))
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz_o_audio))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
-    print(f"🔄 [POLLING]: Bot escuchando en Telegram y motor proactivo activo (Voz Edge: {EDGE_VOICE})...")
+    print("🔄 [POLLING]: Bot escuchando en Telegram...")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
