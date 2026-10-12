@@ -659,5 +659,209 @@
             }
         ],
         "total_entrenamientos": 14
+    },
+    {
+        "timestamp": "2026-10-12 01:18:34",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1107.wav",
+        "texto": "Te quería decirlo de si durante el día sin que yo te escriba, me muestres alguna cosa  interesante que descubrí en la web, me dijiste que lo iba a hacer y no me lo enviaste,  eso quería decirte, gracias.",
+        "partitura_metrica": [
+            {
+                "palabra": "Te",
+                "duracion_ms": 561,
+                "intensidad_db": -1.94
+            },
+            {
+                "palabra": "quería",
+                "duracion_ms": 280,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "decirlo",
+                "duracion_ms": 660,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 160,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 340,
+                "intensidad_db": -2.73
+            },
+            {
+                "palabra": "durante",
+                "duracion_ms": 300,
+                "intensidad_db": -1.35
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 320,
+                "intensidad_db": -0.02
+            },
+            {
+                "palabra": "día",
+                "duracion_ms": 240,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "sin",
+                "duracion_ms": 560,
+                "intensidad_db": -0.42
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 260,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "yo",
+                "duracion_ms": 180,
+                "intensidad_db": 0.23
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 100,
+                "intensidad_db": -3.84
+            },
+            {
+                "palabra": "escriba,",
+                "duracion_ms": 540,
+                "intensidad_db": 2.1
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 280,
+                "intensidad_db": -2.03
+            },
+            {
+                "palabra": "muestres",
+                "duracion_ms": 500,
+                "intensidad_db": 1.34
+            },
+            {
+                "palabra": "alguna",
+                "duracion_ms": 400,
+                "intensidad_db": -1.18
+            },
+            {
+                "palabra": "cosa",
+                "duracion_ms": 440,
+                "intensidad_db": 0.8
+            },
+            {
+                "palabra": "interesante",
+                "duracion_ms": 640,
+                "intensidad_db": -3.35
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 280,
+                "intensidad_db": -2.69
+            },
+            {
+                "palabra": "descubrí",
+                "duracion_ms": 440,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 260,
+                "intensidad_db": -4.88
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 100,
+                "intensidad_db": -5.66
+            },
+            {
+                "palabra": "web,",
+                "duracion_ms": 240,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 50,
+                "intensidad_db": -4.04
+            },
+            {
+                "palabra": "dijiste",
+                "duracion_ms": 360,
+                "intensidad_db": -4.74
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 140,
+                "intensidad_db": -3.21
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 380,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "iba",
+                "duracion_ms": 120,
+                "intensidad_db": -0.26
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 140,
+                "intensidad_db": -2.68
+            },
+            {
+                "palabra": "hacer",
+                "duracion_ms": 280,
+                "intensidad_db": 1.49
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 180,
+                "intensidad_db": -0.64
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 120,
+                "intensidad_db": -2.01
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 900,
+                "intensidad_db": -2.37
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 80,
+                "intensidad_db": 2.67
+            },
+            {
+                "palabra": "enviaste,",
+                "duracion_ms": 440,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 240,
+                "intensidad_db": -2.09
+            },
+            {
+                "palabra": "quería",
+                "duracion_ms": 360,
+                "intensidad_db": -4.99
+            },
+            {
+                "palabra": "decirte,",
+                "duracion_ms": 760,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "gracias.",
+                "duracion_ms": 240,
+                "intensidad_db": 0.67
+            }
+        ],
+        "total_entrenamientos": 15
     }
 ]
