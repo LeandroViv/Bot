@@ -164,6 +164,44 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         print(f"⚠️ Error sintetizando con Gemini TTS: {e}")
         return False
 
+async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
+    """
+    Fallback 100% gratuito e ilimitado usando la voz neuronal argentina Tomas (es-AR-TomasNeural).
+    No requiere API key ni cuotas diarias.
+    """
+    try:
+        import edge_tts
+        communicate = edge_tts.Communicate(texto, "es-AR-TomasNeural", pitch="-2Hz", rate="+0%")
+        mp3_tmp = "tmp_edge.mp3"
+        await communicate.save(mp3_tmp)
+        
+        # Convertir a OGG Opus nativo vía ffmpeg
+        subprocess.run([
+            "ffmpeg", "-y", "-i", mp3_tmp,
+            "-c:a", "libopus", "-b:a", "48k", ogg_salida
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        if os.path.exists(mp3_tmp):
+            os.remove(mp3_tmp)
+        return os.path.exists(ogg_salida)
+    except Exception as e:
+        print(f"⚠️ Aviso edge-tts: {e}")
+        return False
+
+async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
+    """
+    Intenta primero Gemini TTS. Si la cuota se agota (429) o no responde,
+    conmuta automáticamente a edge-tts con la voz neuronal argentina Tomas (es-AR-TomasNeural).
+    """
+    if client:
+        try:
+            if sintetizar_voz_gemini(texto, ogg_salida):
+                return True
+        except Exception as e:
+            print(f"⚠️ Gemini TTS falló ({e}), conmutando a Edge TTS...")
+
+    print("🎙️ [EDGE-TTS]: Sintetizando con voz neuronal argentina es-AR-TomasNeural...")
+    return await sintetizar_voz_edge_tts(texto, ogg_salida)
+
 # BUCLE AUTÓNOMO PROACTIVO: Escribe sin que el usuario le escriba
 async def bucle_proactivo_autonomo(bot_app: Application):
     """Revisa memoria_tareas.json y lanza reflexiones de radio en Telegram de forma autónoma."""
@@ -201,9 +239,9 @@ async def bucle_proactivo_autonomo(bot_app: Application):
             # Mandar texto a Telegram
             await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
 
-            # Mandar audio si se puede
+            # Mandar audio si se puede (Gemini TTS con fallback a Edge-TTS)
             ogg_f = "proactivo.ogg"
-            if sintetizar_voz_gemini(texto_spont, ogg_f):
+            if await sintetizar_voz(texto_spont, ogg_f):
                 with open(ogg_f, "rb") as vf:
                     await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
                 if os.path.exists(ogg_f):
@@ -237,26 +275,32 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(resp)
 
     ogg_f = "resp.ogg"
-    if sintetizar_voz_gemini(resp, ogg_f):
+    if await sintetizar_voz(resp, ogg_f):
         with open(ogg_f, "rb") as vf:
             await update.message.reply_voice(voice=vf)
         if os.path.exists(ogg_f): os.remove(ogg_f)
 
 def main():
     if not TOKEN:
-        print("❌ Falta TELEGRAM_BOT_TOKEN.")
+        print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
+        print("👉 Entrá a tu repo en GitHub: Settings > Secrets and variables > Actions > New repository secret")
+        print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
         return
+
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram y Gemini...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
-    app = Application.builder().token(TOKEN).request(request_config).build()
+
+    # post_init garantiza que el bucle proactivo corra adentro del event loop oficial
+    async def post_init(application: Application):
+        print("⚡ [PROACTIVO]: Registrando bucle autónomo en segundo plano...")
+        asyncio.create_task(bucle_proactivo_autonomo(application))
+
+    app = Application.builder().token(TOKEN).request(request_config).post_init(post_init).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("corregir", corregir))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
-    # Iniciar motor proactivo en segundo plano
-    loop = asyncio.get_event_loop()
-    loop.create_task(bucle_proactivo_autonomo(app))
-
-    print("🔄 [POLLING]: Bot y motor proactivo activos...")
+    print("🔄 [POLLING]: Bot escuchando en Telegram y motor proactivo activo...")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
