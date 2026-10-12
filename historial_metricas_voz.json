@@ -1280,5 +1280,79 @@
             }
         ],
         "total_entrenamientos": 13
+    },
+    {
+        "timestamp": "2026-10-12 05:27:13",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1136.wav",
+        "texto": "Me pones acá por escrito de nuevo los links, eso es por favor.",
+        "partitura_metrica": [
+            {
+                "palabra": "Me",
+                "duracion_ms": 640,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "pones",
+                "duracion_ms": 640,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "acá",
+                "duracion_ms": 320,
+                "intensidad_db": -4.61
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 240,
+                "intensidad_db": 0.16
+            },
+            {
+                "palabra": "escrito",
+                "duracion_ms": 520,
+                "intensidad_db": -5.39
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 880,
+                "intensidad_db": -2.89
+            },
+            {
+                "palabra": "nuevo",
+                "duracion_ms": 280,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "los",
+                "duracion_ms": 320,
+                "intensidad_db": 2.41
+            },
+            {
+                "palabra": "links,",
+                "duracion_ms": 420,
+                "intensidad_db": -3.05
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 180,
+                "intensidad_db": -5.49
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 180,
+                "intensidad_db": -5.64
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 80,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 340,
+                "intensidad_db": -2.57
+            }
+        ],
+        "total_entrenamientos": 14
     }
 ]

@@ -960,3 +960,5 @@ Y el tipo, con una cara de deprimido total, le mete:
 [2026-10-12 04:45:22] LeandroBot: Dale, quedate tranquilo, che. Durante el día me pongo a rastrear data fresca sobre agentes y LLM en la web, y en cuanto cace algo piola te lo mando de una. Descansá tranquilo.
 [2026-10-12 05:14:21] Usuario: ¿Qué tal? A ver si te entiendo ahora lo que me decís de si me cualquier cosa simplemente quiero ver si te comprendo.
 [2026-10-12 05:14:49] LeandroBot: Che, te escuché perfecto, acá sintonizamos de nuevo. Te voy a pasar los links de langchain.com y crewai.com, chusmeate y aguá, fijate, y después me contás. Te los voy a dejo acá, crewai.com y langchain.com, aguá, fijate y después me contás
+[2026-10-12 05:27:13] Usuario: Me pones acá por escrito de nuevo los links, eso es por favor.
+[2026-10-12 05:27:43] LeandroBot: Che, estuve analizando lo que tiraste sobre 'Me pones acá por escrito de nu...', sintonizamos en un rato.

@@ -22,5 +22,11 @@
         "usuario": "¿Qué tal? A ver si te entiendo ahora lo que me decís de si me cualquier cosa simplemente quiero ver si te comprendo.",
         "bot": "Che, te escuché perfecto, acá sintonizamos de nuevo. Te voy a pasar los links de langchain.com y crewai.com, chusmeate y aguá, fijate, y después me contás. Te los voy a dejo acá, crewai.com y langchain.com, aguá, fijate y después me contás",
         "id_entrenamiento": 4
+    },
+    {
+        "timestamp": "2026-10-12 05:27:43",
+        "usuario": "Me pones acá por escrito de nuevo los links, eso es por favor.",
+        "bot": "Che, estuve analizando lo que tiraste sobre 'Me pones acá por escrito de nu...', sintonizamos en un rato.",
+        "id_entrenamiento": 5
     }
 ]
