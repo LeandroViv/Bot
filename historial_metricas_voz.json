@@ -1502,5 +1502,49 @@
             }
         ],
         "total_entrenamientos": 16
+    },
+    {
+        "timestamp": "2026-10-12 06:33:47",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1144.ogg",
+        "texto": "el que anda, su amigo, está ahí",
+        "partitura_metrica": [
+            {
+                "palabra": "el",
+                "duracion_ms": 760,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 100,
+                "intensidad_db": -1.06
+            },
+            {
+                "palabra": "anda,",
+                "duracion_ms": 240,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "su",
+                "duracion_ms": 100,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "amigo,",
+                "duracion_ms": 280,
+                "intensidad_db": -3.93
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 220,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 280,
+                "intensidad_db": -5.17
+            }
+        ],
+        "total_entrenamientos": 17
     }
 ]
