@@ -32,6 +32,7 @@ from telegram.ext import (
     filters,
 )
 from faster_whisper import WhisperModel
+import edge_tts
 
 TXT_FILE = "conversaciones.txt"
 MEMORIA_TAREAS = "memoria_tareas.json"
@@ -200,7 +201,6 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
     try:
-        import edge_tts
         communicate = edge_tts.Communicate(
             texto, voice=EDGE_VOICE, pitch=EDGE_PITCH, rate=EDGE_RATE
         )
@@ -221,17 +221,12 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
     if client:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
+                print("🎙️ [AUDIO]: Sintetizado con Gemini TTS.")
                 return True
         except Exception:
             pass
+    
+    print("🎙️ [EDGE-TTS]: Usando respaldo Edge-TTS (es-AR-TomasNeural)...")
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
-# Motor Proactivo Autónomo
-async def bucle_proactivo_autonomo(bot_app: Application):
-    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...", flush=True)
-    await asyncio.sleep(15)
-
-    while True:
-        try:
-            await asyncio.sleep(180)
-            global CHAT_ID_
+# Motor Pro
