@@ -1,56 +1,59 @@
-name: Ejecutar LeandroBot (Webhook)
+name: Leandro Bot 24/7
+
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 */4 * * *'
+  push:
+    branches:
+      - main
+      - master
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Instalar FFmpeg y Node.js (Para Túnel Webhook)
+      - name: Instalar FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Instalar Ollama y descargar modelo
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
-          npm install -g localtunnel
-
-      - name: Instalar Dependencias
-        run: pip install -r requirements.txt
-
-      - name: Instalar y Levantar Ollama
-        run: |
-          curl -L https://github.com/ollama/ollama/releases/download/v0.5.7/ollama-linux-amd64.tgz -o ollama.tgz
-          sudo tar -C /usr/local -xzf ollama.tgz
+          curl -fsSL https://ollama.com/install.sh | sh
           nohup ollama serve > ollama.log 2>&1 &
-          for i in {1..30}; do
-            if curl -s http://127.0.0.1:11434/api/tags > /dev/null; then
-              break
-            fi
-            sleep 2
-          done
+          sleep 5
           ollama pull llama3.2
 
-      - name: Iniciar Túnel Webhook y Correr LeandroBot
+      - name: Instalar dependencias de Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests python-telegram-bot faster-whisper google-genai soundfile gtts edge-tts
+
+      - name: Configurar Git
+        run: |
+          git config --global user.name "Leandro Bot Action"
+          git config --global user.email "bot@actions.github.com"
+
+      - name: Ejecutar el Bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          VOZ_ESTILO: ${{ secrets.VOZ_ESTILO }}
-          OLLAMA_HOST: "http://127.0.0.1:11434"
-          PORT: 8443
-        run: |
-          echo "🌐 Creando túnel público para Webhook..."
-          SUBDOMAIN="leandrobot-runner-$RANDOM"
-          lt --port 8443 --subdomain $SUBDOMAIN > localtunnel.log 2>&1 &
-          sleep 5
-          
-          export WEBHOOK_URL="https://$SUBDOMAIN.loca.lt"
-          echo "🚀 Webhook asignado en: $WEBHOOK_URL"
-          
-          python procesar.py
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python procesar.py
