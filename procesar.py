@@ -218,7 +218,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                     break
 
     if not respuesta_raw or GEMINI_BLOQUEADO_POR_CUOTA:
-        print(f"🦙 [IA CONECTADA]: Intentando usar Llama local (Ollama) en {OLLAMA_HOST}...")
+        print(f"🦙 [IA CONECTADA]: Usando Llama local (Ollama) en {OLLAMA_HOST}...")
         
         historial_reciente = ""
         if os.path.exists(TXT_FILE):
@@ -237,16 +237,17 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_con_historial}
             ],
+            "format": "json",  # <--- FUERZA A OLLAMA A RESPONDER ESTRICTAMENTE EN JSON
             "options": {"num_ctx": 16384, "temperature": 0.7},
             "stream": False,
         }
         try:
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-            res_local = requests.post(url_llama, json=payload, timeout=30)
+            res_local = requests.post(url_llama, json=payload, timeout=60)
             if res_local.status_code == 200:
                 respuesta_raw = str(res_local.json().get("message", {}).get("content", "")).strip()
         except Exception as ex_local:
-            print(f"⚠️ Aviso: Llama local no disponible en el runner ({ex_local}).")
+            print(f"⚠️ Error conectando con Llama local: {ex_local}")
 
     if not isinstance(respuesta_raw, str):
         respuesta_raw = str(respuesta_raw or "")
@@ -255,22 +256,12 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
     respuesta_raw = re.sub(r'^```\s*', '', respuesta_raw)
     respuesta_raw = re.sub(r'\s*```$', '', respuesta_raw).strip()
 
-    try:
-        datos = json_lib.loads(respuesta_raw)
-        texto = datos.get("texto_completo", "Che, todo bien por acá.")
-        partitura = datos.get("partitura", [])
-        if not partitura:
-            raise ValueError("Partitura vacía")
-        return texto, partitura
-    except Exception as parse_err:
-        print(f"⚠️ Error parseando JSON de la IA ({parse_err}). Respuesta cruda fue: {respuesta_raw}")
-        if prompt_usuario and len(prompt_usuario) > 3:
-            texto_fallback = f"Che, estuve analizando lo que tiraste sobre '{prompt_usuario[:30]}...', sintonizamos en un rato."
-        else:
-            texto_fallback = "Che, te capté perfectamente, acá estamos al firme con la frecuencia."
-            
-        partitura_fallback = [{"palabra": w, "duracion_ms": 180, "intensidad_db": -0.5} for w in texto_fallback.split()]
-        return texto_fallback, partitura_fallback
+    datos = json_lib.loads(respuesta_raw)
+    texto = datos.get("texto_completo", "Che, todo bien por acá.")
+    partitura = datos.get("partitura", [])
+    if not partitura:
+        raise ValueError("Partitura vacía en la respuesta de la IA")
+    return texto, partitura
 
 
 def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
@@ -336,7 +327,6 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             if len(fragmento) == 0:
                 fragmento = data_timbre[:muestras_bloque]
 
-            # Fundidos cruzados (Crossfades) de 5ms para eliminar chasquidos digitales
             fade_samples = int(sr * 0.005)
             if len(fragmento) > fade_samples * 2:
                 fade_in = np.linspace(0.0, 1.0, fade_samples)
