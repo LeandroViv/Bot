@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark + Archivos Adjuntos a Gemini 3.8 + Memoria + Git Sync)...")
+print("🚀 [INIT]: Inicializando sistema híbrido definitivo (Timbre Bark Optimizado + Lectura de Correcciones + Git Sync)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -120,15 +120,17 @@ def registrar_tarea_pendiente(instruccion):
 
 def generar_respuesta_y_partitura_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
-    respuesta_raw = ""
+    respuesta_raw = []
     
     system_prompt = (
         "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
         "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
         "utilizando el voseo natural ('vós sabés', 'vení', 'fijate', 'escuchá'), lunfardo sutil y la grafía o fonética "
         "que refleje la entonación de Buenos Aires (énfasis en imperativos agudos y cadencia porteña).\n"
-        "Tenés adjuntos los archivos 'conversaciones.txt' (con el hilo histórico completo de dónde arrancamos) y 'historial_metricas_voz.json' "
-        "(con las métricas acústicas limpias). Analizá el contexto completo para comprender de dónde venimos y componé la partitura palabra por palabra.\n\n"
+        "INSTRUCCIÓN DE APRENDIZAJE CRÍTICA: Tenés adjuntos 'conversaciones.txt' y 'historial_metricas_voz.json'. "
+        "Analizá detalladamente las correcciones humanas previas ('corregido_por_usuario': true, 'texto_whisper_original' vs 'texto') "
+        "para comprender dónde Whisper suele pifiar en la interpretación fonética de los audios del usuario. "
+        "Aprendé de esas correcciones para entender con máxima precisión el sentido real de los mensajes y componé la partitura palabra por palabra.\n\n"
         "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown tipo ```json, solo el JSON crudo):\n"
         "{\n"
         "  \"texto_completo\": \"Tu respuesta hablada aquí con acentuación porteña\",\n"
@@ -142,7 +144,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
     if client and not GEMINI_BLOQUEADO_POR_CUOTA and os.path.exists(REGISTRO_METRICAS):
         for intento in range(2):
             try:
-                print("🤖 [IA]: Intentando conectar con Gemini (gemini-3.8-flash) adjuntando contexto limpio y métricas...")
+                print("🤖 [IA]: Intentando conectar con Gemini (gemini-3.8-flash) analizando correcciones y contexto...")
                 adjunto_metricas = client.files.upload(file=REGISTRO_METRICAS)
                 adjunto_conversaciones = client.files.upload(file=TXT_FILE) if os.path.exists(TXT_FILE) else None
                 
@@ -161,7 +163,7 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
                 )
                 if res and res.text:
                     respuesta_raw = res.text.strip()
-                    print("✅ [IA CONECTADA]: ¡Gemini respondió con éxito usando archivos adjuntos!")
+                    print("✅ [IA CONECTADA]: ¡Gemini respondió con éxito analizando el historial corregido!")
                     break
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -237,7 +239,9 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
             device = "cpu"
             model = model.to(device)
 
-            texto_para_bark = f"[es] {texto.strip()}"
+            # Limitamos el texto a procesar para evitar que Bark genere bolas incomprensibles de audio
+            texto_corto = texto.strip()[:180]
+            texto_para_bark = f"[es] {texto_corto}"
             inputs = processor(texto_para_bark, voice_preset="v2/es_speaker_2").to(device)
             
             with torch.no_grad():
@@ -263,15 +267,39 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
         if max_val > 0:
             data_timbre = data_timbre / max_val
 
-        audio_dinamico = data_timbre.copy()
+        audio_dinamico = np.array([], dtype=np.float32)
+        if not partitura:
+            partitura = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto.split()]
+
+        for item in partitura:
+            duracion_ms = item.get("duracion_ms", 200)
+            # Acotamos los milisegundos por palabra para evitar ecos y solapamientos
+            duracion_ms = max(100, min(int(duracion_ms), 450))
+            
+            intensidad_db = item.get("intensidad_db", 0.0)
+            intensidad_db_segura = max(min(float(intensidad_db), 2.0), -3.0)
+            mult_vol = 10 ** (intensidad_db_segura / 20.0)
+
+            muestras_bloque = int(sr * (duracion_ms / 1000.0))
+            if len(data_timbre) >= muestras_bloque:
+                start_idx = np.random.randint(0, len(data_timbre) - muestras_bloque)
+                fragmento = data_timbre[start_idx : start_idx + muestras_bloque]
+            else:
+                fragmento = data_timbre
+
+            audio_dinamico = np.concatenate((audio_dinamico, fragmento * mult_vol))
+
+        if len(audio_dinamico) < sr * 0.5:
+            audio_dinamico = data_timbre
+
         sf.write(wav_temp_final, audio_dinamico, sr)
     except Exception as e:
-        print(f"⚠️ Error procesando audio final: {e}")
+        print(f"⚠️ Error procesando partitura dinámica: {e}")
         subprocess.run(["cp", wav_temp_timbre, wav_temp_final], check=True)
 
     filtros = [
-        "highpass=f=80",
-        "lowpass=f=7500",
+        "highpass=f=100",
+        "lowpass=f=7000",
         "dynaudnorm=f=150:g=15:p=0.9",
         "volume=1.3"
     ]
@@ -289,7 +317,7 @@ def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot híbrido activo con historial limpio, adjuntos y fonética porteña.")
+    await update.message.reply_text("¡Buenas che! Bot activo aprendiendo de tus correcciones y con síntesis limpia.")
 
 
 async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -331,13 +359,15 @@ async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_T
                 json_lib.dump(historial, f, indent=4, ensure_ascii=False)
 
             try:
+                subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
+                subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
                 subprocess.run(["git", "add", REGISTRO_METRICAS], check=True)
-                subprocess.run(["git", "commit", "-m", f"✏️ Corrección humana transcripción: {texto_corregido[:30]}..."], check=True)
+                subprocess.run(["git", "commit", "-m", f"✏️ Corrección humana de transcripción registrada: {texto_corregido[:30]}..."], check=True)
                 subprocess.run(["git", "push"], check=True)
             except Exception as e_git:
                 print(f"⚠️ Error al pushear corrección: {e_git}")
 
-            await update.message.reply_text(f"✅ ¡Entendido! Registrada la corrección:\n\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"\n\n🧠 *Guardado en dataset y sincronizado en Git.*", parse_mode="Markdown")
+            await update.message.reply_text(f"✅ ¡Entendido y aprendido! Registrada la corrección para futuras lecturas:\n\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"\n\n🧠 *Guardado en dataset y sincronizado en Git.*", parse_mode="Markdown")
         else:
             await update.message.reply_text("No encontré registros previos para corregir.")
     except Exception as e:
@@ -361,7 +391,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
 
     with open(ogg_f, "rb") as vf:
-        await update.message.reply_voice(voice=vf, caption="🎙️ *(Contexto Limpio + Fonética Porteña)*")
+        await update.message.reply_voice(voice=vf, caption="🎙️ *(Aprendiendo de correcciones + Audio Limpio)*")
 
     if os.path.exists(ogg_f): 
         os.remove(ogg_f)
@@ -444,9 +474,9 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
             subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
             subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS, MEMORIA_TAREAS, TXT_FILE], check=True)
-            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento métricas limpias y tareas: {update.message.message_id}"], check=True)
+            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento y lectura de correcciones: {update.message.message_id}"], check=True)
             subprocess.run(["git", "push"], check=True)
-            print("🚀 [GIT SYNC]: Archivos limpios subidos a GitHub.")
+            print("🚀 [GIT SYNC]: Muestras, métricas y correcciones subidas a GitHub.")
         except Exception as git_err:
             print(f"⚠️ [GIT SYNC]: Push omitido o sin permisos: {git_err}")
 
