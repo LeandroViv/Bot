@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo sin Coqui XTTS (Gemini TTS + Edge-TTS): procesar.py
+Script definitivo para GitHub Actions (Polling + Gemini + Edge-TTS): procesar.py
 """
 
 import asyncio
@@ -13,16 +13,14 @@ import requests
 import time
 from datetime import datetime
 
-# --- INYECCIÓN AUTOMÁTICA DE HF_TOKEN PARA EVITAR WARNINGS ---
+# --- INYECCIÓN AUTOMÁTICA DE HF_TOKEN ---
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
     os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.")
-else:
-    print("⚠️ [HUGGING FACE]: No se encontró HF_TOKEN en el entorno.")
-# -------------------------------------------------------------
+# ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot (Whisper + Gemini/Llama + Gemini TTS / Edge-TTS)...")
+print("🚀 [INIT]: Inicializando LeandroBot en GitHub Actions...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -48,16 +46,26 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 
+# Leemos el CHAT_ID directamente desde los Secrets de GitHub
+ENV_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit() else None
+
+if CHAT_ID_ACTIVO:
+    print(f"🎯 [SECRETS]: CHAT_ID cargado exitosamente: {CHAT_ID_ACTIVO}")
+else:
+    print("⚠️ [SECRETS]: TELEGRAM_CHAT_ID no encontrado en secretos. Se capturará con el primer mensaje.")
+
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
 
+client = None
 try:
     from google import genai
-    client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
-    GENAI_DISPONIBLE = True if client else False
-except Exception:
-    client = None
-    GENAI_DISPONIBLE = False
+    if GEMINI_API_KEY:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        print("✅ [GEMINI]: Cliente GenAI inicializado correctamente.")
+except Exception as e:
+    print(f"⚠️ [GEMINI ERROR]: {e}")
 
 SYSTEM_PROMPT = (
     "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
@@ -80,17 +88,21 @@ def registrar_conversacion(remitente, texto):
     except Exception as e:
         print(f"⚠️ Error conversacion: {e}")
 
-def generar_texto_ia(prompt_usuario):
+def generar_texto_ia(prompt_usuario, es_proactivo=False):
     global GEMINI_BLOQUEADO_POR_CUOTA
+    p = prompt_usuario
+    if es_proactivo:
+        p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
+
     respuesta = ""
 
     # 1. Gemini
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
-            print("🤖 [IA GEMINI]: Generando respuesta...")
+            print("🤖 [IA GEMINI]: Generando respuesta...", flush=True)
             res = client.models.generate_content(
                 model="gemini-2.0-flash",
-                contents=prompt_usuario,
+                contents=p,
                 config=dict(system_instruction=SYSTEM_PROMPT, response_mime_type="application/json")
             )
             raw = (res.text or "").strip()
@@ -108,14 +120,14 @@ def generar_texto_ia(prompt_usuario):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
             print(f"⚠️ Gemini falló, conmutando a Llama: {e}")
 
-    # 2. Fallback a Llama local (Ollama)
+    # 2. Fallback a Llama (Ollama local)
     if not respuesta:
-        print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...")
+        print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...", flush=True)
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt_usuario}
+                {"role": "user", "content": p}
             ],
             "format": "json",
             "options": {"num_ctx": 4096, "temperature": 0.7},
@@ -133,7 +145,7 @@ def generar_texto_ia(prompt_usuario):
                 texto = data.get("texto_completo")
                 if texto and str(texto).strip():
                     respuesta = str(texto).strip()
-                    print("✅ [IA LLAMA]: Respuesta obtenida con éxito.")
+                    print("✅ [IA LLAMA]: Éxito.")
         except Exception as ex_local:
             print(f"⚠️ Error en Llama local: {ex_local}")
 
@@ -150,7 +162,7 @@ def generar_texto_ia(prompt_usuario):
 
     return respuesta
 
-# Configuración de voz (Gemini TTS + Edge-TTS)
+# Configuración de voz
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
     "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
@@ -209,102 +221,17 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
     if client:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
-                print("🎙️ [AUDIO]: Audio sintetizado con Gemini TTS.")
                 return True
         except Exception:
             pass
-    
-    print("🎙️ [EDGE-TTS]: Conmutando a Edge-TTS neuronal argentino...")
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message:
-        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter. Chat sintonizado correctamente.")
-
-async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-    u_text = update.message.text or update.message.caption or "[Texto recibido]"
-    registrar_conversacion("Usuario", u_text)
-
-    resp = generar_texto_ia(u_text)
-    registrar_conversacion("LeandroBot", resp)
-    await update.message.reply_text(resp)
-
-    ogg_f = "resp.ogg"
-    if await sintetizar_voz(resp, ogg_f):
-        with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf)
-        if os.path.exists(ogg_f):
-            os.remove(ogg_f)
-
-async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    async with lock_voz:
-        if not update.message:
-            return
-        await update.message.chat.send_action(action="record_voice")
-        file = await update.message.voice.get_file()
-        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
-        await file.download_to_drive(path_in)
-
-        print("🎙️ [AUDIO]: Transcribiendo nota de voz con Faster-Whisper...")
-        model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, _ = model.transcribe(path_in, beam_size=5, language="es")
-        texto_crudo = " ".join([s.text for s in segments]).strip() or "Che, te mandé un audio."
-
-        registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
-        resp = generar_texto_ia(texto_crudo)
-        registrar_conversacion("LeandroBot", resp)
-        await update.message.reply_text(resp)
-
-        ogg_f = "resp.ogg"
-        if await sintetizar_voz(resp, ogg_f):
-            with open(ogg_f, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption=f"*(Interpretado: {texto_crudo})*")
-            if os.path.exists(ogg_f):
-                os.remove(ogg_f)
-        
-        if os.path.exists(path_in):
-            os.remove(path_in)
-
-def asegurar_e_iniciar_ollama():
-    print("🦙 [OLLAMA CHECK]: Verificando entorno local de Ollama...")
-    try:
-        res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
-        if res.status_code == 200:
-            print("✅ [OLLAMA]: El servicio ya está activo.")
-            return
-    except Exception:
-        print("⚠️ [OLLAMA]: Iniciando demonio en segundo plano...")
-
-    try:
-        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(4)
-    except Exception as e:
-        print(f"⚠️ Error iniciando Ollama: {e}")
-
-def main():
-    if not TOKEN:
-        print("❌ [ERROR CRÍTICO]: Falta TELEGRAM_BOT_TOKEN.")
-        return
-
-    asegurar_e_iniciar_ollama()
-
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Polling anticorte)...")
-    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
-
-    app = Application.builder().token(TOKEN).request(request_config).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+# Motor Proactivo Autónomo
+async def bucle_proactivo_autonomo(bot_app: Application):
+    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...", flush=True)
+    await asyncio.sleep(15)
 
     while True:
         try:
-            print("🔄 [POLLING]: Escuchando eventos de Telegram...")
-            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
-        except Exception as e:
-            print(f"⚠️ Conexión interrumpida ({e}). Reconectando en 5 segundos...")
-            time.sleep(5)
-
-if __name__ == "__main__":
-    main()
+            await asyncio.sleep(180)
+            global CHAT_ID_
