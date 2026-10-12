@@ -21,6 +21,13 @@ jobs:
       - name: Instalar Dependencias
         run: pip install -r requirements.txt
 
+      - name: Instalar y Levantar Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 5
+          ollama pull llama3.2
+
       - name: Correr LeandroBot con Secrets
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
