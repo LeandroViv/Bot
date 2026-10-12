@@ -1,4 +1,4 @@
-name: Ejecutar LeandroBot
+name: Ejecutar LeandroBot (Webhook)
 on:
   schedule:
     - cron: '*/30 * * * *'
@@ -15,38 +15,42 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Instalar FFmpeg y Node.js (Para Túnel Webhook)
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          npm install -g localtunnel
 
       - name: Instalar Dependencias
         run: pip install -r requirements.txt
 
       - name: Instalar y Levantar Ollama
         run: |
-          echo "📥 Descargando binario oficial de Ollama..."
           curl -L https://github.com/ollama/ollama/releases/download/v0.5.7/ollama-linux-amd64.tgz -o ollama.tgz
           sudo tar -C /usr/local -xzf ollama.tgz
-          
-          echo "🚀 Lanzando servidor Ollama..."
           nohup ollama serve > ollama.log 2>&1 &
-          
-          echo "⏳ Esperando a que responda el puerto 11434..."
           for i in {1..30}; do
             if curl -s http://127.0.0.1:11434/api/tags > /dev/null; then
-              echo "✅ ¡Ollama está activo!"
               break
             fi
             sleep 2
           done
-
-          echo "📥 Descargando modelo llama3.2..."
           ollama pull llama3.2
 
-      - name: Correr LeandroBot con Secrets
+      - name: Iniciar Túnel Webhook y Correr LeandroBot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           VOZ_ESTILO: ${{ secrets.VOZ_ESTILO }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
-        run: python procesar.py
+          PORT: 8443
+        run: |
+          echo "🌐 Creando túnel público para Webhook..."
+          SUBDOMAIN="leandrobot-runner-$RANDOM"
+          lt --port 8443 --subdomain $SUBDOMAIN > localtunnel.log 2>&1 &
+          sleep 5
+          
+          export WEBHOOK_URL="https://$SUBDOMAIN.loca.lt"
+          echo "🚀 Webhook asignado en: $WEBHOOK_URL"
+          
+          python procesar.py
