@@ -103,7 +103,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
     if client:
         try:
             res = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.0-flash",
                 contents=p,
                 config=dict(system_instruction=SYSTEM_PROMPT, response_mime_type="application/json")
             )
@@ -156,14 +156,14 @@ EDGE_VOLUME = os.environ.get("EDGE_VOLUME", "+10%")           # Presencia de mic
 
 def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
     """
-    Sintetiza audio con Gemini 3.8 TTS nativo usando el estilo modelado por características.
+    Sintetiza audio con Gemini 2.0 Flash TTS nativo usando el estilo modelado por características.
     Convierte directo a OGG/Opus sin pasar por Bark ni generar ruidos metálicos.
     """
     if not client:
         return False
     try:
         response = client.models.generate_content(
-            model="gemini-3.8-flash-lite-tts",
+            model="gemini-2.0-flash",
             contents=[{"role": "user", "parts": [{"text": texto, "speechMetadata": {"style": VOZ_ESTILO_PERSONALIZADO}}] }],
             config=dict(
                 response_modalities=["AUDIO"],
