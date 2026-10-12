@@ -318,12 +318,38 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if os.path.exists(ogg_f):
             os.remove(ogg_f)
 
+def asegurar_e_iniciar_ollama():
+    """Verifica si Ollama está instalado y corriendo. Si no, lo instala y levanta el demonio."""
+    print("🦙 [OLLAMA CHECK]: Verificando entorno local de Ollama...")
+    try:
+        res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
+        if res.status_code == 200:
+            print("✅ [OLLAMA]: El servicio ya está activo y respondiendo.")
+            return
+    except Exception:
+        print("⚠️ [OLLAMA]: No se detectó servicio activo. Iniciando configuración automática...")
+
+    if subprocess.run(["which", "ollama"], capture_output=True).returncode != 0:
+        print("📥 [OLLAMA]: Instalando Ollama en el runner...")
+        subprocess.run("curl -fsSL https://ollama.com/install.sh | sh", shell=True, check=True)
+
+    print("🚀 [OLLAMA]: Levantando demonio 'ollama serve'...")
+    subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(5)
+
+    print("📥 [OLLAMA]: Verificando modelo llama3.2...")
+    subprocess.run(["ollama", "pull", "llama3.2"], check=True)
+    print("✅ [OLLAMA]: Entorno local listo y modelo cargado.")
+
 def main():
     if not TOKEN:
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
         print("👉 Entrá a tu repo en GitHub: Settings > Secrets and variables > Actions > New repository secret")
         print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
         return
+
+    # Asegurar que Ollama esté disponible y corriendo localmente
+    asegurar_e_iniciar_ollama()
 
     print("🚀 [INIT]: Configurando LeandroBot con Telegram, Gemini y Edge-TTS tuneado...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
