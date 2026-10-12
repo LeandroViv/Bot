@@ -1580,5 +1580,34 @@
             }
         ],
         "total_entrenamientos": 18
+    },
+    {
+        "timestamp": "2026-10-12 07:06:06",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1149.ogg",
+        "texto": "para decimé cualquier cosa.",
+        "partitura_metrica": [
+            {
+                "palabra": "para",
+                "duracion_ms": 120,
+                "intensidad_db": 2.74
+            },
+            {
+                "palabra": "decimé",
+                "duracion_ms": 580,
+                "intensidad_db": 2.64
+            },
+            {
+                "palabra": "cualquier",
+                "duracion_ms": 420,
+                "intensidad_db": 0.03
+            },
+            {
+                "palabra": "cosa.",
+                "duracion_ms": 420,
+                "intensidad_db": -1.88
+            }
+        ],
+        "total_entrenamientos": 19
     }
 ]
