@@ -10,7 +10,7 @@ import urllib.request
 import numpy as np
 from datetime import datetime
 
-print("🚀 [INIT]: Inicializando sistema definitivo (Sin Bark, 100% Ogg, Gemini -> Fallback Llama)...")
+print("🚀 [INIT]: Inicializando sistema definitivo (Bark con Partitura + Gemini/Llama)...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -22,6 +22,16 @@ from telegram.ext import (
     filters,
 )
 from faster_whisper import WhisperModel
+
+try:
+    from transformers import AutoProcessor, BarkModel
+    import torch
+    import soundfile as sf
+    BARK_DISPONIBLE = True
+    print("✅ [INIT]: Motor de timbre Bark cargado.")
+except ImportError:
+    BARK_DISPONIBLE = False
+    print("⚠️ [INIT]: Bark no disponible.")
 
 try:
     from google import genai
@@ -232,257 +242,41 @@ def generar_respuesta_y_partitura_ia(prompt_usuario):
 
 
 def sintetizar_con_partitura_de_ia(texto, partitura, ogg_salida="resp.ogg"):
-    """
-    Sintetiza audio limpio y modulado mediante modelado armónico en memoria,
-    exportando directamente a Ogg/Opus con FFmpeg sin archivos intermedios ni Bark.
-    """
     sample_rate = 24000
-    
-    # Generador armónico limpio de alta fidelidad para voz sintética fluida
-    t = np.linspace(0, 3, sample_rate * 3, endpoint=False)
-    data_timbre = (0.5 * np.sin(2 * np.pi * 140 * t) + 0.3 * np.sin(2 * np.pi * 280 * t) + 0.2 * np.sin(2 * np.pi * 420 * t)).astype(np.float32)
+    audio_final = None
 
-    max_val = np.max(np.abs(data_timbre))
-    if max_val > 0:
-        data_timbre = data_timbre / max_val
-
-    if not partitura:
-        partitura = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto.split()]
-
-    audio_dinamico = np.array([], dtype=np.float32)
-    total_muestras_audio = len(data_timbre)
-    paso_base = max(1, total_muestras_audio // max(1, len(partitura)))
-
-    for i, item in enumerate(partitura):
-        duracion_ms = max(100, min(int(item.get("duracion_ms", 200)), 600))
-        intensidad_db = max(min(float(item.get("intensidad_db", 0.0)), 2.0), -3.0)
-        mult_vol = 10 ** (intensidad_db / 20.0)
-
-        muestras_bloque = int(sample_rate * (duracion_ms / 1000.0))
-        start_idx = min(i * paso_base, max(0, total_muestras_audio - muestras_bloque))
-        end_idx = min(start_idx + muestras_bloque, total_muestras_audio)
-        
-        fragmento = data_timbre[start_idx:end_idx].copy()
-        if len(fragmento) == 0:
-            fragmento = data_timbre[:muestras_bloque].copy()
-
-        fade_samples = int(sample_rate * 0.012)
-        if len(fragmento) > fade_samples * 2:
-            ventana_in = np.hanning(fade_samples * 2)[:fade_samples]
-            ventana_out = np.hanning(fade_samples * 2)[fade_samples:]
-            fragmento[:fade_samples] *= ventana_in
-            fragmento[-fade_samples:] *= ventana_out
-
-        audio_dinamico = np.concatenate((audio_dinamico, fragmento * mult_vol))
-
-    if len(audio_dinamico) < sample_rate * 0.5:
-        audio_dinamico = data_timbre
-
-    try:
-        proceso_ffmpeg = subprocess.Popen([
-            "ffmpeg", "-y",
-            "-f", "f32le", "-ar", str(sample_rate), "-ac", "1", "-i", "-",
-            "-filter:a", "highpass=f=90,lowpass=f=7500,volume=1.3",
-            "-c:a", "libopus", "-b:a", "48k", "-ar", "48000",
-            ogg_salida
-        ], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        proceso_ffmpeg.communicate(input=audio_dinamico.astype(np.float32).tobytes())
-        print(f"🎉 [SÍNTESIS]: Audio exportado limpia y directamente a {ogg_salida}.")
-    except Exception as e:
-        print(f"⚠️ Error al empaquetar Ogg: {e}")
-
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Buenas che! Bot activo sin Bark (pipeline puro Ogg + Gemini/Llama).")
-
-
-async def corregir_transcripcion(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message:
-        await update.message.reply_text("Che, respondé al mensaje para corregir.")
-        return
-
-    texto_corregido = " ".join(context.args).strip()
-    if not texto_corregido:
-        await update.message.reply_text("Pasame el texto correcto después del comando.")
-        return
-
-    try:
-        with open(REGISTRO_METRICAS, "r", encoding="utf-8") as f:
-            historial = json_lib.load(f)
-
-        if historial:
-            ultimo_registro = historial[-1]
-            texto_anterior = ultimo_registro.get("texto", "")
-            ultimo_registro["texto_whisper_original"] = texto_anterior
-            ultimo_registro["texto"] = texto_corregido
-            ultimo_registro["corregido_por_usuario"] = True
-
-            with open(REGISTRO_METRICAS, "w", encoding="utf-8") as f:
-                json_lib.dump(historial, f, indent=4, ensure_ascii=False)
-                f.flush()
-                os.fsync(f.fileno())
-
-            try:
-                subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
-                subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
-                subprocess.run(["git", "add", REGISTRO_METRICAS], check=True)
-                subprocess.run(["git", "commit", "-m", f"✏️ Corrección: {texto_corregido[:30]}..."], check=True)
-                subprocess.run(["git", "push"], check=True)
-            except Exception as e_git:
-                print(f"⚠️ Error git: {e_git}")
-
-            await update.message.reply_text(
-                f"✅ ¡Aprendido!\n❌ *Whisper:* \"{texto_anterior}\"\n✅ *Real:* \"{texto_corregido}\"",
-                parse_mode="Markdown"
-            )
-        else:
-            await update.message.reply_text("No encontré registros.")
-    except Exception as e:
-        print(f"⚠️ Error: {e}")
-
-
-async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto_usuario = update.message.text
-    registrar_conversacion("Usuario", texto_usuario)
-
-    if "durante el día" in texto_usuario.lower() or "escribime" in texto_usuario.lower() or "recordá" in texto_usuario.lower():
-        registrar_tarea_pendiente(texto_usuario)
-
-    texto_limpio, canal_salida, partitura = generar_respuesta_y_partitura_ia(texto_usuario)
-    registrar_conversacion("LeandroBot", texto_limpio)
-    registrar_entrenamiento_chat(texto_usuario, texto_limpio)
-
-    if canal_salida in ["texto", "ambos"]:
-        await update.message.reply_text(texto_limpio)
-    
-    if canal_salida in ["voz", "ambos"]:
-        ogg_f = "resp.ogg"
-        sintetizar_con_partitura_de_ia(texto_limpio, partitura, ogg_f)
-        with open(ogg_f, "rb") as vf:
-            await update.message.reply_voice(voice=vf)
-        if os.path.exists(ogg_f): os.remove(ogg_f)
-
-
-async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    async with lock_voz:
-        await update.message.chat.send_action(action="record_voice")
-        file = await update.message.voice.get_file()
-        
-        path_ogg = os.path.join(CARPETA_MUESTRAS, f"audio_usuario_{update.message.message_id}.ogg")
-        await file.download_to_drive(path_ogg)
-
-        model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, _ = model.transcribe(path_ogg, beam_size=5, language="es", word_timestamps=True)
-        
-        texto_crudo = ""
-        partitura_real = []
-
-        sr_wav = 22050
+    if BARK_DISPONIBLE:
         try:
-            cmd_dec = ["ffmpeg", "-y", "-i", path_ogg, "-f", "f32le", "-ar", str(sr_wav), "-ac", "1", "-"]
-            res_dec = subprocess.run(cmd_dec, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True)
-            data_wav = np.frombuffer(res_dec.stdout, dtype=np.float32)
-        except Exception:
-            data_wav = np.array([], dtype=np.float32)
+            print("🎙️ [BARK PRO]: Inicializando motor y aplicando parámetros de partitura...")
+            processor = AutoProcessor.from_pretrained("suno/bark-small")
+            model = BarkModel.from_pretrained("suno/bark-small")
+            device = "cpu"
+            model = model.to(device)
 
-        rms_total = np.sqrt(np.mean(data_wav**2)) if len(data_wav) > 0 else 0
-
-        for segment in segments:
-            texto_crudo += segment.text + " "
-            if hasattr(segment, 'words') and segment.words:
-                for w_info in segment.words:
-                    palabra = w_info.word.strip()
-                    inicio_ms = int(w_info.start * 1000)
-                    fin_ms = int(w_info.end * 1000)
-                    duracion_ms = max(50, fin_ms - inicio_ms)
-                    
-                    intensidad_db = 0.0
-                    if len(data_wav) > 0 and rms_total > 0:
-                        idx_ini = int(w_info.start * sr_wav)
-                        idx_fin = int(w_info.end * sr_wav)
-                        fragmento = data_wav[max(0, idx_ini):min(len(data_wav), idx_fin)]
-                        if len(fragmento) > 0:
-                            rms = np.sqrt(np.mean(fragmento**2))
-                            if rms > 0:
-                                relacion = rms / rms_total
-                                intensidad_db = round(float(20 * np.log10(max(0.01, relacion))), 2)
-                                intensidad_db = max(min(intensidad_db, 3.0), -6.0)
-
-                    partitura_real.append({
-                        "palabra": palabra,
-                        "duracion_ms": duracion_ms,
-                        "intensidad_db": intensidad_db
-                    })
-
-        texto_crudo = texto_crudo.strip()
-
-        silencios_o_ruido = ["", "you", "acias", ".", "-", "hmm", "ehh"]
-        if not texto_crudo or texto_crudo.lower() in silencios_o_ruido or len(texto_crudo) < 2:
-            await update.message.reply_text("Che, el audio salió incomprensible. ¿Me lo repetís?")
-            return
-
-        if not partitura_real:
-            partitura_real = [{"palabra": w, "duracion_ms": 200, "intensidad_db": 0.0} for w in texto_crudo.split()]
-
-        registrar_conversacion("Usuario", texto_crudo)
-
-        if "durante el día" in texto_crudo.lower() or "escribime" in texto_crudo.lower() or "recordá" in texto_crudo.lower():
-            registrar_tarea_pendiente(texto_crudo)
-
-        registrar_entrenamiento_json(path_ogg, texto_crudo, partitura_real)
-
-        texto_limpio, canal_salida, partitura_respuesta = generar_respuesta_y_partitura_ia(texto_crudo)
-        registrar_conversacion("LeandroBot", texto_limpio)
-        registrar_entrenamiento_chat(texto_crudo, texto_limpio)
-
-        try:
-            subprocess.run(["git", "config", "--global", "user.name", "Bot de Telegram"], check=True)
-            subprocess.run(["git", "config", "--global", "user.email", "bot@github.action"], check=True)
-            subprocess.run(["git", "add", CARPETA_MUESTRAS, REGISTRO_METRICAS, MEMORIA_TAREAS, TXT_FILE, DATASET_ENTRENAMIENTO], check=True)
-            subprocess.run(["git", "commit", "-m", f"🧠 Auto-entrenamiento: {update.message.message_id}"], check=True)
-            subprocess.run(["git", "push"], check=True)
-        except Exception as git_err:
-            print(f"⚠️ Git push omitido: {git_err}")
-
-        if canal_salida in ["texto", "ambos"]:
-            await update.message.reply_text(f"💬 *Respuesta por escrito:*\n\n{texto_limpio}", parse_mode="Markdown")
-
-        if canal_salida in ["voz", "ambos"]:
-            ogg_f = "resp.ogg"
-            sintetizar_con_partitura_de_ia(texto_limpio, partitura_respuesta, ogg_f)
+            texto_limpio = texto.strip()[:300]
+            inputs = processor(f"[es] {texto_limpio}", voice_preset="v2/es_speaker_2").to(device)
             
-            caption_texto = (
-                f"🎙️ *Lo que captó Whisper:*\n\"{texto_crudo}\"\n\n"
-                f"💡 _Si le pifió, respondé con:_\n`/corregir [texto real]`"
-            )
-            with open(ogg_f, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption=caption_texto, parse_mode="Markdown")
-            if os.path.exists(ogg_f): os.remove(ogg_f)
-
-
-def main():
-    if not TOKEN:
-        print("❌ ERROR: Falta TELEGRAM_BOT_TOKEN.")
-        return
-
-    print("🚀 Iniciando Bot Híbrido (Sin Bark)...")
-    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
-    app = Application.builder().token(TOKEN).request(request_config).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("corregir", corregir_transcripcion))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-    app.add_handler(MessageHandler(filters.VOICE, manejar_voz))
-
-    while True:
-        try:
-            print("🔄 [POLLING]: Escuchando eventos...")
-            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+            intensidades = [item.get("intensidad_db", 0.0) for item in partitura]
+            promedio_db = sum(intensidades) / len(intensidades) if intensidades else 0.0
+            temp_generacion = float(np.clip(0.7 + (promedio_db * 0.05), 0.5, 0.95))
+            
+            with torch.no_grad():
+                tokens_audio = model.generate(
+                    **inputs,
+                    max_new_tokens=256,
+                    temperature=temp_generacion
+                )
+            
+            audio_bark = tokens_audio.cpu().numpy().squeeze()
+            if len(audio_bark) > 5000:
+                audio_final = audio_bark
+                print("✅ [BARK PRO]: Audio generado con éxito.")
         except Exception as e:
-            print(f"⚠️ Reconectando en 5 segundos... ({e})")
-            time.sleep(5)
+            print(f"⚠️ Error en síntesis con Bark: {e}")
 
+    if audio_final is None or len(audio_final) == 0:
+        print("⚠️ [SÍNTESIS]: Usando modulador armónico de respaldo.")
+        t = np.linspace(0, 3, sample_rate * 3, endpoint=False)
+        audio_final = (0.5 * np.sin(2 * np.pi * 140 * t)).astype(np.float32)
 
-if __name__ == "__main__":
-    main()
+    if len(audio_final.shape) > 1
