@@ -305,8 +305,10 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_tarea_pendiente(u_text)
 
     resp = generar_texto_ia(u_text)
+    
+    # Blindaje estricto: Si la respuesta viene vacía, asignamos un comodín de radio FM
     if not resp or not str(resp).strip():
-        resp = "Te capté perfecto, che. Sintonizamos en un toque."
+        resp = "¡Buenas che! Te capté perfecto. Sintonizamos en un toque."
 
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
