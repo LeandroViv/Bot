@@ -1,6 +1,6 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script adaptado para Webhooks: procesar.py
+Script definitivo para Webhooks: procesar.py
 """
 
 import asyncio
@@ -10,6 +10,7 @@ import re
 import sys
 import subprocess
 import requests
+import time
 from datetime import datetime
 
 # --- INYECCIÓN AUTOMÁTICA DE HF_TOKEN PARA EVITAR WARNINGS ---
@@ -18,10 +19,10 @@ if hf_token:
     os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.")
 else:
-    print("⚠️ [HUGGING FACE]: No se encontró HF_TOKEN en el entorno (funcionando de forma anónima).")
+    print("⚠️ [HUGGING FACE]: No se encontró HF_TOKEN en el entorno.")
 # -------------------------------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con arquitectura Webhook...")
+print("🚀 [INIT]: Inicializando LeandroBot con arquitectura WEBHOOK...")
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -53,7 +54,8 @@ for f_path, default_val in [
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")  # URL pública (ej: Ngrok, Koyeb, Vercel o similar si se expone, o procesamiento directo)
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+PORT = int(os.environ.get("PORT", "8443"))
 
 CHAT_ID_ACTIVO = None
 lock_voz = asyncio.Lock()
@@ -174,7 +176,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
 
     return respuesta
 
-# Configuración de voz
+# Configuración de voz (Gemini TTS + Edge-TTS)
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
     "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
@@ -237,13 +239,59 @@ async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
                 return True
         except Exception:
             pass
+    print("🎙️ [EDGE-TTS]: Conmutando a Edge-TTS neuronal...")
     return await sintetizar_voz_edge_tts(texto, ogg_salida)
+
+# Motor Proactivo Autónomo
+async def bucle_proactivo_autonomo(bot_app: Application):
+    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...")
+    await asyncio.sleep(15)
+
+    while True:
+        try:
+            await asyncio.sleep(180)
+            global CHAT_ID_ACTIVO
+            if not CHAT_ID_ACTIVO:
+                continue
+
+            tarea_pendiente = None
+            try:
+                with open(MEMORIA_TAREAS, "r", encoding="utf-8") as f:
+                    tareas = json_lib.load(f)
+                for t in tareas:
+                    if t.get("pendiente"):
+                        tarea_pendiente = t
+                        t["pendiente"] = False
+                        break
+                with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
+                    json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
+            except Exception:
+                pass
+
+            motivo = f"Cumpliendo lo que me pediste: '{tarea_pendiente['instruccion']}'" if tarea_pendiente else "Reflexión nocturna de radio FM espontánea"
+            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo: {motivo}")
+
+            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
+            registrar_conversacion("Leandro (Proactivo)", texto_spont)
+
+            await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
+
+            ogg_f = "proactivo.ogg"
+            if await sintetizar_voz(texto_spont, ogg_f):
+                with open(ogg_f, "rb") as vf:
+                    await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
+                if os.path.exists(ogg_f):
+                    os.remove(ogg_f)
+
+        except Exception as e:
+            print(f"⚠️ Error en bucle proactivo: {e}")
+            await asyncio.sleep(10)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter. Webhook sintonizado.")
+        await update.message.reply_text("¡Buenas che! Acá Leandro en el éter. Webhook activado.")
 
 async def corregir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     corr = " ".join(context.args).strip()
@@ -333,34 +381,35 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando Webhook para LeandroBot...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
-    app = Application.builder().token(TOKEN).request(request_config).build()
-    
+    async def post_init(application: Application):
+        print("⚡ [PROACTIVO]: Registrando bucle autónomo en segundo plano...")
+        asyncio.create_task(bucle_proactivo_autonomo(application))
+
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        print(f"⚠️ [Telegram Error]: {context.error}")
+
+    app = Application.builder().token(TOKEN).request(request_config).post_init(post_init).build()
+    app.add_error_handler(error_handler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("corregir", corregir))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
-    # Si se define una URL de webhook, lo configuramos para escuchar por puerto web en lugar de polling continuo
-    # Nota: Para GitHub Actions puro, lo ideal es correr un túnel o usar un servicio web liviano.
-    PORT = int(os.environ.get("PORT", "8443"))
-    WEBHOOK_PATH = f"webhook/{TOKEN}"
-    
     if WEBHOOK_URL:
-        full_webhook_url = f"{WEBHOOK_URL.rstrip('/')}/{WEBHOOK_PATH}"
-        print(levantar_webhook_info := f"🌐 [WEBHOOK]: Configurando webhook en {full_webhook_url}")
+        webhook_path = f"webhook/{TOKEN}"
+        url_completa = f"{WEBHOOK_URL.rstrip('/')}/{webhook_path}"
+        print(f"🌐 [WEBHOOK]: Levantando webhook en {url_completa} (Puerto {PORT})...")
         app.run_webhook(
             listen="0.0.0.0",
             port=PORT,
-            url_path=WEBHOOK_PATH,
-            webhook_url=full_webhook_url,
+            url_path=webhook_path,
+            webhook_url=url_completa,
             drop_pending_updates=True
         )
     else:
-        # Modo fallback local con polling corto si se ejecuta de forma manual
-        print("⚠️ [WEBHOOK URL no especificada]: Iniciando polling corto de emergencia...")
+        print("🔄 [POLLING]: WEBHOOK_URL no definida. Iniciando polling...")
         app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
