@@ -944,3 +944,5 @@ Y el tipo, con una cara de deprimido total, le mete:
 ---
 [LEANDRO_BOT]: Che, me quedé sin conexión, tirámela de nuevo.
 ---
+[2026-10-12 02:11:32] Usuario: que estaba averiguando algo sobre agentes con LLM, que se pueda vender, quería  dar a ver si me podía pasar algo de info que encuentres en la web sobre eso, por favor.
+[2026-10-12 02:14:52] LeandroBot: Che, mirá, estuve rastreando y lo que garpa posta para vender son agentes autónomos de soporte y prospección por WhatsApp conectados directo al CRM. Las pymes compran soluciones llave en mano que les automaticen cotizaciones y seguimiento sin mandar fruta. Si te metés por ahí con un buen RAG, tenés un negocio redondo, fijate.

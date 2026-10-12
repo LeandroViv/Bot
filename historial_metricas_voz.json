@@ -1046,5 +1046,174 @@
             }
         ],
         "total_entrenamientos": 17
+    },
+    {
+        "timestamp": "2026-10-12 02:11:32",
+        "tipo": "voz_usuario",
+        "archivo": "muestras_voz/audio_usuario_1113.wav",
+        "texto": "que estaba averiguando algo sobre agentes con LLM, que se pueda vender, quería  dar a ver si me podía pasar algo de info que encuentres en la web sobre eso, por favor.",
+        "partitura_metrica": [
+            {
+                "palabra": "que",
+                "duracion_ms": 1160,
+                "intensidad_db": -0.79
+            },
+            {
+                "palabra": "estaba",
+                "duracion_ms": 360,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "averiguando",
+                "duracion_ms": 700,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 460,
+                "intensidad_db": 2.68
+            },
+            {
+                "palabra": "sobre",
+                "duracion_ms": 440,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "agentes",
+                "duracion_ms": 1800,
+                "intensidad_db": -5.51
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 640,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "LLM,",
+                "duracion_ms": 1100,
+                "intensidad_db": 2.15
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 60,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 180,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "pueda",
+                "duracion_ms": 320,
+                "intensidad_db": 3.0
+            },
+            {
+                "palabra": "vender,",
+                "duracion_ms": 600,
+                "intensidad_db": 1.41
+            },
+            {
+                "palabra": "quería",
+                "duracion_ms": 420,
+                "intensidad_db": -5.09
+            },
+            {
+                "palabra": "dar",
+                "duracion_ms": 280,
+                "intensidad_db": 0.25
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 50,
+                "intensidad_db": 0.0
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 140,
+                "intensidad_db": -3.06
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 140,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 80,
+                "intensidad_db": -4.25
+            },
+            {
+                "palabra": "podía",
+                "duracion_ms": 300,
+                "intensidad_db": -3.84
+            },
+            {
+                "palabra": "pasar",
+                "duracion_ms": 320,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 320,
+                "intensidad_db": -0.6
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 200,
+                "intensidad_db": -4.45
+            },
+            {
+                "palabra": "info",
+                "duracion_ms": 320,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 800,
+                "intensidad_db": -6.0
+            },
+            {
+                "palabra": "encuentres",
+                "duracion_ms": 460,
+                "intensidad_db": -0.74
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 180,
+                "intensidad_db": -5.25
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 100,
+                "intensidad_db": -2.18
+            },
+            {
+                "palabra": "web",
+                "duracion_ms": 200,
+                "intensidad_db": -2.21
+            },
+            {
+                "palabra": "sobre",
+                "duracion_ms": 500,
+                "intensidad_db": -5.44
+            },
+            {
+                "palabra": "eso,",
+                "duracion_ms": 360,
+                "intensidad_db": -4.83
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 100,
+                "intensidad_db": -4.67
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 320,
+                "intensidad_db": -3.47
+            }
+        ],
+        "total_entrenamientos": 18
     }
 ]
