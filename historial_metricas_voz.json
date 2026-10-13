@@ -1784,5 +1784,92 @@
                 "intensidad_db": -26.1
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-13 14:18:46",
+        "archivo": "muestras_voz/audio_usuario_1338.ogg",
+        "texto": "A ver, pasas los links esos que me habías mostrado por favor, eso te quería pedir.",
+        "partitura_metrica": [
+            {
+                "palabra": "A",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "pasas",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "los",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "esos",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "habías",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "mostrado",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "favor,",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "quería",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            },
+            {
+                "palabra": "pedir.",
+                "duracion_ms": 390,
+                "intensidad_db": -18.99
+            }
+        ]
     }
 ]
