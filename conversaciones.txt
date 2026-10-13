@@ -998,3 +998,4 @@ Decime cual era
 [2026-10-13 22:27:23] USUARIO: [AUDIO] Me puedes copiar el mensaje que me escribiste sobre la LLM, por favor.
 [2026-10-13 22:28:09] LEANDROBOT: De una che, decime.
 [2026-10-13 22:39:37] USUARIO: [AUDIO] ¿Estás ahí?
+[2026-10-13 22:40:24] LEANDROBOT: Che, me quedé sin conexión con los modelos, fíjate los logs.
