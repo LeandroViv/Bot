@@ -102,3 +102,77 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
         try:
             print(f"🤖 [IA GEMINI]: Generando respuesta con {MODELO_GEMINI}...", flush=True)
             res = client.models.generate_content(
+                model=MODELO_GEMINI,
+                contents=p,
+                config={
+                    "system_instruction": SYSTEM_PROMPT,
+                    "response_mime_type": "application/json"
+                }
+            )
+            raw = (res.text or "").strip()
+            if raw:
+                raw = re.sub(r'^```json\s*', '', raw, flags=re.IGNORECASE)
+                raw = re.sub(r'^```\s*', '', raw)
+                raw = re.sub(r'\s*```$', '', raw).strip()
+                data = json_lib.loads(raw)
+                texto = data.get("texto_completo")
+                if texto and str(texto).strip():
+                    respuesta = str(texto).strip()
+                    print("✅ [IA GEMINI]: Éxito.")
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
+                print("⚠️ [GEMINI CUOTA EXCEDIDA]: Conmutando a Llama para esta sesión.")
+                GEMINI_BLOQUEADO_POR_CUOTA = True
+            else:
+                print(f"⚠️ Gemini falló, conmutando a Llama: {e}")
+
+    # 2. Fallback a Llama (Ollama local)
+    if not respuesta:
+        print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...", flush=True)
+        payload = {
+            "model": "llama3.2",
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": p}
+            ],
+            "format": "json",
+            "options": {"num_ctx": 4096, "temperature": 0.7},
+            "stream": False,
+        }
+        try:
+            url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
+            res_local = requests.post(url_llama, json=payload, timeout=20)
+            if res_local.status_code == 200:
+                content_str = res_local.json().get("message", {}).get("content", "{}")
+                content_str = re.sub(r'^```json\s*', '', content_str, flags=re.IGNORECASE)
+                content_str = re.sub(r'^```\s*', '', content_str)
+                content_str = re.sub(r'\s*```$', '', content_str).strip()
+                data = json_lib.loads(content_str)
+                texto = data.get("texto_completo")
+                if texto and str(texto).strip():
+                    respuesta = str(texto).strip()
+                    print("✅ [IA LLAMA]: Éxito.")
+        except Exception as ex_local:
+            print(f"⚠️ Error en Llama local: {ex_local}")
+
+    # 3. Comodín de radio FM
+    if not respuesta or not str(respuesta).strip():
+        print("⚠️ [RADIO FM]: Usando comodín de respaldo local.")
+        import random
+        respuestas_radio = [
+            "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
+            "Qué hacés che, de una. Anotado acá en la consola de la radio.",
+            "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire."
+        ]
+        respuesta = random.choice(respuestas_radio)
+
+    return respuesta
+
+# ==========================================
+# SISTEMA DE VOCES: GEMINI TTS + DSP ESPECTRAL (Rubberband)
+# ==========================================
+VOZ_ESTILO_PERSONALIZADO = os.environ.get(
+    "VOZ_ESTILO",
+    "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
+)
+VOZ_BASE_NOMBRE = os.environ
