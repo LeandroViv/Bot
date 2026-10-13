@@ -994,3 +994,4 @@ Me mostraste ese link y uno más aparte de ese
 Decime cual era
 [2026-10-13 14:54:47] LEANDROBOT: De una che, decime.
 [2026-10-13 22:07:24] USUARIO: [AUDIO] Estas ahí?
+[2026-10-13 22:08:11] LEANDROBOT: De una che, decime.
