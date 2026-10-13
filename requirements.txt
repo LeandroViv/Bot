@@ -1,6 +1,6 @@
 python-telegram-bot>=21.0
 google-genai>=2.4.0
-httpx>=0.27.0
+soundfile
 numpy>=1.24.0
 requests>=2.31.0
 faster-whisper>=1.0.0
