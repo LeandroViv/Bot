@@ -992,3 +992,4 @@ Revisa lo que me dijiste y completa la frase con las mismas palabras que usaste
 [2026-10-13 14:54:00] USUARIO: langchain.com
 Me mostraste ese link y uno más aparte de ese
 Decime cual era
+[2026-10-13 14:54:47] LEANDROBOT: De una che, decime.
