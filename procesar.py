@@ -1,10 +1,9 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Memoria contextual leyendo conversaciones.txt.
-- Corrección de extensión a dataset_entrenamiento.json.
-- Búsqueda web real e inteligente.
-- Calibración de métricas de voz propias + DSP Rubberband.
+- Inyección de contexto vía bloque adjunto/auxiliar para ahorro de tokens.
+- Persistencia en conversaciones.txt y dataset_entrenamiento_chat.json.
+- Búsqueda web DuckDuckGo + DSP Rubberband con calibración propia.
 """
 
 import asyncio
@@ -44,7 +43,7 @@ TXT_FILE = "conversaciones.txt"
 MEMORIA_TAREAS = "memoria_tareas.json"
 CARPETA_MUESTRAS = "muestras_voz"
 FILE_METRICAS_VOZ = "historial_metricas_voz.json"
-FILE_DATASET = "dataset_entrenamiento.json"
+FILE_DATASET = "dataset_entrenamiento_chat.json"
 FILE_METRICAS_GENERALES = "metricas_entrenamiento.json"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
@@ -72,7 +71,7 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 ENV_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit() else None
 
-lock_voz = asyncio.Lock()
+lock_voz = asyncioLock = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
 MODELO_GEMINI = "gemini-2.0-flash"
 
@@ -102,30 +101,36 @@ SYSTEM_PROMPT = (
     "}"
 )
 
-# --- MEMORIA DINÁMICA DESDE conversaciones.txt ---
-def obtener_historial_adaptativo(cant_lineas=50):
-    """Lee el archivo de conversaciones para darle contexto suficiente a la IA."""
+def obtener_historial_adaptativo(cant_lineas=60):
     if not os.path.exists(TXT_FILE):
         return ""
     try:
-        with open(TXT_FILE, "r", encoding="utf-8") as f:
-            lineas = f.readlines()
-        recientes = [l.strip() for l in lineas[-cant_lineas:]]
+        try:
+            with open(TXT_FILE, "r", encoding="utf-8") as f:
+                lineas = f.readlines()
+        except UnicodeDecodeError:
+            with open(TXT_FILE, "r", encoding="latin-1", errors="ignore") as f:
+                lineas = f.readlines()
+        
+        recientes = [l.strip() for l in lineas[-cant_lineas:] if l.strip()]
         return "\n".join(recientes)
     except Exception as e:
-        print(f"⚠️ Error leyendo historial: {e}")
+        print(f"⚠️ Error leyendo {TXT_FILE}: {e}")
         return ""
 
 def registrar_conversacion(remitente, texto):
     try:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        linea = f"[{ts}] {remitente}: {texto}\n"
         with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {remitente}: {texto}\n")
+            f.write(linea)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"📝 [TXT REGISTRADO]: {remitente}: {texto[:50]}...")
     except Exception as e:
-        print(f"⚠️ Error guardando conversacion: {e}")
+        print(f"⚠️ Error guardando en {TXT_FILE}: {e}")
 
 def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, resultados_web="", origen_modelo="gemini"):
-    """Guarda muestras en dataset_entrenamiento.json para futuro fine-tuning/entrenamiento."""
     try:
         ejemplo = {
             "timestamp": datetime.now().isoformat(),
@@ -141,10 +146,12 @@ def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, resultados_we
         }
         with open(FILE_DATASET, "a", encoding="utf-8") as f:
             f.write(json_lib.dumps(ejemplo, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"💾 [DATASET REGISTRADO]: Entrada añadida a {FILE_DATASET}")
     except Exception as e:
-        print(f"⚠️ Error guardando ejemplo de entrenamiento: {e}")
+        print(f"⚠️ Error guardando en {FILE_DATASET}: {e}")
 
-# --- MÓDULO DE BÚSQUEDA WEB REAL ---
 def buscar_en_la_web(query):
     try:
         print(f"🌐 [WEB SEARCH]: Buscando en la web: '{query}'...", flush=True)
@@ -202,6 +209,8 @@ def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
         historial.append(nueva_entrada)
         with open(FILE_METRICAS_VOZ, "w", encoding="utf-8") as f:
             json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
     except Exception as e:
         print(f"⚠️ Error actualizando {FILE_METRICAS_VOZ}: {e}")
 
@@ -233,17 +242,15 @@ def obtener_calibracion_personalizada():
 def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
-    # 1. Recuperar contexto amplio de conversaciones.txt
-    historial_previo = obtener_historial_adaptativo(50)
+    # 1. Recuperar contexto de conversaciones.txt
+    historial_previo = obtener_historial_adaptativo(60)
 
-    # 2. Búsqueda web real si la consulta lo amerita
+    # 2. Búsqueda web real
     contexto_web = ""
     if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info"]):
         snippets = buscar_en_la_web(prompt_usuario)
         if snippets:
-            contexto_web = f"\n[RESULTADOS WEB EN TIEMPO REAL]:\n{snippets}\n"
-
-    prompt_final = f"Historial de la charla:\n{historial_previo}\n{contexto_web}\nMensaje actual del usuario: {prompt_usuario}"
+            contexto_web = f"[RESULTADOS WEB]:\n{snippets}\n"
 
     pitch_estimado = 0.88
     if any(kw in prompt_usuario.lower() for kw in ["grave", "tachero", "profundo", "baja el tono"]):
@@ -258,11 +265,20 @@ def generar_respuesta_ia(prompt_usuario):
     }
     modelo_usado = "local"
 
+    # --- INYECCIÓN EN PARTES ADJUNTAS (OPTIMIZACIÓN DE TOKENS DE PROMPT) ---
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
+            partes_adjuntas = []
+            if historial_previo:
+                partes_adjuntas.append({"text": f"--- ADJUNTO: HISTORIAL DE CHARLA ---\n{historial_previo}\n--- FIN ADJUNTO ---"})
+            if contexto_web:
+                partes_adjuntas.append({"text": contexto_web})
+            
+            partes_adjuntas.append({"text": f"Mensaje actual: {prompt_usuario}"})
+
             res = client.models.generate_content(
                 model=MODELO_GEMINI,
-                contents=prompt_final,
+                contents=partes_adjuntas,
                 config={
                     "system_instruction": SYSTEM_PROMPT,
                     "response_mime_type": "application/json"
@@ -284,11 +300,12 @@ def generar_respuesta_ia(prompt_usuario):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
     if modelo_usado == "local":
+        prompt_fallback = f"Historial adjunto:\n{historial_previo}\n{contexto_web}\nMensaje: {prompt_usuario}"
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt_final}
+                {"role": "user", "content": prompt_fallback}
             ],
             "format": "json",
             "options": {"num_ctx": 4096, "temperature": 0.7},
@@ -359,6 +376,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto recibido]"
+    
     registrar_conversacion("Usuario", u_text)
 
     res_ia = generar_respuesta_ia(u_text)
@@ -431,7 +449,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (dataset_entrenamiento.json + memoria)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Contexto como adjunto + Ahorro de tokens)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
