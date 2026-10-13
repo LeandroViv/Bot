@@ -1,9 +1,10 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Búsqueda web real integrada (DuckDuckGo fallback / requests).
-- Ajuste dinámico de tono y timbre por prompt (interpretación fonética de intención).
-- Calibración de métricas de voz propias + Rubberband DSP.
+- Memoria contextual leyendo conversaciones.txt.
+- Corrección de extensión a dataset_entrenamiento.json.
+- Búsqueda web real e inteligente.
+- Calibración de métricas de voz propias + DSP Rubberband.
 """
 
 import asyncio
@@ -12,7 +13,6 @@ import os
 import re
 import sys
 import math
-import random
 import subprocess
 import requests
 import time
@@ -44,10 +44,14 @@ TXT_FILE = "conversaciones.txt"
 MEMORIA_TAREAS = "memoria_tareas.json"
 CARPETA_MUESTRAS = "muestras_voz"
 FILE_METRICAS_VOZ = "historial_metricas_voz.json"
-FILE_DATASET = "dataset_entrenamiento.jsonl"
+FILE_DATASET = "dataset_entrenamiento.json"
 FILE_METRICAS_GENERALES = "metricas_entrenamiento.json"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
+
+if not os.path.exists(TXT_FILE):
+    with open(TXT_FILE, "w", encoding="utf-8") as f:
+        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sistema: Bitácora iniciada.\n")
 
 if not os.path.exists(MEMORIA_TAREAS):
     with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
@@ -82,32 +86,72 @@ except Exception as e:
     print(f"⚠️ [GEMINI ERROR]: {e}")
 
 # =====================================================================
-# SYSTEM PROMPT CON TABLA DE EQUIVALENCIAS DE DSP
+# SYSTEM PROMPT
 # =====================================================================
 SYSTEM_PROMPT = (
-    "Sos Leandro, un compañero y colega de Telegram. Hablás en perfecto español rioplatense (porteño) con voseo natural.\n"
+    "Sos Leandro, un compañero y colega de Telegram. Hablás en perfecto español rioplatense (porteño) con voseo natural ('che', 'vós', 'fijate', 'posta').\n"
     "REGLA DE TONO Y TIMBRE: Evaluá la petición del usuario para definir el tono de voz:\n"
     "- Si pide 'voz más grave', 'tachero', 'profundo', 'nocturno' -> pitch_factor: 0.72\n"
     "- Si pide 'voz normal', 'colega', 'estándar' -> pitch_factor: 0.88\n"
     "- Si pide 'voz aguda' o 'rápida' -> pitch_factor: 1.05\n"
     "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown):\n"
     "{\n"
-    '  "texto_completo": "Tu respuesta redactada con la personalidad solicitada",\n'
-    '  "pitch_factor": 0.72,\n'
+    '  "texto_completo": "Tu respuesta redactada con la personalidad solicitada y acento porteño",\n'
+    '  "pitch_factor": 0.88,\n'
     '  "ganancia_db": 0.0\n'
     "}"
 )
 
-# --- MÓDULO DE BÚSQUEDA WEB REAL EN PYTHON ---
+# --- MEMORIA DINÁMICA DESDE conversaciones.txt ---
+def obtener_historial_adaptativo(cant_lineas=50):
+    """Lee el archivo de conversaciones para darle contexto suficiente a la IA."""
+    if not os.path.exists(TXT_FILE):
+        return ""
+    try:
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            lineas = f.readlines()
+        recientes = [l.strip() for l in lineas[-cant_lineas:]]
+        return "\n".join(recientes)
+    except Exception as e:
+        print(f"⚠️ Error leyendo historial: {e}")
+        return ""
+
+def registrar_conversacion(remitente, texto):
+    try:
+        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open(TXT_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] {remitente}: {texto}\n")
+    except Exception as e:
+        print(f"⚠️ Error guardando conversacion: {e}")
+
+def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, resultados_web="", origen_modelo="gemini"):
+    """Guarda muestras en dataset_entrenamiento.json para futuro fine-tuning/entrenamiento."""
+    try:
+        ejemplo = {
+            "timestamp": datetime.now().isoformat(),
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt_usuario},
+                {"role": "assistant", "content": respuesta_bot}
+            ],
+            "metadata": {
+                "modelo_usado": origen_modelo,
+                "contexto_web_incluido": bool(resultados_web)
+            }
+        }
+        with open(FILE_DATASET, "a", encoding="utf-8") as f:
+            f.write(json_lib.dumps(ejemplo, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"⚠️ Error guardando ejemplo de entrenamiento: {e}")
+
+# --- MÓDULO DE BÚSQUEDA WEB REAL ---
 def buscar_en_la_web(query):
-    """Realiza una búsqueda real en la web usando la API pública de DuckDuckGo."""
     try:
         print(f"🌐 [WEB SEARCH]: Buscando en la web: '{query}'...", flush=True)
         url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         res = requests.get(url, headers=headers, timeout=5)
         if res.status_code == 200:
-            # Extraer snippets mediante Regex simple de HTML
             snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', res.text, re.DOTALL)
             limpios = [re.sub(r'<[^>]+>', '', s).strip() for s in snippets[:3]]
             if limpios:
@@ -186,27 +230,21 @@ def obtener_calibracion_personalizada():
         print(f"⚠️ Error leyendo calibración: {e}")
     return calibracion_por_defecto
 
-def registrar_conversacion(remitente, texto):
-    try:
-        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {remitente}: {texto}\n")
-    except Exception as e:
-        print(f"⚠️ Error conversacion: {e}")
-
 def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
-    # 1. Chequeo de intención de búsqueda en la web
+    # 1. Recuperar contexto amplio de conversaciones.txt
+    historial_previo = obtener_historial_adaptativo(50)
+
+    # 2. Búsqueda web real si la consulta lo amerita
     contexto_web = ""
-    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es"]):
+    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info"]):
         snippets = buscar_en_la_web(prompt_usuario)
         if snippets:
-            contexto_web = f"\n[RESULTADOS WEB REALES PARA CONSIDERAR]:\n{snippets}\n"
+            contexto_web = f"\n[RESULTADOS WEB EN TIEMPO REAL]:\n{snippets}\n"
 
-    prompt_final = prompt_usuario + contexto_web
+    prompt_final = f"Historial de la charla:\n{historial_previo}\n{contexto_web}\nMensaje actual del usuario: {prompt_usuario}"
 
-    # Fallback dinámico de Pitch por palabras clave si la IA es indecisa
     pitch_estimado = 0.88
     if any(kw in prompt_usuario.lower() for kw in ["grave", "tachero", "profundo", "baja el tono"]):
         pitch_estimado = 0.72
@@ -273,10 +311,12 @@ def generar_respuesta_ia(prompt_usuario):
         except Exception as ex_local:
             print(f"⚠️ Error en Llama local: {ex_local}")
 
+    registrar_ejemplo_entrenamiento(prompt_usuario, resultado["texto_completo"], contexto_web, modelo_usado)
+
     return resultado
 
 # ==========================================
-# SÍNTESIS DSP RUBBERBAND APLICANDO PITCH REAL
+# SÍNTESIS DSP RUBBERBAND
 # ==========================================
 def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
     try:
@@ -287,7 +327,6 @@ def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_s
         mp3_tmp = "tmp_base.mp3"
         gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
         
-        # Filtro de Rubberband + Ecualización adaptativa para tonos graves
         filtro_eq = ",equalizer=f=140:width_type=h:width=100:g=5" if pitch_prompt < 0.80 else ""
         filtro_dsp = f"rubberband=pitch={pitch_prompt}:tempo={tempo_f}:formant=preserved:transients=smooth{filtro_eq},volume={gain_final}dB,highpass=f=80,lowpass=f=4500"
         
@@ -392,7 +431,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Búsqueda web + Tono dinámico)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (dataset_entrenamiento.json + memoria)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
