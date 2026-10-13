@@ -2007,5 +2007,22 @@
                 "intensidad_db": -24.14
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-13 22:39:37",
+        "archivo": "muestras_voz/audio_usuario_1356.ogg",
+        "texto": "¿Estás ahí?",
+        "partitura_metrica": [
+            {
+                "palabra": "¿Estás",
+                "duracion_ms": 746,
+                "intensidad_db": -20.53
+            },
+            {
+                "palabra": "ahí?",
+                "duracion_ms": 746,
+                "intensidad_db": -20.53
+            }
+        ]
     }
 ]
