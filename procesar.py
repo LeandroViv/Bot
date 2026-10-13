@@ -1,9 +1,10 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Inyección de contexto vía bloque adjunto/auxiliar para ahorro de tokens.
-- Persistencia en conversaciones.txt y dataset_entrenamiento_chat.json.
-- Búsqueda web DuckDuckGo + DSP Rubberband con calibración propia.
+- Análisis e integración de dB (intensidad/volumen) y Cadencia (ritmo).
+- Lectura/escritura blindada de conversaciones.txt con file_lock.
+- Búsqueda web real (DuckDuckGo) e historial en dataset_entrenamiento_chat.json.
+- Mapeo dinámico de DSP Rubberband + Ecualización basada en tus métricas.
 """
 
 import asyncio
@@ -12,6 +13,7 @@ import os
 import re
 import sys
 import math
+import threading
 import subprocess
 import requests
 import time
@@ -49,8 +51,11 @@ FILE_METRICAS_GENERALES = "metricas_entrenamiento.json"
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
 if not os.path.exists(TXT_FILE):
-    with open(TXT_FILE, "w", encoding="utf-8") as f:
-        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sistema: Bitácora iniciada.\n")
+    try:
+        with open(TXT_FILE, "w", encoding="utf-8") as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sistema: Bitácora iniciada.\n")
+    except Exception as e:
+        print(f"⚠️ Error creando conversaciones.txt: {e}")
 
 if not os.path.exists(MEMORIA_TAREAS):
     with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
@@ -71,7 +76,8 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 ENV_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit() else None
 
-lock_voz = asyncioLock = asyncio.Lock()
+lock_voz = asyncio.Lock()
+file_lock = threading.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
 MODELO_GEMINI = "gemini-2.0-flash"
 
@@ -101,34 +107,37 @@ SYSTEM_PROMPT = (
     "}"
 )
 
+# --- MANEJO BLINDADO DE conversaciones.txt ---
 def obtener_historial_adaptativo(cant_lineas=60):
-    if not os.path.exists(TXT_FILE):
-        return ""
-    try:
+    with file_lock:
+        if not os.path.exists(TXT_FILE):
+            return ""
         try:
-            with open(TXT_FILE, "r", encoding="utf-8") as f:
-                lineas = f.readlines()
-        except UnicodeDecodeError:
-            with open(TXT_FILE, "r", encoding="latin-1", errors="ignore") as f:
-                lineas = f.readlines()
-        
-        recientes = [l.strip() for l in lineas[-cant_lineas:] if l.strip()]
-        return "\n".join(recientes)
-    except Exception as e:
-        print(f"⚠️ Error leyendo {TXT_FILE}: {e}")
-        return ""
+            try:
+                with open(TXT_FILE, "r", encoding="utf-8") as f:
+                    lineas = f.readlines()
+            except UnicodeDecodeError:
+                with open(TXT_FILE, "r", encoding="latin-1", errors="ignore") as f:
+                    lineas = f.readlines()
+            
+            recientes = [l.strip() for l in lineas[-cant_lineas:] if l.strip()]
+            return "\n".join(recientes)
+        except Exception as e:
+            print(f"⚠️ Error leyendo {TXT_FILE}: {e}")
+            return ""
 
 def registrar_conversacion(remitente, texto):
-    try:
-        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        linea = f"[{ts}] {remitente}: {texto}\n"
-        with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(linea)
-            f.flush()
-            os.fsync(f.fileno())
-        print(f"📝 [TXT REGISTRADO]: {remitente}: {texto[:50]}...")
-    except Exception as e:
-        print(f"⚠️ Error guardando en {TXT_FILE}: {e}")
+    with file_lock:
+        try:
+            ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            linea = f"[{ts}] {remitente}: {texto}\n"
+            with open(TXT_FILE, "a", encoding="utf-8") as f:
+                f.write(linea)
+                f.flush()
+                os.fsync(f.fileno())
+            print(f"📝 [TXT REGISTRADO]: {remitente}: {texto[:50]}...")
+        except Exception as e:
+            print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}")
 
 def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, resultados_web="", origen_modelo="gemini"):
     try:
@@ -148,10 +157,10 @@ def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, resultados_we
             f.write(json_lib.dumps(ejemplo, ensure_ascii=False) + "\n")
             f.flush()
             os.fsync(f.fileno())
-        print(f"💾 [DATASET REGISTRADO]: Entrada añadida a {FILE_DATASET}")
     except Exception as e:
         print(f"⚠️ Error guardando en {FILE_DATASET}: {e}")
 
+# --- MÓDULO DE BÚSQUEDA WEB REAL ---
 def buscar_en_la_web(query):
     try:
         print(f"🌐 [WEB SEARCH]: Buscando en la web: '{query}'...", flush=True)
@@ -174,7 +183,7 @@ def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
             "ffmpeg", "-y", "-i", path_audio_ogg, "-ar", "16000", "-ac", "1", wav_tmp
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
-        intensidad_db_estimada = -2.0
+        intensidad_db_estimada = -18.0
         duracion_total_ms = 1000
 
         if os.path.exists(wav_tmp):
@@ -188,11 +197,14 @@ def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
         cant_palabras = len(palabras) if palabras else 1
         duracion_promedio_palabra = max(150, int(duracion_total_ms / cant_palabras))
 
-        partitura = [{"palabra": p, "duracion_ms": duracion_promedio_palabra, "intensidad_db": intensidad_db_estimada} for p in palabras]
+        partitura = [{
+            "palabra": p,
+            "duracion_ms": duracion_promedio_palabra,
+            "intensidad_db": intensidad_db_estimada
+        } for p in palabras]
 
         nueva_entrada = {
             "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "tipo": "voz_usuario",
             "archivo": path_audio_ogg,
             "texto": texto_transcripto,
             "partitura_metrica": partitura
@@ -212,12 +224,13 @@ def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
             f.flush()
             os.fsync(f.fileno())
     except Exception as e:
-        print(f"⚠️ Error actualizando {FILE_METRICAS_VOZ}: {e}")
+        print(f"⚠️ Error actualizando métricas de voz: {e}")
 
-def obtener_calibracion_personalizada():
-    calibracion_por_defecto = {"tempo_factor": 1.0, "gain_db": 0.0}
+def obtener_metricas_calibracion():
+    """Calcula el tempo (cadencia) e intensidad promedio (dB) acumulada de tus audios."""
+    calibracion = {"tempo_factor": 1.0, "gain_db": 0.0, "intensidad_promedio": -18.0}
     if not os.path.exists(FILE_METRICAS_VOZ):
-        return calibracion_por_defecto
+        return calibracion
     try:
         with open(FILE_METRICAS_VOZ, "r", encoding="utf-8") as f:
             datos = json_lib.load(f)
@@ -226,26 +239,30 @@ def obtener_calibracion_personalizada():
         intensidades = []
         for entrada in datos:
             for metrica in entrada.get("partitura_metrica", []):
-                if "duracion_ms" in metrica: duraciones.append(metrica["duracion_ms"])
-                if "intensidad_db" in metrica: intensidades.append(metrica["intensidad_db"])
+                if "duracion_ms" in metrica:
+                    duraciones.append(metrica["duracion_ms"])
+                if "intensidad_db" in metrica:
+                    intensidades.append(metrica["intensidad_db"])
         
         if duraciones and intensidades:
-            promedio_duracion = sum(duraciones) / len(duraciones)
-            promedio_intensidad = sum(intensidades) / len(intensidades)
-            tempo_calibrado = 350.0 / max(promedio_duracion, 150.0)
+            prom_duracion = sum(duraciones) / len(duraciones)
+            prom_intensidad = sum(intensidades) / len(intensidades)
+            
+            tempo_calibrado = 350.0 / max(prom_duracion, 150.0)
             tempo_calibrado = max(0.8, min(tempo_calibrado, 1.25))
-            return {"tempo_factor": round(tempo_calibrado, 2), "gain_db": round(promedio_intensidad, 2)}
+            
+            calibracion["tempo_factor"] = round(tempo_calibrado, 2)
+            calibracion["intensidad_promedio"] = round(prom_intensidad, 2)
+            calibracion["gain_db"] = round(max(-6.0, min(6.0, (-18.0 - prom_intensidad))), 2)
     except Exception as e:
         print(f"⚠️ Error leyendo calibración: {e}")
-    return calibracion_por_defecto
+    return calibracion
 
 def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
-    # 1. Recuperar contexto de conversaciones.txt
     historial_previo = obtener_historial_adaptativo(60)
 
-    # 2. Búsqueda web real
     contexto_web = ""
     if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info"]):
         snippets = buscar_en_la_web(prompt_usuario)
@@ -265,7 +282,6 @@ def generar_respuesta_ia(prompt_usuario):
     }
     modelo_usado = "local"
 
-    # --- INYECCIÓN EN PARTES ADJUNTAS (OPTIMIZACIÓN DE TOKENS DE PROMPT) ---
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             partes_adjuntas = []
@@ -333,18 +349,21 @@ def generar_respuesta_ia(prompt_usuario):
     return resultado
 
 # ==========================================
-# SÍNTESIS DSP RUBBERBAND
+# SÍNTESIS DSP CON CADENCIA Y INTENSIDAD (dB)
 # ==========================================
 def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
     try:
-        calibracion = obtener_calibracion_personalizada()
+        calibracion = obtener_metricas_calibracion()
         tempo_f = calibracion["tempo_factor"]
         gain_final = ganancia_prompt if ganancia_prompt != 0.0 else calibracion["gain_db"]
 
         mp3_tmp = "tmp_base.mp3"
         gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
         
-        filtro_eq = ",equalizer=f=140:width_type=h:width=100:g=5" if pitch_prompt < 0.80 else ""
+        # Filtro de ecualización ajustado por intensidad de dB
+        eq_gain = 5.0 if calibracion["intensidad_promedio"] < -20.0 else 3.0
+        filtro_eq = f",equalizer=f=140:width_type=h:width=100:g={eq_gain}" if pitch_prompt < 0.80 else ""
+        
         filtro_dsp = f"rubberband=pitch={pitch_prompt}:tempo={tempo_f}:formant=preserved:transients=smooth{filtro_eq},volume={gain_final}dB,highpass=f=80,lowpass=f=4500"
         
         cmd_ffmpeg = [
@@ -359,7 +378,7 @@ def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_s
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Error en síntesis dinámica: {e}")
+        print(f"⚠️ Error en síntesis DSP: {e}")
         if os.path.exists(mp3_tmp):
             os.remove(mp3_tmp)
         return False
@@ -449,7 +468,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Contexto como adjunto + Ahorro de tokens)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Métricas dB + Cadencia + FileLock)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
