@@ -1871,5 +1871,52 @@
                 "intensidad_db": -18.99
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-13 14:19:36",
+        "archivo": "muestras_voz/audio_usuario_1341.ogg",
+        "texto": "Bueno ponerme acá por escrito esos mismos links",
+        "partitura_metrica": [
+            {
+                "palabra": "Bueno",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "ponerme",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "acá",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "escrito",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "esos",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "mismos",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 431,
+                "intensidad_db": -17.78
+            }
+        ]
     }
 ]
