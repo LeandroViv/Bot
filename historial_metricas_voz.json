@@ -1935,5 +1935,77 @@
                 "intensidad_db": -20.79
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-13 22:27:23",
+        "archivo": "muestras_voz/audio_usuario_1353.ogg",
+        "texto": "Me puedes copiar el mensaje que me escribiste sobre la LLM, por favor.",
+        "partitura_metrica": [
+            {
+                "palabra": "Me",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "puedes",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "copiar",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "mensaje",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "escribiste",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "sobre",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "LLM,",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 474,
+                "intensidad_db": -24.14
+            }
+        ]
     }
 ]
