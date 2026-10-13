@@ -1700,5 +1700,22 @@
                 "intensidad_db": -80.0
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-13 06:16:26",
+        "archivo": "muestras_voz/audio_usuario_1327.ogg",
+        "texto": "por favor",
+        "partitura_metrica": [
+            {
+                "palabra": "por",
+                "duracion_ms": 2936,
+                "intensidad_db": -33.76
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 2936,
+                "intensidad_db": -33.76
+            }
+        ]
     }
 ]
