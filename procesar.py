@@ -302,4 +302,222 @@ def obtener_metricas_calibracion():
     return calibracion
 
 
-def generar_respuesta_ia(
+def generar_respuesta_ia(prompt_usuario):
+    global GEMINI_BLOQUEADO_POR_CUOTA
+    
+    historial_previo = obtener_historial_conversaciones(cant_lineas=80)
+
+    contexto_web = ""
+    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info", "links", "link"]):
+        snippets = buscar_en_la_web(prompt_usuario)
+        if snippets:
+            contexto_web = f"[RESULTADOS BUSQUEDA WEB]:\n{snippets}\n"
+
+    pitch_estimado = 0.88
+    if any(kw in prompt_usuario.lower() for kw in ["grave", "tachero", "profundo", "baja el tono"]):
+        pitch_estimado = 0.72
+    elif any(kw in prompt_usuario.lower() for kw in ["agudo", "rápido", "fino"]):
+        pitch_estimado = 1.05
+
+    resultado = {
+        "texto_completo": "De una che, decime.",
+        "pitch_factor": pitch_estimado,
+        "ganancia_db": 0.0
+    }
+    modelo_usado = "local"
+
+    prompt_completo_con_memoria = (
+        f"--- HISTORIAL DE CONVERSACIONES ---\n"
+        f"{historial_previo if historial_previo else '[Sin historial previo]'}\n"
+        f"--- FIN HISTORIAL ---\n\n"
+        f"{contexto_web}\n"
+        f"Mensaje actual: {prompt_usuario}"
+    )
+
+    texto_generado_crudo = ""
+
+    if client and not GEMINI_BLOQUEADO_POR_CUOTA:
+        try:
+            res = client.models.generate_content(
+                model=MODELO_GEMINI,
+                contents=[
+                    {"role": "user", "parts": [{"text": SYSTEM_PROMPT + "\n\n" + prompt_completo_con_memoria}]}
+                ]
+            )
+            texto_generado_crudo = (res.text or "").strip()
+            modelo_usado = "gemini"
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
+                GEMINI_BLOQUEADO_POR_CUOTA = True
+            else:
+                print(f"⚠️ Error en Gemini: {e}")
+
+    if modelo_usado == "local" or not texto_generado_crudo:
+        payload = {
+            "model": "llama3.2",
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt_completo_con_memoria}
+            ],
+            "options": {"num_ctx": 4096, "temperature": 0.7},
+            "stream": False,
+        }
+        try:
+            url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
+            res_local = requests.post(url_llama, json=payload, timeout=20)
+            if res_local.status_code == 200:
+                texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
+                modelo_usado = "llama"
+        except Exception as ex_local:
+            print(f"⚠️ Error en Llama local: {ex_local}")
+
+    if texto_generado_crudo:
+        limpio = re.sub(r'^```[a-zA-Z]*\s*', '', texto_generado_crudo)
+        limpio = re.sub(r'\s*```$', '', limpio).strip()
+        resultado["texto_completo"] = limpio
+
+    registrar_ejemplo_entrenamiento(prompt_usuario, resultado["texto_completo"], contexto_web, modelo_usado)
+    return resultado
+
+
+def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
+    try:
+        calibracion = obtener_metricas_calibracion()
+        tempo_f = calibracion["tempo_factor"]
+        gain_final = ganancia_prompt if ganancia_prompt != 0.0 else calibracion["gain_db"]
+
+        mp3_tmp = "tmp_base.mp3"
+        gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
+        
+        eq_gain = 5.0 if calibracion["intensidad_promedio"] < -20.0 else 3.0
+        filtro_eq = f",equalizer=f=140:width_type=h:width=100:g={eq_gain}" if pitch_prompt < 0.80 else ""
+        
+        filtro_dsp = f"rubberband=pitch={pitch_prompt}:tempo={tempo_f}:formant=preserved:transients=smooth{filtro_eq},volume={gain_final}dB,highpass=f=80,lowpass=f=4500"
+        
+        cmd_ffmpeg = [
+            "ffmpeg", "-y", "-i", mp3_tmp,
+            "-af", filtro_dsp,
+            "-c:a", "libopus", "-b:a", "48k", ogg_salida
+        ]
+        
+        subprocess.run(cmd_ffmpeg, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        
+        if os.path.exists(mp3_tmp):
+            os.remove(mp3_tmp)
+        return os.path.exists(ogg_salida)
+    except Exception as e:
+        print(f"⚠️ Error en síntesis DSP: {e}")
+        if os.path.exists(mp3_tmp):
+            os.remove(mp3_tmp)
+        return False
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    if update.message:
+        CHAT_ID_ACTIVO = update.message.chat_id
+        await update.message.reply_text(f"¡Buenas che! Chat ID `{CHAT_ID_ACTIVO}` fijado correctamente.", parse_mode="Markdown")
+
+
+async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.message.chat_id
+    u_text = update.message.text or update.message.caption or "[Texto recibido]"
+    
+    registrar_conversacion("Usuario", u_text)
+
+    res_ia = generar_respuesta_ia(u_text)
+    resp = res_ia["texto_completo"]
+    pitch_val = res_ia["pitch_factor"]
+    gain_val = res_ia["ganancia_db"]
+
+    registrar_conversacion("LeandroBot", resp)
+    await update.message.reply_text(resp)
+
+    ogg_f = "resp.ogg"
+    if sintetizar_voz_dinamica(resp, pitch_prompt=pitch_val, ganancia_prompt=gain_val, ogg_salida=ogg_f):
+        with open(ogg_f, "rb") as vf:
+            await update.message.reply_voice(voice=vf)
+        if os.path.exists(ogg_f):
+            os.remove(ogg_f)
+
+
+async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    async with lock_voz:
+        if not update.message:
+            return
+        CHAT_ID_ACTIVO = update.message.chat_id
+
+        await update.message.chat.send_action(action="record_voice")
+        file = await update.message.voice.get_file()
+
+        nombre_archivo = f"audio_usuario_{update.message.message_id}.ogg"
+        path_in = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
+        await file.download_to_drive(path_in)
+
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(path_in, beam_size=5, language="es")
+        texto_crudo = " ".join([s.text for s in segments]).strip() or "Che, te mandé un audio."
+
+        texto_corregido = cotejar_y_corregir_induccion(texto_crudo)
+
+        registrar_metricas_voz_usuario(path_in, texto_corregido)
+        registrar_conversacion("Usuario", f"[AUDIO] {texto_corregido}")
+
+        res_ia = generar_respuesta_ia(texto_corregido)
+        resp = res_ia["texto_completo"]
+        pitch_val = res_ia["pitch_factor"]
+        gain_val = res_ia["ganancia_db"]
+
+        registrar_conversacion("LeandroBot", resp)
+        await update.message.reply_text(resp)
+
+        ogg_f = "resp.ogg"
+        if sintetizar_voz_dinamica(resp, pitch_prompt=pitch_val, ganancia_prompt=gain_val, ogg_salida=ogg_f):
+            with open(ogg_f, "rb") as vf:
+                await update.message.reply_voice(voice=vf, caption=f"*(Interpretado: {texto_corregido})*")
+            if os.path.exists(ogg_f):
+                os.remove(ogg_f)
+
+
+def asegurar_e_iniciar_ollama():
+    try:
+        res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
+        if res.status_code == 200: return
+    except Exception:
+        pass
+    try:
+        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(4)
+    except Exception as e:
+        print(f"⚠️ Error iniciando Ollama: {e}")
+
+
+def main():
+    if not TOKEN:
+        print("❌ [ERROR CRÍTICO]: Falta TELEGRAM_BOT_TOKEN.")
+        return
+
+    asegurar_e_iniciar_ollama()
+
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria + Inducción + Búsqueda Web + DSP)...", flush=True)
+    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
+
+    app = Application.builder().token(TOKEN).request(request_config).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+
+    while True:
+        try:
+            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+        except Exception as e:
+            print(f"⚠️ Conexión interrumpida ({e}). Reconectando en 5 segundos...", flush=True)
+            time.sleep(5)
+
+
+if __name__ == "__main__":
+    main()
