@@ -1,10 +1,11 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Análisis e integración de dB (intensidad/volumen) y Cadencia (ritmo).
-- Lectura/escritura blindada de conversaciones.txt con file_lock.
-- Búsqueda web real (DuckDuckGo) e historial en dataset_entrenamiento_chat.json.
-- Mapeo dinámico de DSP Rubberband + Ecualización basada en tus métricas.
+- LECTURA Y ESCRITURA REPARADAS Y BLINDADAS de conversaciones.txt.
+- Inyección fluida del historial en la memoria del bot.
+- Registro en dataset_entrenamiento_chat.json.
+- Mapeo de métricas vocales (dB + Cadencia) y DSP Rubberband.
+- Búsqueda web real con DuckDuckGo.
 """
 
 import asyncio
@@ -50,6 +51,9 @@ FILE_METRICAS_GENERALES = "metricas_entrenamiento.json"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
+# Lock global para evitar que la lectura y la escritura colisionen en el disco
+file_lock = threading.Lock()
+
 if not os.path.exists(TXT_FILE):
     try:
         with open(TXT_FILE, "w", encoding="utf-8") as f:
@@ -77,7 +81,6 @@ ENV_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit() else None
 
 lock_voz = asyncio.Lock()
-file_lock = threading.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
 MODELO_GEMINI = "gemini-2.0-flash"
 
@@ -95,24 +98,28 @@ except Exception as e:
 # =====================================================================
 SYSTEM_PROMPT = (
     "Sos Leandro, un compañero y colega de Telegram. Hablás en perfecto español rioplatense (porteño) con voseo natural ('che', 'vós', 'fijate', 'posta').\n"
+    "Tenés acceso al historial previo de la charla guardado en conversaciones.txt. Leelo con atención y respondé teniendo en cuenta todo el contexto que hablaron antes.\n"
     "REGLA DE TONO Y TIMBRE: Evaluá la petición del usuario para definir el tono de voz:\n"
     "- Si pide 'voz más grave', 'tachero', 'profundo', 'nocturno' -> pitch_factor: 0.72\n"
     "- Si pide 'voz normal', 'colega', 'estándar' -> pitch_factor: 0.88\n"
     "- Si pide 'voz aguda' o 'rápida' -> pitch_factor: 1.05\n"
     "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown):\n"
     "{\n"
-    '  "texto_completo": "Tu respuesta redactada con la personalidad solicitada y acento porteño",\n'
+    '  "texto_completo": "Tu respuesta redactada teniendo en cuenta la conversación previa",\n'
     '  "pitch_factor": 0.88,\n'
     '  "ganancia_db": 0.0\n'
     "}"
 )
 
-# --- MANEJO BLINDADO DE conversaciones.txt ---
-def obtener_historial_adaptativo(cant_lineas=60):
+# --- FUNCIONES CORREGIDAS DE LECTURA Y ESCRITURA EN conversaciones.txt ---
+
+def obtener_historial_conversaciones(cant_lineas=80):
+    """Lee el historial de conversaciones.txt de forma robusta y sin bloqueos de archivo."""
     with file_lock:
         if not os.path.exists(TXT_FILE):
             return ""
         try:
+            lineas = []
             try:
                 with open(TXT_FILE, "r", encoding="utf-8") as f:
                     lineas = f.readlines()
@@ -120,13 +127,15 @@ def obtener_historial_adaptativo(cant_lineas=60):
                 with open(TXT_FILE, "r", encoding="latin-1", errors="ignore") as f:
                     lineas = f.readlines()
             
-            recientes = [l.strip() for l in lineas[-cant_lineas:] if l.strip()]
-            return "\n".join(recientes)
+            # Limpiamos y obtenemos las últimas líneas relevantes
+            recientes = [l.strip() for l in lineas if l.strip() and not l.startswith("[INFO]")]
+            return "\n".join(recientes[-cant_lineas:])
         except Exception as e:
-            print(f"⚠️ Error leyendo {TXT_FILE}: {e}")
+            print(f"⚠️ Error crítico leyendo {TXT_FILE}: {e}")
             return ""
 
 def registrar_conversacion(remitente, texto):
+    """Escribe de manera segura en conversaciones.txt forzando la sincronización en disco."""
     with file_lock:
         try:
             ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -135,7 +144,7 @@ def registrar_conversacion(remitente, texto):
                 f.write(linea)
                 f.flush()
                 os.fsync(f.fileno())
-            print(f"📝 [TXT REGISTRADO]: {remitente}: {texto[:50]}...")
+            print(f"📝 [MEMORIA TXT]: Guardado correctamente -> {remitente}: {texto[:40]}...")
         except Exception as e:
             print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}")
 
@@ -227,7 +236,6 @@ def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
         print(f"⚠️ Error actualizando métricas de voz: {e}")
 
 def obtener_metricas_calibracion():
-    """Calcula el tempo (cadencia) e intensidad promedio (dB) acumulada de tus audios."""
     calibracion = {"tempo_factor": 1.0, "gain_db": 0.0, "intensidad_promedio": -18.0}
     if not os.path.exists(FILE_METRICAS_VOZ):
         return calibracion
@@ -261,13 +269,15 @@ def obtener_metricas_calibracion():
 def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
-    historial_previo = obtener_historial_adaptativo(60)
+    # 1. RECUPERAR EL HISTORIAL REAL Y COMPLETO DE CONVERSACIONES.TXT
+    historial_previo = obtener_historial_conversaciones(cant_lineas=80)
 
+    # 2. Búsqueda web real si la consulta lo requiere
     contexto_web = ""
     if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info"]):
         snippets = buscar_en_la_web(prompt_usuario)
         if snippets:
-            contexto_web = f"[RESULTADOS WEB]:\n{snippets}\n"
+            contexto_web = f"[RESULTADOS BUSQUEDA WEB]:\n{snippets}\n"
 
     pitch_estimado = 0.88
     if any(kw in prompt_usuario.lower() for kw in ["grave", "tachero", "profundo", "baja el tono"]):
@@ -276,25 +286,26 @@ def generar_respuesta_ia(prompt_usuario):
         pitch_estimado = 1.05
 
     resultado = {
-        "texto_completo": "De una che, te capté.",
+        "texto_completo": "De una che, te capté perfecto.",
         "pitch_factor": pitch_estimado,
         "ganancia_db": 0.0
     }
     modelo_usado = "local"
 
+    # Inyección directa del historial de conversaciones.txt en el prompt
+    prompt_completo_con_memoria = (
+        f"--- MEMORIA COMPLETA DE CONVERSACIONES.TXT ---\n"
+        f"{historial_previo if historial_previo else '[Sin historial previo]'}\n"
+        f"--- FIN HISTORIAL ---\n"
+        f"{contexto_web}\n"
+        f"Mensaje actual del usuario: {prompt_usuario}"
+    )
+
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
-            partes_adjuntas = []
-            if historial_previo:
-                partes_adjuntas.append({"text": f"--- ADJUNTO: HISTORIAL DE CHARLA ---\n{historial_previo}\n--- FIN ADJUNTO ---"})
-            if contexto_web:
-                partes_adjuntas.append({"text": contexto_web})
-            
-            partes_adjuntas.append({"text": f"Mensaje actual: {prompt_usuario}"})
-
             res = client.models.generate_content(
                 model=MODELO_GEMINI,
-                contents=partes_adjuntas,
+                contents=prompt_completo_con_memoria,
                 config={
                     "system_instruction": SYSTEM_PROMPT,
                     "response_mime_type": "application/json"
@@ -314,14 +325,15 @@ def generar_respuesta_ia(prompt_usuario):
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
+            else:
+                print(f"⚠️ Error en Gemini: {e}")
 
     if modelo_usado == "local":
-        prompt_fallback = f"Historial adjunto:\n{historial_previo}\n{contexto_web}\nMensaje: {prompt_usuario}"
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt_fallback}
+                {"role": "user", "content": prompt_completo_con_memoria}
             ],
             "format": "json",
             "options": {"num_ctx": 4096, "temperature": 0.7},
@@ -349,7 +361,7 @@ def generar_respuesta_ia(prompt_usuario):
     return resultado
 
 # ==========================================
-# SÍNTESIS DSP CON CADENCIA Y INTENSIDAD (dB)
+# SÍNTESIS DSP RUBBERBAND CON CALIBRACIÓN DE dB
 # ==========================================
 def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
     try:
@@ -360,7 +372,6 @@ def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_s
         mp3_tmp = "tmp_base.mp3"
         gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
         
-        # Filtro de ecualización ajustado por intensidad de dB
         eq_gain = 5.0 if calibracion["intensidad_promedio"] < -20.0 else 3.0
         filtro_eq = f",equalizer=f=140:width_type=h:width=100:g={eq_gain}" if pitch_prompt < 0.80 else ""
         
@@ -396,13 +407,16 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto recibido]"
     
+    # 1. Escribir inmediatamente la entrada del usuario en conversaciones.txt
     registrar_conversacion("Usuario", u_text)
 
+    # 2. Generar respuesta de la IA leyendo conversaciones.txt
     res_ia = generar_respuesta_ia(u_text)
     resp = res_ia["texto_completo"]
     pitch_val = res_ia["pitch_factor"]
     gain_val = res_ia["ganancia_db"]
 
+    # 3. Escribir inmediatamente la respuesta del bot en conversaciones.txt
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
@@ -468,7 +482,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Métricas dB + Cadencia + FileLock)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Lectura y escritura continua de conversaciones.txt REPARADAS)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
