@@ -1,8 +1,6 @@
 name: Leandro Bot 24/7
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'
   push:
     branches:
       - main
@@ -29,8 +27,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Instalar FFmpeg y Rubberband
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg rubberband-cli
 
       - name: Instalar Ollama y descargar modelo
         run: |
@@ -42,7 +40,7 @@ jobs:
       - name: Instalar dependencias de Python
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade requests python-telegram-bot faster-whisper google-genai soundfile gtts edge-tts
+          pip install --upgrade requests python-telegram-bot faster-whisper google-genai soundfile gtts
 
       - name: Configurar Git
         run: |
