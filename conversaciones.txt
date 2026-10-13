@@ -989,3 +989,6 @@ Y el tipo, con una cara de deprimido total, le mete:
 [2026-10-13 14:25:45] USUARIO: ''Che, te escuché perfecto, acá sintonizamos de nuevo. Te voy a pasar los links de...''
 Revisa lo que me dijiste y completa la frase con las mismas palabras que usaste
 [2026-10-13 14:26:07] LEANDROBOT: De una che, decime.
+[2026-10-13 14:54:00] USUARIO: langchain.com
+Me mostraste ese link y uno más aparte de ese
+Decime cual era
