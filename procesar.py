@@ -1,9 +1,9 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Timbre y tono ajustables por prompt de forma dinámica (sin hardcodeo).
-- DSP Rubberband parametrizado en tiempo real.
-- Calibración exclusiva con historial_metricas_voz.json.
+- Búsqueda web real integrada (DuckDuckGo fallback / requests).
+- Ajuste dinámico de tono y timbre por prompt (interpretación fonética de intención).
+- Calibración de métricas de voz propias + Rubberband DSP.
 """
 
 import asyncio
@@ -68,11 +68,6 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 ENV_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit() else None
 
-if CHAT_ID_ACTIVO:
-    print(f"🎯 [SECRETS]: CHAT_ID cargado exitosamente: {CHAT_ID_ACTIVO}")
-else:
-    print("⚠️ [SECRETS]: TELEGRAM_CHAT_ID no encontrado en secretos. Se capturará con el primer mensaje.")
-
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
 MODELO_GEMINI = "gemini-2.0-flash"
@@ -87,20 +82,39 @@ except Exception as e:
     print(f"⚠️ [GEMINI ERROR]: {e}")
 
 # =====================================================================
-# SYSTEM PROMPT DINÁMICO (Devuelve texto y parámetros de audio ajustados)
+# SYSTEM PROMPT CON TABLA DE EQUIVALENCIAS DE DSP
 # =====================================================================
 SYSTEM_PROMPT = (
-    "Sos un asistente flexible que adopta el personaje que el usuario te pida (tachero, campesino, colega, etc.) "
-    "hablando estrictamente en español rioplatense (porteño) con voseo natural ('che', 'vós', 'fijate', 'posta').\n"
-    "Además de tu respuesta en texto, debés estimar los parámetros vocales ideales según lo que te pidió el usuario.\n"
+    "Sos Leandro, un compañero y colega de Telegram. Hablás en perfecto español rioplatense (porteño) con voseo natural.\n"
+    "REGLA DE TONO Y TIMBRE: Evaluá la petición del usuario para definir el tono de voz:\n"
+    "- Si pide 'voz más grave', 'tachero', 'profundo', 'nocturno' -> pitch_factor: 0.72\n"
+    "- Si pide 'voz normal', 'colega', 'estándar' -> pitch_factor: 0.88\n"
+    "- Si pide 'voz aguda' o 'rápida' -> pitch_factor: 1.05\n"
     "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown):\n"
     "{\n"
-    '  "texto_completo": "Tu respuesta redactada con el tono del personaje y acentuación porteña",\n'
-    '  "pitch_factor": 0.85,\n'
-    '  "ganancia_db": 0.0,\n'
-    '  "canal_salida": "ambos"\n'
+    '  "texto_completo": "Tu respuesta redactada con la personalidad solicitada",\n'
+    '  "pitch_factor": 0.72,\n'
+    '  "ganancia_db": 0.0\n'
     "}"
 )
+
+# --- MÓDULO DE BÚSQUEDA WEB REAL EN PYTHON ---
+def buscar_en_la_web(query):
+    """Realiza una búsqueda real en la web usando la API pública de DuckDuckGo."""
+    try:
+        print(f"🌐 [WEB SEARCH]: Buscando en la web: '{query}'...", flush=True)
+        url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            # Extraer snippets mediante Regex simple de HTML
+            snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', res.text, re.DOTALL)
+            limpios = [re.sub(r'<[^>]+>', '', s).strip() for s in snippets[:3]]
+            if limpios:
+                return "\n".join(limpios)
+    except Exception as e:
+        print(f"⚠️ Error en búsqueda web: {e}")
+    return ""
 
 def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
     try:
@@ -172,34 +186,6 @@ def obtener_calibracion_personalizada():
         print(f"⚠️ Error leyendo calibración: {e}")
     return calibracion_por_defecto
 
-def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, origen_modelo="gemini"):
-    try:
-        ejemplo = {
-            "timestamp": datetime.now().isoformat(),
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt_usuario},
-                {"role": "assistant", "content": respuesta_bot}
-            ],
-            "metadata": {"modelo_usado": origen_modelo}
-        }
-        with open(FILE_DATASET, "a", encoding="utf-8") as f:
-            f.write(json_lib.dumps(ejemplo, ensure_ascii=False) + "\n")
-    except Exception as e:
-        print(f"⚠️ Error guardando dataset: {e}")
-
-def actualizar_metricas_generales(modelo_usado):
-    try:
-        with open(FILE_METRICAS_GENERALES, "r", encoding="utf-8") as f:
-            m = json_lib.load(f)
-        m["total_interacciones"] = m.get("total_interacciones", 0) + 1
-        if modelo_usado == "gemini": m["gemini_exitos"] = m.get("gemini_exitos", 0) + 1
-        elif modelo_usado == "llama": m["llama_exitos"] = m.get("llama_exitos", 0) + 1
-        with open(FILE_METRICAS_GENERALES, "w", encoding="utf-8") as f:
-            json_lib.dump(m, f, indent=4, ensure_ascii=False)
-    except Exception as e:
-        print(f"⚠️ Error actualizando métricas generales: {e}")
-
 def registrar_conversacion(remitente, texto):
     try:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -210,19 +196,35 @@ def registrar_conversacion(remitente, texto):
 
 def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
+    
+    # 1. Chequeo de intención de búsqueda en la web
+    contexto_web = ""
+    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es"]):
+        snippets = buscar_en_la_web(prompt_usuario)
+        if snippets:
+            contexto_web = f"\n[RESULTADOS WEB REALES PARA CONSIDERAR]:\n{snippets}\n"
+
+    prompt_final = prompt_usuario + contexto_web
+
+    # Fallback dinámico de Pitch por palabras clave si la IA es indecisa
+    pitch_estimado = 0.88
+    if any(kw in prompt_usuario.lower() for kw in ["grave", "tachero", "profundo", "baja el tono"]):
+        pitch_estimado = 0.72
+    elif any(kw in prompt_usuario.lower() for kw in ["agudo", "rápido", "fino"]):
+        pitch_estimado = 1.05
+
     resultado = {
-        "texto_completo": "De una che, te capté perfecto.",
-        "pitch_factor": 0.85,
+        "texto_completo": "De una che, te capté.",
+        "pitch_factor": pitch_estimado,
         "ganancia_db": 0.0
     }
     modelo_usado = "local"
 
-    # 1. Gemini
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             res = client.models.generate_content(
                 model=MODELO_GEMINI,
-                contents=prompt_usuario,
+                contents=prompt_final,
                 config={
                     "system_instruction": SYSTEM_PROMPT,
                     "response_mime_type": "application/json"
@@ -242,16 +244,13 @@ def generar_respuesta_ia(prompt_usuario):
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-            else:
-                print(f"⚠️ Gemini falló, conmutando a Llama: {e}")
 
-    # 2. Fallback a Llama (Ollama local)
     if modelo_usado == "local":
         payload = {
             "model": "llama3.2",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt_usuario}
+                {"role": "user", "content": prompt_final}
             ],
             "format": "json",
             "options": {"num_ctx": 4096, "temperature": 0.7},
@@ -274,27 +273,23 @@ def generar_respuesta_ia(prompt_usuario):
         except Exception as ex_local:
             print(f"⚠️ Error en Llama local: {ex_local}")
 
-    actualizar_metricas_generales(modelo_usado)
-    registrar_ejemplo_entrenamiento(prompt_usuario, resultado["texto_completo"], modelo_usado)
-
     return resultado
 
 # ==========================================
-# SÍNTESIS DSP DINÁMICA POR PROMPT
+# SÍNTESIS DSP RUBBERBAND APLICANDO PITCH REAL
 # ==========================================
 def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
     try:
         calibracion = obtener_calibracion_personalizada()
         tempo_f = calibracion["tempo_factor"]
-        
-        # Combinamos ganancia de tus métricas con la solicitada en el prompt
         gain_final = ganancia_prompt if ganancia_prompt != 0.0 else calibracion["gain_db"]
 
         mp3_tmp = "tmp_base.mp3"
         gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
         
-        # Filtro DSP aplicando el pitch devuelto por la IA según lo que pediste en el prompt
-        filtro_dsp = f"rubberband=pitch={pitch_prompt}:tempo={tempo_f}:formant=preserved:transients=smooth,volume={gain_final}dB,highpass=f=90,lowpass=f=4500"
+        # Filtro de Rubberband + Ecualización adaptativa para tonos graves
+        filtro_eq = ",equalizer=f=140:width_type=h:width=100:g=5" if pitch_prompt < 0.80 else ""
+        filtro_dsp = f"rubberband=pitch={pitch_prompt}:tempo={tempo_f}:formant=preserved:transients=smooth{filtro_eq},volume={gain_final}dB,highpass=f=80,lowpass=f=4500"
         
         cmd_ffmpeg = [
             "ffmpeg", "-y", "-i", mp3_tmp,
@@ -317,7 +312,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text(f"¡Buenas che! Quedamos sintonizados en el Chat ID `{CHAT_ID_ACTIVO}`.", parse_mode="Markdown")
+        await update.message.reply_text(f"¡Buenas che! Chat ID `{CHAT_ID_ACTIVO}` fijado correctamente.", parse_mode="Markdown")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -397,7 +392,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Timbre dinámico por prompt)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Búsqueda web + Tono dinámico)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
