@@ -1,8 +1,8 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Actualizado a gemini-2.5-flash.
-- Timeout extendido para Llama local.
+- Con logs detallados de depuración para Gemini y Llama local.
+- Modelo actualizado a gemini-2.5-flash.
 - Memoria contextual integrada, búsqueda web y DSP de voz.
 """
 
@@ -73,7 +73,7 @@ CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit
 
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
-MODELO_GEMINI = "gemini-2.5-flash"  # Actualizado al modelo vigente
+MODELO_GEMINI = "gemini-2.5-flash"
 
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
@@ -301,7 +301,7 @@ def generar_respuesta_ia(prompt_usuario):
     historial_previo = obtener_historial_conversaciones(cant_lineas=80)
 
     contexto_web = ""
-    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info", "links", "link"]):
+    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info", "links", "link", "copiar", "mensaje"]):
         snippets = buscar_en_la_web(prompt_usuario)
         if snippets:
             contexto_web = f"[RESULTADOS BUSQUEDA WEB]:\n{snippets}\n"
@@ -313,7 +313,7 @@ def generar_respuesta_ia(prompt_usuario):
         pitch_estimado = 1.05
 
     resultado = {
-        "texto_completo": "De una che, decime.",
+        "texto_completo": "Che, me quedé sin conexión con los modelos, fíjate los logs.",
         "pitch_factor": pitch_estimado,
         "ganancia_db": 0.0
     }
@@ -331,6 +331,7 @@ def generar_respuesta_ia(prompt_usuario):
 
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
+            print(f"🤖 [CONECTANDO]: Intentando con Gemini ({MODELO_GEMINI})...", flush=True)
             res = client.models.generate_content(
                 model=MODELO_GEMINI,
                 contents=[
@@ -338,14 +339,16 @@ def generar_respuesta_ia(prompt_usuario):
                 ]
             )
             texto_generado_crudo = (res.text or "").strip()
-            modelo_usado = "gemini"
+            if texto_generado_crudo:
+                print(f"✅ [GEMINI OK]: Respuesta recibida.", flush=True)
+                modelo_usado = "gemini"
         except Exception as e:
+            print(f"⚠️ [GEMINI ERROR CRÍTICO]: {e}", flush=True)
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
-            else:
-                print(f"⚠️ Error en Gemini: {e}")
 
     if modelo_usado == "local" or not texto_generado_crudo:
+        print(f"🦙 [CONECTANDO]: Intentando con Llama local...", flush=True)
         payload = {
             "model": "llama3.2",
             "messages": [
@@ -358,11 +361,14 @@ def generar_respuesta_ia(prompt_usuario):
         try:
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
             res_local = requests.post(url_llama, json=payload, timeout=45)
+            print(f"📡 [LLAMA STATUS]: Código HTTP {res_local.status_code}", flush=True)
             if res_local.status_code == 200:
                 texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
-                modelo_usado = "llama"
+                if texto_generado_crudo:
+                    print(f"✅ [LLAMA OK]: Respuesta recibida.", flush=True)
+                    modelo_usado = "llama"
         except Exception as ex_local:
-            print(f"⚠️ Error en Llama local: {ex_local}")
+            print(f"⚠️ [LLAMA ERROR CRÍTICO]: {ex_local}", flush=True)
 
     if texto_generado_crudo:
         limpio = re.sub(r'^```[a-zA-Z]*\s*', '', texto_generado_crudo)
