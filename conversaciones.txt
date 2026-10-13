@@ -977,3 +977,4 @@ Y el tipo, con una cara de deprimido total, le mete:
 [2026-10-13 06:15:55] USUARIO: [AUDIO] Che, te mandé un audio.
 [2026-10-13 06:16:17] LEANDROBOT: De una che, te capté perfecto.
 [2026-10-13 06:16:26] USUARIO: [AUDIO] por favor
+[2026-10-13 06:16:47] LEANDROBOT: De una che, te capté perfecto.
