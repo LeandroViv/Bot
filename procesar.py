@@ -1,8 +1,10 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Gemini 3.8-flash principal + Ollama local de fallback en GitHub Actions.
-- Memoria contextual integrada, búsqueda web y DSP de voz.
+- Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
+- Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
+- Gemini 3.8-flash principal + Ollama local de fallback.
+- Memoria contextual integrada, búsqueda web y Whisper de transcripción.
 """
 
 import asyncio
@@ -25,7 +27,7 @@ if hf_token:
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.")
 # ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con Autonomía y DSP...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Edge-TTS, Autonomía y DSP...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -38,7 +40,7 @@ from telegram.ext import (
 )
 from faster_whisper import WhisperModel
 from google import genai
-from gtts import gTTS
+import edge_tts
 import soundfile as sf
 
 TXT_FILE = "conversaciones.txt"
@@ -347,7 +349,7 @@ def generar_respuesta_ia(prompt_usuario):
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    # 2. FALLBACK A OLLAMA (Si Gemini falla, comprueba y usa Ollama local en el runner)
+    # 2. FALLBACK A OLLAMA
     if not texto_generado_crudo:
         print(f"🦙 [VERIFICANDO OLLAMA]: Comprobando disponibilidad en {OLLAMA_HOST}...", flush=True)
         ollama_disponible = False
@@ -394,14 +396,17 @@ def generar_respuesta_ia(prompt_usuario):
     return resultado
 
 
-def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
+async def sintetizar_voz_dinamica_edge(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_salida="resp.ogg"):
+    mp3_tmp = f"tmp_edge_{int(time.time())}_{os.getpid()}.mp3"
     try:
         calibracion = obtener_metricas_calibracion()
         tempo_f = calibracion["tempo_factor"]
         gain_final = ganancia_prompt if ganancia_prompt != 0.0 else calibracion["gain_db"]
 
-        mp3_tmp = "tmp_base.mp3"
-        gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
+        voz_elegida = "es-AR-TomasNeural"
+        
+        communicate = edge_tts.Communicate(text=texto, voice=voz_elegida)
+        await communicate.save(mp3_tmp)
         
         eq_gain = 5.0 if calibracion["intensidad_promedio"] < -20.0 else 3.0
         filtro_eq = f",equalizer=f=140:width_type=h:width=100:g={eq_gain}" if pitch_prompt < 0.80 else ""
@@ -420,7 +425,7 @@ def sintetizar_voz_dinamica(texto, pitch_prompt=0.85, ganancia_prompt=0.0, ogg_s
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Error en síntesis DSP: {e}")
+        print(f"⚠️ Error en síntesis Edge-TTS + DSP: {e}")
         if os.path.exists(mp3_tmp):
             os.remove(mp3_tmp)
         return False
@@ -450,8 +455,8 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
-    ogg_f = "resp.ogg"
-    if sintetizar_voz_dinamica(resp, pitch_prompt=pitch_val, ganancia_prompt=gain_val, ogg_salida=ogg_f):
+    ogg_f = f"resp_{update.message.message_id}.ogg"
+    if await sintetizar_voz_dinamica_edge(resp, pitch_prompt=pitch_val, ganancia_prompt=gain_val, ogg_salida=ogg_f):
         with open(ogg_f, "rb") as vf:
             await update.message.reply_voice(voice=vf)
         if os.path.exists(ogg_f):
@@ -489,8 +494,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_conversacion("LeandroBot", resp)
         await update.message.reply_text(resp)
 
-        ogg_f = "resp.ogg"
-        if sintetizar_voz_dinamica(resp, pitch_prompt=pitch_val, ganancia_prompt=gain_val, ogg_salida=ogg_f):
+        ogg_f = f"resp_{update.message.message_id}.ogg"
+        if await sintetizar_voz_dinamica_edge(resp, pitch_prompt=pitch_val, ganancia_prompt=gain_val, ogg_salida=ogg_f):
             with open(ogg_f, "rb") as vf:
                 await update.message.reply_voice(voice=vf, caption=f"*(Interpretado: {texto_corregido})*")
             if os.path.exists(ogg_f):
@@ -517,7 +522,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Memoria + Inducción + Búsqueda Web + DSP)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria + Inducción + Búsqueda Web + Edge-TTS + DSP)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
