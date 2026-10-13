@@ -1,6 +1,9 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
-Script definitivo para GitHub Actions (Gemini TTS + gTTS + DSP Espectral con Rubberband): procesar.py
+Script definitivo para GitHub Actions: procesar.py
+- Personaje e iniciativa espontánea 100% prompteables desde SYSTEM_PROMPT.
+- Síntesis de voz siempre procesada con DSP Rubberband y tu historial_metricas_voz.json.
+- Transcripción con Faster-Whisper y actualización acumulativa de tu dataset métrico.
 """
 
 import asyncio
@@ -8,6 +11,8 @@ json_lib = __import__('json')
 import os
 import re
 import sys
+import math
+import random
 import subprocess
 import requests
 import time
@@ -33,14 +38,27 @@ from telegram.ext import (
 )
 from faster_whisper import WhisperModel
 from gtts import gTTS
+import soundfile as sf
 
 TXT_FILE = "conversaciones.txt"
 MEMORIA_TAREAS = "memoria_tareas.json"
 CARPETA_MUESTRAS = "muestras_voz"
+FILE_METRICAS_VOZ = "historial_metricas_voz.json"
+FILE_DATASET = "dataset_entrenamiento.jsonl"
+FILE_METRICAS_GENERALES = "metricas_entrenamiento.json"
+
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
 if not os.path.exists(MEMORIA_TAREAS):
     with open(MEMORIA_TAREAS, "w", encoding="utf-8") as f:
+        json_lib.dump([], f, indent=4, ensure_ascii=False)
+
+if not os.path.exists(FILE_METRICAS_GENERALES):
+    with open(FILE_METRICAS_GENERALES, "w", encoding="utf-8") as f:
+        json_lib.dump({"total_interacciones": 0, "gemini_exitos": 0, "llama_exitos": 0, "audios_procesados": 0}, f, indent=4)
+
+if not os.path.exists(FILE_METRICAS_VOZ):
+    with open(FILE_METRICAS_VOZ, "w", encoding="utf-8") as f:
         json_lib.dump([], f, indent=4, ensure_ascii=False)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -68,18 +86,137 @@ try:
 except Exception as e:
     print(f"⚠️ [GEMINI ERROR]: {e}")
 
-SYSTEM_PROMPT = (
-    "Sos Leandro, locutor nocturno de radio FM y colega por Telegram. Porteño, cálido y directo.\n"
-    "REGLA FONÉTICA Y LINGÜÍSTICA OBLIGATORIA: Escribí y respondé usando estrictamente el español rioplatense (porteño), "
-    "utilizando el voseo natural ('che', 'vós sabés', 'vení', 'fijate', 'escuchá', 'sintonizamos en un toque', 'posta'), "
-    "lunfardo sutil y la entonación de Buenos Aires.\n"
-    "INTELIGENCIA AUTÓNOMA: Iniciás charlas por propia cuenta, compartís pensamientos nocturnos y chequeás tareas pendientes.\n"
+# =====================================================================
+# SYSTEM PROMPT TOTALMENTE PROMPTEABLE
+# (Cambiá la personalidad o las reglas de espontaneidad cuando quieras)
+# =====================================================================
+SYSTEM_PROMPT = os.environ.get(
+    "CUSTOM_SYSTEM_PROMPT",
+    "Sos Leandro, un colega y compañero de charlas por Telegram. Sos directo, cálido y hablas en perfecto español rioplatense (porteño), "
+    "usando voseo natural ('che', 'vós sabés', 'fijate', 'posta', 'de una') y lunfardo sutil.\n"
+    "REGLA DE PERSONAJE: Podés adoptar el rol que se te pida (un campesino, un programador, un locutor, etc.) según el contexto.\n"
+    "REGLA ESPONTÁNEA: Si tenés activada la iniciativa en tus instrucciones, podés mandar un mensaje o reflexión por tu cuenta si descubrís algo interesante.\n"
     "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código markdown):\n"
     "{\n"
-    '  "texto_completo": "Tu respuesta hablada o escrita con acentuación porteña",\n'
+    '  "texto_completo": "Tu respuesta redactada según el personaje y con acentuación porteña",\n'
     '  "canal_salida": "ambos"\n'
     "}"
 )
+
+def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
+    try:
+        wav_tmp = f"tmp_analisis_{int(time.time())}.wav"
+        subprocess.run([
+            "ffmpeg", "-y", "-i", path_audio_ogg, "-ar", "16000", "-ac", "1", wav_tmp
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+        intensidad_db_estimada = -2.0
+        duracion_total_ms = 1000
+
+        if os.path.exists(wav_tmp):
+            data, samplerate = sf.read(wav_tmp)
+            duracion_total_ms = int((len(data) / samplerate) * 1000)
+            
+            rms = math.sqrt(sum(data**2) / len(data)) if len(data) > 0 else 0.0001
+            intensidad_db_estimada = round(20 * math.log10(max(rms, 0.0001)), 2)
+            os.remove(wav_tmp)
+
+        palabras = texto_transcripto.split()
+        cant_palabras = len(palabras) if palabras else 1
+        duracion_promedio_palabra = max(150, int(duracion_total_ms / cant_palabras))
+
+        partitura = []
+        for p in palabras:
+            partitura.append({
+                "palabra": p,
+                "duracion_ms": duracion_promedio_palabra,
+                "intensidad_db": intensidad_db_estimada
+            })
+
+        nueva_entrada = {
+            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            "tipo": "voz_usuario",
+            "archivo": path_audio_ogg,
+            "texto": texto_transcripto,
+            "partitura_metrica": partitura
+        }
+
+        historial = []
+        if os.path.exists(FILE_METRICAS_VOZ):
+            try:
+                with open(FILE_METRICAS_VOZ, "r", encoding="utf-8") as f:
+                    historial = json_lib.load(f)
+            except Exception:
+                historial = []
+
+        historial.append(nueva_entrada)
+        with open(FILE_METRICAS_VOZ, "w", encoding="utf-8") as f:
+            json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+
+        print(f"📈 [HISTORIAL METRICAS]: Agregadas {cant_palabras} palabras nuevas a {FILE_METRICAS_VOZ}.")
+    except Exception as e:
+        print(f"⚠️ Error actualizando {FILE_METRICAS_VOZ}: {e}")
+
+def obtener_calibracion_personalizada():
+    calibracion_por_defecto = {"tempo_factor": 1.0, "gain_db": 0.0}
+    if not os.path.exists(FILE_METRICAS_VOZ):
+        return calibracion_por_defecto
+    try:
+        with open(FILE_METRICAS_VOZ, "r", encoding="utf-8") as f:
+            datos = json_lib.load(f)
+        
+        duraciones = []
+        intensidades = []
+        
+        for entrada in datos:
+            for metrica in entrada.get("partitura_metrica", []):
+                if "duracion_ms" in metrica:
+                    duraciones.append(metrica["duracion_ms"])
+                if "intensidad_db" in metrica:
+                    intensidades.append(metrica["intensidad_db"])
+        
+        if duraciones and intensidades:
+            promedio_duracion = sum(duraciones) / len(duraciones)
+            promedio_intensidad = sum(intensidades) / len(intensidades)
+            
+            tempo_calibrado = 350.0 / max(promedio_duracion, 150.0)
+            tempo_calibrado = max(0.8, min(tempo_calibrado, 1.25))
+            
+            return {"tempo_factor": round(tempo_calibrado, 2), "gain_db": round(promedio_intensidad, 2)}
+    except Exception as e:
+        print(f"⚠️ Error leyendo calibración: {e}")
+    
+    return calibracion_por_defecto
+
+def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, origen_modelo="gemini"):
+    try:
+        ejemplo = {
+            "timestamp": datetime.now().isoformat(),
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt_usuario},
+                {"role": "assistant", "content": respuesta_bot}
+            ],
+            "metadata": {"modelo_usado": origen_modelo}
+        }
+        with open(FILE_DATASET, "a", encoding="utf-8") as f:
+            f.write(json_lib.dumps(ejemplo, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"⚠️ Error guardando dataset: {e}")
+
+def actualizar_metricas_generales(modelo_usado):
+    try:
+        with open(FILE_METRICAS_GENERALES, "r", encoding="utf-8") as f:
+            m = json_lib.load(f)
+        m["total_interacciones"] = m.get("total_interacciones", 0) + 1
+        if modelo_usado == "gemini":
+            m["gemini_exitos"] = m.get("gemini_exitos", 0) + 1
+        elif modelo_usado == "llama":
+            m["llama_exitos"] = m.get("llama_exitos", 0) + 1
+        with open(FILE_METRICAS_GENERALES, "w", encoding="utf-8") as f:
+            json_lib.dump(m, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        print(f"⚠️ Error actualizando métricas generales: {e}")
 
 def registrar_conversacion(remitente, texto):
     try:
@@ -93,14 +230,14 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
     global GEMINI_BLOQUEADO_POR_CUOTA
     p = prompt_usuario
     if es_proactivo:
-        p = f"Iniciá vos la conversación con tu colega en Telegram por iniciativa propia sobre este motivo: {prompt_usuario}."
+        p = f"Iniciás vos la charla espontáneamente según tu personaje asignado sobre este motivo: {prompt_usuario}."
 
     respuesta = ""
+    modelo_usado = "local"
 
     # 1. Gemini
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
-            print(f"🤖 [IA GEMINI]: Generando respuesta con {MODELO_GEMINI}...", flush=True)
             res = client.models.generate_content(
                 model=MODELO_GEMINI,
                 contents=p,
@@ -118,17 +255,15 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
                 texto = data.get("texto_completo")
                 if texto and str(texto).strip():
                     respuesta = str(texto).strip()
-                    print("✅ [IA GEMINI]: Éxito.")
+                    modelo_usado = "gemini"
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
-                print("⚠️ [GEMINI CUOTA EXCEDIDA]: Conmutando a Llama para esta sesión.")
                 GEMINI_BLOQUEADO_POR_CUOTA = True
             else:
                 print(f"⚠️ Gemini falló, conmutando a Llama: {e}")
 
     # 2. Fallback a Llama (Ollama local)
     if not respuesta:
-        print(f"🦙 [IA LLAMA]: Conectando a Ollama en {OLLAMA_HOST}...", flush=True)
         payload = {
             "model": "llama3.2",
             "messages": [
@@ -151,29 +286,24 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
                 texto = data.get("texto_completo")
                 if texto and str(texto).strip():
                     respuesta = str(texto).strip()
-                    print("✅ [IA LLAMA]: Éxito.")
+                    modelo_usado = "llama"
         except Exception as ex_local:
             print(f"⚠️ Error en Llama local: {ex_local}")
 
-    # 3. Comodín de radio FM
     if not respuesta or not str(respuesta).strip():
-        print("⚠️ [RADIO FM]: Usando comodín de respaldo local.")
-        import random
-        respuestas_radio = [
-            "¡Buenas che! Acá Leandro en el éter. Te capté perfecto. Sintonizamos en un toque.",
-            "Qué hacés che, de una. Anotado acá en la consola de la radio.",
-            "Totalmente de acuerdo, che. Me quedo con eso en mente para la próxima salida al aire."
-        ]
-        respuesta = random.choice(respuestas_radio)
+        respuesta = "De una che, te capté perfecto. Sintonizados."
+
+    actualizar_metricas_generales(modelo_usado)
+    registrar_ejemplo_entrenamiento(prompt_usuario, respuesta, modelo_usado)
 
     return respuesta
 
 # ==========================================
-# SISTEMA DE VOCES: GEMINI TTS + DSP ESPECTRAL (Rubberband)
+# SÍNTESIS DSP CON RUBBERBAND Y MÉTRICAS PROPIAS
 # ==========================================
 VOZ_ESTILO_PERSONALIZADO = os.environ.get(
     "VOZ_ESTILO",
-    "Locutor nocturno de radio FM porteño, hombre de 42 años, tono barítono cálido, pausado, acústica de cabina de radio y voseo de Buenos Aires"
+    "Voz masculina natural, cálida y pausada de Buenos Aires"
 )
 VOZ_BASE_NOMBRE = os.environ.get("VOZ_BASE", "Charon")
 
@@ -203,18 +333,20 @@ def sintetizar_voz_gemini(texto, ogg_salida="resp.ogg"):
         print(f"⚠️ Gemini TTS falló: {e}")
         return False
 
-def sintetizar_voz_con_espectro_armonico(texto, ogg_salida="resp.ogg"):
+def sintetizar_voz_con_calibracion_propia(texto, ogg_salida="resp.ogg"):
     try:
-        print("🎙️ [DSP ESPECTRAL]: Modelando espectro armónico y formantes...", flush=True)
+        calibracion = obtener_calibracion_personalizada()
+        tempo_f = calibracion["tempo_factor"]
+        gain_db = calibracion["gain_db"]
+
         mp3_tmp = "tmp_base.mp3"
-        
-        # 1. Generamos base clara con gTTS
         gTTS(text=texto, lang="es", tld="com.ar").save(mp3_tmp)
         
-        # 2. Procesamiento espectral con rubberband y ecualización de estudio
+        filtro_dsp = f"rubberband=pitch=0.88:tempo={tempo_f}:formant=preserved:transients=smooth,volume={gain_db}dB,highpass=f=100,lowpass=f=4500"
+        
         cmd_ffmpeg = [
             "ffmpeg", "-y", "-i", mp3_tmp,
-            "-af", "rubberband=pitch=0.85:formant=preserved:transients=smooth:detector=compound,highpass=f=120,lowpass=f=4200",
+            "-af", filtro_dsp,
             "-c:a", "libopus", "-b:a", "48k", ogg_salida
         ]
         
@@ -224,61 +356,60 @@ def sintetizar_voz_con_espectro_armonico(texto, ogg_salida="resp.ogg"):
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Error en modelado armónico: {e}")
+        print(f"⚠️ Error en síntesis propia: {e}")
         if os.path.exists(mp3_tmp):
             os.remove(mp3_tmp)
         return False
 
 async def sintetizar_voz(texto, ogg_salida="resp.ogg"):
-    # 1. Gemini TTS (si hay cuota)
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             if sintetizar_voz_gemini(texto, ogg_salida):
-                print("🎙️ [GEMINI TTS]: Audio sintetizado con éxito.")
                 return True
         except Exception:
             pass
     
-    # 2. Síntesis con control de espectro armónico y formantes (Rubberband + DSP)
-    return sintetizar_voz_con_espectro_armonico(texto, ogg_salida)
+    return sintetizar_voz_con_calibracion_propia(texto, ogg_salida)
 
-# Motor Proactivo Autónomo
-async def bucle_proactivo_autonomo(bot_app: Application):
-    print("⚡ [PROACTIVO]: Motor de iniciativa propia iniciado...", flush=True)
-    await asyncio.sleep(15)
+# --- BUCLE ESPONTÁNEO PROMPTEABLE ---
+async def bucle_espontaneo_prompteable(bot_app: Application):
+    """Evalúa si en el SYSTEM_PROMPT le indicaste que tenga iniciativa propia."""
+    print("⚡ [PROACTIVO]: Verificando reglas del System Prompt...", flush=True)
+    await asyncio.sleep(25)
 
     while True:
         try:
-            await asyncio.sleep(180)
+            await asyncio.sleep(1800) # Chequeo cada 30 minutos
+
             global CHAT_ID_ACTIVO
             if not CHAT_ID_ACTIVO:
                 continue
 
-            motivo = "Reflexión nocturna de radio FM espontánea"
-            print(f"🎙️ [PROACTIVO]: Disparando mensaje espontáneo al chat {CHAT_ID_ACTIVO}...", flush=True)
+            # Solo dispara si el prompt del sistema le autoriza la iniciativa propia
+            if "espontáne" in SYSTEM_PROMPT.lower() or "iniciativa" in SYSTEM_PROMPT.lower() or "proactivo" in SYSTEM_PROMPT.lower():
+                print(f"🎙️ [ESPONTÁNEO]: Disparando mensaje según prompt...", flush=True)
+                motivo = "Pensamiento o novedad según tu personaje asignado"
+                texto_spont = generar_texto_ia(motivo, es_proactivo=True)
+                registrar_conversacion("Leandro (Espontáneo)", texto_spont)
 
-            texto_spont = generar_texto_ia(motivo, es_proactivo=True)
-            registrar_conversacion("Leandro (Proactivo)", texto_spont)
+                await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=texto_spont)
 
-            await bot_app.bot.send_message(chat_id=CHAT_ID_ACTIVO, text=f"📻 *Leandro (Radio FM)*:\n{texto_spont}", parse_mode="Markdown")
-
-            ogg_f = "proactivo.ogg"
-            if await sintetizar_voz(texto_spont, ogg_f):
-                with open(ogg_f, "rb") as vf:
-                    await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
-                if os.path.exists(ogg_f):
-                    os.remove(ogg_f)
+                ogg_f = "espontaneo.ogg"
+                if await sintetizar_voz(texto_spont, ogg_f):
+                    with open(ogg_f, "rb") as vf:
+                        await bot_app.bot.send_voice(chat_id=CHAT_ID_ACTIVO, voice=vf)
+                    if os.path.exists(ogg_f):
+                        os.remove(ogg_f)
 
         except Exception as e:
-            print(f"⚠️ Error en bucle proactivo: {e}", flush=True)
-            await asyncio.sleep(10)
+            print(f"⚠️ Error en bucle espontáneo: {e}", flush=True)
+            await asyncio.sleep(60)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        print(f"💡 [CHAT START]: Chat ID detectado y fijado: {CHAT_ID_ACTIVO}")
-        await update.message.reply_text(f"¡Buenas che! Acá Leandro en el éter. Tu Chat ID es `{CHAT_ID_ACTIVO}`. Sintonizado.", parse_mode="Markdown")
+        await update.message.reply_text(f"¡Buenas che! Quedamos sintonizados en el Chat ID `{CHAT_ID_ACTIVO}`.", parse_mode="Markdown")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -308,13 +439,16 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
-        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
+
+        nombre_archivo = f"audio_usuario_{update.message.message_id}.ogg"
+        path_in = os.path.join(CARPETA_MUESTRAS, nombre_archivo)
         await file.download_to_drive(path_in)
 
-        print("🎙️ [AUDIO]: Transcribiendo nota de voz con Faster-Whisper...", flush=True)
         model = WhisperModel("base", device="cpu", compute_type="int8")
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
         texto_crudo = " ".join([s.text for s in segments]).strip() or "Che, te mandé un audio."
+
+        registrar_metricas_voz_usuario(path_in, texto_crudo)
 
         registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
         resp = generar_texto_ia(texto_crudo)
@@ -327,19 +461,14 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_voice(voice=vf, caption=f"*(Interpretado: {texto_crudo})*")
             if os.path.exists(ogg_f):
                 os.remove(ogg_f)
-        
-        if os.path.exists(path_in):
-            os.remove(path_in)
 
 def asegurar_e_iniciar_ollama():
-    print("🦙 [OLLAMA CHECK]: Verificando entorno local de Ollama...", flush=True)
     try:
         res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
         if res.status_code == 200:
-            print("✅ [OLLAMA]: El servicio ya está activo.")
             return
     except Exception:
-        print("⚠️ [OLLAMA]: Iniciando demonio en segundo plano...")
+        pass
 
     try:
         subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -354,12 +483,11 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Polling anticorte)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot con Telegram (Polling continuo)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     async def post_init(application: Application):
-        print("⚡ [PROACTIVO]: Registrando bucle autónomo en segundo plano...", flush=True)
-        asyncio.create_task(bucle_proactivo_autonomo(application))
+        asyncio.create_task(bucle_espontaneo_prompteable(application))
 
     app = Application.builder().token(TOKEN).request(request_config).post_init(post_init).build()
     app.add_handler(CommandHandler("start", start))
@@ -368,7 +496,6 @@ def main():
 
     while True:
         try:
-            print("🔄 [POLLING]: Escuchando eventos de Telegram...", flush=True)
             app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
         except Exception as e:
             print(f"⚠️ Conexión interrumpida ({e}). Reconectando en 5 segundos...", flush=True)
