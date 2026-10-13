@@ -1668,5 +1668,37 @@
             }
         ],
         "total_entrenamientos": 20
+    },
+    {
+        "timestamp": "2026-10-13 06:15:55",
+        "archivo": "muestras_voz/audio_usuario_1326.ogg",
+        "texto": "Che, te mandé un audio.",
+        "partitura_metrica": [
+            {
+                "palabra": "Che,",
+                "duracion_ms": 1306,
+                "intensidad_db": -80.0
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 1306,
+                "intensidad_db": -80.0
+            },
+            {
+                "palabra": "mandé",
+                "duracion_ms": 1306,
+                "intensidad_db": -80.0
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 1306,
+                "intensidad_db": -80.0
+            },
+            {
+                "palabra": "audio.",
+                "duracion_ms": 1306,
+                "intensidad_db": -80.0
+            }
+        ]
     }
 ]
