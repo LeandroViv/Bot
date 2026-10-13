@@ -2024,5 +2024,87 @@
                 "intensidad_db": -20.53
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-13 23:05:34",
+        "archivo": "muestras_voz/audio_usuario_1359.ogg",
+        "texto": "miras los links de llm que ya me había mostrado de sus links por favor",
+        "partitura_metrica": [
+            {
+                "palabra": "miras",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "los",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "llm",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "ya",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "había",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "mostrado",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "sus",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 395,
+                "intensidad_db": -22.7
+            }
+        ]
     }
 ]
