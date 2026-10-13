@@ -979,3 +979,4 @@ Y el tipo, con una cara de deprimido total, le mete:
 [2026-10-13 06:16:26] USUARIO: [AUDIO] por favor
 [2026-10-13 06:16:47] LEANDROBOT: De una che, te capté perfecto.
 [2026-10-13 06:18:37] USUARIO: [AUDIO] A ver, dame por favor esos mismos links que me habías mostrado.
+[2026-10-13 06:18:58] LEANDROBOT: De una che, te capté perfecto.
