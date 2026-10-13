@@ -1,11 +1,9 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Memoria contextual integrada leyendo y escribiendo conversaciones.txt con Lock.
-- Parser de texto directo y fluido (sin JSON estricto para evitar bloqueos).
-- Búsqueda web real en tiempo real (DuckDuckGo).
-- Síntesis DSP con Rubberband controlando cadencia y dB según métricas.
-- Sincronización automática con Git / GitHub Actions.
+- Actualizado a gemini-2.5-flash.
+- Timeout extendido para Llama local.
+- Memoria contextual integrada, búsqueda web y DSP de voz.
 """
 
 import asyncio
@@ -53,7 +51,6 @@ CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
-# Lock físico de hilos para evitar colisiones en archivos de texto
 file_lock = threading.Lock()
 
 for archivo_base, contenido_inicial in [
@@ -76,12 +73,12 @@ CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit
 
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
-MODELO_GEMINI = "gemini-2.0-flash"
+MODELO_GEMINI = "gemini-2.5-flash"  # Actualizado al modelo vigente
 
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # =====================================================================
-# SYSTEM PROMPT (Versión directa y fluida sin JSON rígido)
+# SYSTEM PROMPT
 # =====================================================================
 SYSTEM_PROMPT = (
     "Sos Leandro, un compañero y colega de Telegram. Hablás en perfecto español rioplatense (porteño) con voseo natural ('che', 'vós', 'fijate', 'posta').\n"
@@ -138,9 +135,6 @@ def registrar_conversacion(remitente, texto):
     sincronizar_con_github(f"📝 Actualización de bitácora ({remitente})")
 
 
-# ==========================================
-# GESTIÓN DE HISTORIALES Y EVOLUCIÓN AUTÓNOMA
-# ==========================================
 def cargar_json(path, tipo_defecto):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -202,7 +196,6 @@ def cotejar_y_corregir_induccion(texto_crudo):
     return texto_crudo
 
 
-# --- MÓDULO DE BÚSQUEDA WEB REAL ---
 def buscar_en_la_web(query):
     try:
         print(f"🌐 [WEB SEARCH]: Buscando en la web: '{query}'...", flush=True)
@@ -364,7 +357,7 @@ def generar_respuesta_ia(prompt_usuario):
         }
         try:
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-            res_local = requests.post(url_llama, json=payload, timeout=20)
+            res_local = requests.post(url_llama, json=payload, timeout=45)
             if res_local.status_code == 200:
                 texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
                 modelo_usado = "llama"
