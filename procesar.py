@@ -1,8 +1,7 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
-- Con logs detallados de depuración para Gemini y Llama local.
-- Modelo actualizado a gemini-2.5-flash.
+- Gemini 3.8-flash principal + Ollama local de fallback en GitHub Actions.
 - Memoria contextual integrada, búsqueda web y DSP de voz.
 """
 
@@ -73,7 +72,7 @@ CHAT_ID_ACTIVO = int(ENV_CHAT_ID) if ENV_CHAT_ID and ENV_CHAT_ID.strip().isdigit
 
 lock_voz = asyncio.Lock()
 GEMINI_BLOQUEADO_POR_CUOTA = False
-MODELO_GEMINI = "gemini-2.5-flash"
+MODELO_GEMINI = "gemini-3.8-flash"
 
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
@@ -313,11 +312,11 @@ def generar_respuesta_ia(prompt_usuario):
         pitch_estimado = 1.05
 
     resultado = {
-        "texto_completo": "Che, me quedé sin conexión con los modelos, fíjate los logs.",
+        "texto_completo": "Che, tuve un tema con los modelos, ¿me repetís?",
         "pitch_factor": pitch_estimado,
         "ganancia_db": 0.0
     }
-    modelo_usado = "local"
+    modelo_usado = "gemini"
 
     prompt_completo_con_memoria = (
         f"--- HISTORIAL DE CONVERSACIONES ---\n"
@@ -329,6 +328,7 @@ def generar_respuesta_ia(prompt_usuario):
 
     texto_generado_crudo = ""
 
+    # 1. INTENTO CON GEMINI
     if client and not GEMINI_BLOQUEADO_POR_CUOTA:
         try:
             print(f"🤖 [CONECTANDO]: Intentando con Gemini ({MODELO_GEMINI})...", flush=True)
@@ -347,28 +347,43 @@ def generar_respuesta_ia(prompt_usuario):
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    if modelo_usado == "local" or not texto_generado_crudo:
-        print(f"🦙 [CONECTANDO]: Intentando con Llama local...", flush=True)
-        payload = {
-            "model": "llama3.2",
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt_completo_con_memoria}
-            ],
-            "options": {"num_ctx": 4096, "temperature": 0.7},
-            "stream": False,
-        }
+    # 2. FALLBACK A OLLAMA (Si Gemini falla, comprueba y usa Ollama local en el runner)
+    if not texto_generado_crudo:
+        print(f"🦙 [VERIFICANDO OLLAMA]: Comprobando disponibilidad en {OLLAMA_HOST}...", flush=True)
+        ollama_disponible = False
         try:
-            url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-            res_local = requests.post(url_llama, json=payload, timeout=45)
-            print(f"📡 [LLAMA STATUS]: Código HTTP {res_local.status_code}", flush=True)
-            if res_local.status_code == 200:
-                texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
-                if texto_generado_crudo:
-                    print(f"✅ [LLAMA OK]: Respuesta recibida.", flush=True)
-                    modelo_usado = "llama"
-        except Exception as ex_local:
-            print(f"⚠️ [LLAMA ERROR CRÍTICO]: {ex_local}", flush=True)
+            test_res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
+            if test_res.status_code == 200:
+                ollama_disponible = True
+        except Exception:
+            ollama_disponible = False
+
+        if ollama_disponible:
+            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt...", flush=True)
+            payload = {
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt_completo_con_memoria}
+                ],
+                "options": {"num_ctx": 4096, "temperature": 0.7},
+                "stream": False,
+            }
+            try:
+                url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
+                res_local = requests.post(url_llama, json=payload, timeout=30)
+                if res_local.status_code == 200:
+                    texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
+                    if texto_generado_crudo:
+                        print(f"✅ [LLAMA OK]: Respuesta recibida.", flush=True)
+                        modelo_usado = "llama"
+            except Exception as ex_local:
+                print(f"⚠️ [LLAMA ERROR]: {ex_local}", flush=True)
+        else:
+            print(f"ℹ️ [INFO]: Ollama no respondió en el puerto local.", flush=True)
+
+    if not texto_generado_crudo:
+        texto_generado_crudo = "Che, se me trabaron los motores de IA por un segundo. ¿Qué me decías?"
 
     if texto_generado_crudo:
         limpio = re.sub(r'^```[a-zA-Z]*\s*', '', texto_generado_crudo)
