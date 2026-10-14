@@ -2106,5 +2106,222 @@
                 "intensidad_db": -22.7
             }
         ]
+    },
+    {
+        "timestamp": "2026-10-14 00:20:33",
+        "archivo": "muestras_voz/audio_usuario_1362.ogg",
+        "texto": "que bueno che gracias te quiero pedir por favor que durante el día me escribas en  algún momento mostrándome alguna cosa que encuentres interesante de la LLM pero sin  que yo te escriba cuando vos quieras y encuentres algo me lo mostras",
+        "partitura_metrica": [
+            {
+                "palabra": "que",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "bueno",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "che",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "gracias",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "quiero",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "pedir",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "durante",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "día",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "escribas",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "algún",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "momento",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "mostrándome",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "alguna",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "cosa",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "encuentres",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "interesante",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "LLM",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "sin",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "yo",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "escriba",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "cuando",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "vos",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "quieras",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "encuentres",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            },
+            {
+                "palabra": "mostras",
+                "duracion_ms": 484,
+                "intensidad_db": -22.76
+            }
+        ]
     }
 ]
