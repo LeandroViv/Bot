@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Vibe Coding, Timbre Dinámico, Memoria de Tareas y Audio Blindado
+# Script: procesar.py - LeandroBot con Filtro Inteligente de Tareas, Whisper y Fallback
 
 import asyncio
 import json as json_lib
@@ -22,7 +22,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot con Memoria de Tareas, Whisper y Fallback...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Filtro de Tareas Inteligente...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
@@ -32,7 +32,6 @@ CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
 
-# Inicializar archivos base si no existen
 for f_path, default_val in [
     (TXT_FILE, ""),
     (FILE_TAREAS, []),
@@ -69,13 +68,12 @@ except Exception:
     client = None
     GENAI_DISPONIBLE = False
 
-# Importar faster_whisper de forma segura para notas de voz
 try:
     from faster_whisper import WhisperModel
     WHISPER_DISPONIBLE = True
 except Exception:
     WHISPER_DISPONIBLE = False
-    print("⚠️ [WHISPER]: No se pudo importar faster_whisper. Las notas de voz responderán avisando de esto.", flush=True)
+    print("⚠️ [WHISPER]: No se pudo importar faster_whisper.", flush=True)
 
 def asegurar_e_iniciar_ollama():
     print("🦙 [OLLAMA]: Verificando estado del servicio local...", flush=True)
@@ -140,17 +138,30 @@ def registrar_conversacion(remitente, texto):
         print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}", flush=True)
 
 def cargar_tareas_memoria():
-    """Lee memoria_tareas.json al arrancar o consultar."""
     if not os.path.exists(FILE_TAREAS):
         return []
     try:
         with open(FILE_TAREAS, "r", encoding="utf-8") as f:
-            return json_lib.load(f)
+            datos = json_lib.load(f)
+            return datos if isinstance(datos, list) else []
     except Exception:
         return []
 
+def es_pedido_o_tarea(texto):
+    t_lower = texto.lower()
+    keywords = [
+        "hacé", "hace", "creá", "crea", "agregá", "agrega", "modificá", "modifica",
+        "programá", "programa", "anotá", "anota", "recordá", "recuerda", "buscá", "busca",
+        "cambiá", "cambia", "necesito", "quiero", "fijate de", "armate", "prepará", "prepara",
+        "código", "script", "bot", "función", "archivo", "tarea", "directiva"
+    ]
+    if texto.startswith("/") or any(kw in t_lower for kw in keywords):
+        return True
+    return False
+
 def guardar_tarea_memoria(texto_tarea):
-    """Guarda pedidos o directivas importantes en memoria_tareas.json."""
+    if not es_pedido_o_tarea(texto_tarea):
+        return
     try:
         tareas = cargar_tareas_memoria()
         nueva = {
@@ -159,16 +170,14 @@ def guardar_tarea_memoria(texto_tarea):
             "estado": "pendiente"
         }
         tareas.append(nueva)
-        # Mantener las últimas 80 tareas para no saturar
         tareas = tareas[-80:]
         with open(FILE_TAREAS, "w", encoding="utf-8") as f:
             json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
-        print(f"📋 [MEMORIA TAREAS]: Tarea guardada -> {texto_tarea[:40]}...", flush=True)
+        print(f"📋 [MEMORIA TAREAS]: Pedido guardado -> {texto_tarea[:40]}...", flush=True)
     except Exception as e:
         print(f"⚠️ Error guardando en memoria_tareas.json: {e}", flush=True)
 
 def obtener_memoria_aprendizaje():
-    """Consulta el historial reciente de conversaciones y las tareas guardadas en memoria_tareas.json."""
     historial_txt = ""
     if os.path.exists(TXT_FILE):
         try:
@@ -179,7 +188,10 @@ def obtener_memoria_aprendizaje():
             pass
 
     tareas = cargar_tareas_memoria()
-    texto_tareas = "\n".join([f"- [{t['timestamp']}] {t['tarea']} ({t['estado']})" for t in tareas[-15:]])
+    texto_tareas = "\n".join([
+        f"- [{t.get('timestamp', 'Reciente')}] {t.get('tarea', str(t))} ({t.get('estado', 'pendiente')})" 
+        for t in tareas[-15:] if isinstance(t, dict)
+    ])
 
     return f"--- TAREAS Y DIRECTIVAS GUARDADAS (memoria_tareas.json) ---\n{texto_tareas if texto_tareas else '[Sin tareas]'}\n\n--- HISTORIAL RECIENTE ---\n{historial_txt}"
 
@@ -255,7 +267,6 @@ def construir_prompt_sistema():
     )
 
 def generar_texto_ia(prompt_usuario):
-    """Genera la respuesta con fallback estricto utilizando memoria_tareas.json y conversaciones.txt."""
     system_prompt = construir_prompt_sistema()
     p = prompt_usuario
 
@@ -264,7 +275,6 @@ def generar_texto_ia(prompt_usuario):
         if info_web:
             p = prompt_usuario + chr(10) + chr(10) + "[Información fresca de internet]:" + chr(10) + info_web
 
-    # 1. Intentar con Gemini
     if client:
         try:
             print("🤖 [GEMINI]: Consultando nube...", flush=True)
@@ -280,7 +290,6 @@ def generar_texto_ia(prompt_usuario):
         except Exception as e:
             print(f"⚠️ [GEMINI FALLÓ]: {e}. Activando fallback a Ollama...", flush=True)
 
-    # 2. Fallback estricto a Ollama Local
     try:
         print(f"🦙 [OLLAMA]: Consultando modelo local {OLLAMA_MODEL}...", flush=True)
         r = requests.post(
@@ -308,7 +317,6 @@ def generar_texto_ia(prompt_usuario):
     except Exception as e_ollama:
         print(f"⚠️ [OLLAMA FALLÓ]: {e_ollama}. Activando respuesta de emergencia...", flush=True)
 
-    # 3. Fallback final garantizado
     return "Che, se me plancharon los motores de IA por un segundo. Decime de nuevo cómo lo seguimos."
 
 def preparar_texto_para_voz(texto):
@@ -407,18 +415,15 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     print(f"📥 [MENSAJE TEXTO]: '{u_text}'", flush=True)
 
-    # 1. Guardar en memoria de tareas y registrar en TXT
+    # Filtrar y guardar solo si es pedido/tarea
     guardar_tarea_memoria(u_text)
     registrar_conversacion("Usuario", u_text)
 
-    # 2. Generar respuesta con la IA
     resp = generar_texto_ia(u_text)
     registrar_conversacion("LeandroBot", resp)
     
-    # 3. Enviar respuesta en texto
     await update.message.reply_text(resp)
 
-    # 4. Enviar nota de voz con Edge-TTS
     ogg_f = f"resp_{int(time.time())}.ogg"
     exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
     if exito and archivo_audio and os.path.exists(archivo_audio):
@@ -439,7 +444,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("🎙️ [AUDIO RECIBIDO]: Procesando nota de voz...", flush=True)
 
         if not WHISPER_DISPONIBLE:
-            await update.message.reply_text("Che, recibí tu audio pero Whisper no está disponible en este entorno para transcribirlo.")
+            await update.message.reply_text("Che, recibí tu audio pero Whisper no está disponible en este entorno.")
             return
 
         await update.message.chat.send_action(action="record_voice")
@@ -447,25 +452,21 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
         await file.download_to_drive(path_in)
 
-        # Transcribir con Faster Whisper
         model = WhisperModel("base", device="cpu", compute_type="int8")
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
         texto_crudo = " ".join([s.text for s in segments]).strip() or "Che, te mandé un audio."
 
         print(f"✍️ [WHISPER TRANSCRIPCIÓN]: '{texto_crudo}'", flush=True)
 
-        # Guardar en memoria y registrar
-        guardar_tarea_memoria(f"[AUDIO] {texto_crudo}")
+        # Filtrar y guardar en memoria si es pedido
+        guardar_tarea_memoria(texto_crudo)
         registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
 
-        # Generar respuesta de IA
         resp = generar_texto_ia(texto_crudo)
         registrar_conversacion("LeandroBot", resp)
 
-        # Enviar texto y transcripción al usuario para que sepa qué entendió
         await update.message.reply_text(f"*(Interpretado: {texto_crudo})*\n\n{resp}")
 
-        # Enviar nota de voz de respuesta
         ogg_f = f"resp_voz_{int(time.time())}.ogg"
         exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
         if exito and archivo_audio and os.path.exists(archivo_audio):
@@ -510,7 +511,7 @@ def main():
     print("🦙 [INIT]: Asegurando Ollama antes de levantar Telegram...", flush=True)
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot con Memoria de Tareas...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot con Filtro Inteligente de Tareas...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     try:
@@ -530,7 +531,7 @@ def main():
         app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
 
-        print("✅ [BOT OK]: Entrando en bucle de polling (escuchando texto y audios)...", flush=True)
+        print("✅ [BOT OK]: Entrando en bucle de polling...", flush=True)
         app.run_polling(drop_pending_updates=True)
         
     except Exception as e:
