@@ -1013,3 +1013,4 @@ Fijate que con esos frameworks tenés la posta para armar agentes autónomos par
 
 Descansá tranquilo o metele a lo tuyo, que yo te mantengo al tanto. Abrazo grande.
 [2026-10-14 00:48:42] USUARIO: [AUDIO] que hago una pregunta, esta tarea que yo te pido, si yo reinicio el GitHub Actions que es donde  corre es bostom, le corre el servidor, vos la podes hacer igual, o te la tengo que reiterar, digamos.
+[2026-10-14 00:49:14] LEANDROBOT: Che, se me trabaron los motores de IA por un segundo. ¿Qué me decías?
