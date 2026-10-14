@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Vibe Coding & Timbre Dinámico
+# Script: procesar.py - LeandroBot Vibe Coding & Timbre Dinámico + Ollama Blindado
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Timbre por Prompt + Aprendizaje)...")
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Timbre + Ollama Blindado)...")
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -66,6 +66,45 @@ try:
 except Exception:
     client = None
     GENAI_DISPONIBLE = False
+
+def asegurar_e_iniciar_ollama():
+    print("🦙 [OLLAMA]: Verificando estado del servicio local...", flush=True)
+    
+    # 1. Verificar si ya está andando
+    for _ in range(3):
+        try:
+            res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
+            if res.status_code == 200:
+                print("🦙 [OLLAMA]: ¡Servicio activo y listo en el puerto 11434!", flush=True)
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+
+    # 2. Si no está activo, lo levantamos en background
+    try:
+        print("🦙 [OLLAMA]: Arrancando demonio 'ollama serve'...", flush=True)
+        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # Espera activa hasta 15 segundos a que levante el servidor HTTP
+        for i in range(15):
+            time.sleep(1)
+            try:
+                res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
+                if res.status_code == 200:
+                    print(f"🦙 [OLLAMA]: Demonio levantado con éxito en el segundo {i+1}.", flush=True)
+                    break
+            except Exception:
+                continue
+                
+        # 3. Asegurar que el modelo esté disponible (lo baja si falta)
+        print(f"🦙 [OLLAMA]: Verificando si el modelo '{OLLAMA_MODEL}' está disponible...", flush=True)
+        subprocess.run(["ollama", "pull", OLLAMA_MODEL], check=False)
+        print(f"🦙 [OLLAMA]: Modelo '{OLLAMA_MODEL}' listo para usar.", flush=True)
+        return True
+    except Exception as e:
+        print(f"⚠️ [OLLAMA ERROR INICIANDO]: {e}", flush=True)
+        return False
 
 def cargar_config_timbre():
     try:
@@ -207,52 +246,42 @@ def generar_texto_ia(prompt_usuario):
         except Exception as e:
             print(f"⚠️ Gemini fallback a Ollama: {e}")
 
-    # Prioridad 2: Ollama local (si está disponible)
+    # Prioridad 2: Ollama local con payload directo y seguro
     try:
+        print(f"🦙 [OLLAMA]: Enviando prompt a {OLLAMA_MODEL}...", flush=True)
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
-            timeout=25
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": p}
+                ],
+                "options": {
+                    "num_ctx": 1024,
+                    "num_predict": 200,
+                    "temperature": 0.7
+                },
+                "stream": False
+            },
+            timeout=40
         )
         if r.status_code == 200:
             texto = r.json().get("message", {}).get("content", "").strip()
             if texto:
-                print(f"🦙 [OLLAMA FALLBACK]: Respuesta generada exitosamente con modelo {OLLAMA_MODEL} en {OLLAMA_HOST}")
+                print(f"🦙 [OLLAMA OK]: Respuesta generada con éxito.", flush=True)
                 return texto
     except Exception as e_ollama:
-        try:
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": f"{system_prompt}\n\n{p}"},
-                timeout=25
-            )
-            if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
-                if texto:
-                    print(f"🦙 [OLLAMA GENERATE]: Respuesta generada exitosamente con {OLLAMA_MODEL}")
-                    return texto
-        except Exception:
-            pass
+        print(f"⚠️ [OLLAMA ERROR DE INFERENCIA]: {e_ollama}", flush=True)
 
-    # Fallback conversacional rioplatense garantizado
-    import random
-    respuestas_porteñas = [
-        "¡Qué hacés che! Mirá, te capté perfecto. Decime cómo seguimos con esto.",
-        "Posta che, tenés toda la razón. Fijate por acá y lo resolvemos en un toque.",
-        "De una che, escuchá: ya lo tengo anotado. Mandale nomás y lo sacamos andando.",
-        "Totalmente che. Mirá que ya lo tengo en mente. ¿Qué otra cosa necesitás que preparemos?"
-    ]
-    return random.choice(respuestas_porteñas)
+    # Fallback conversacional rioplatense garantizado si ambos fallan
+    return "Che, se me plancharon los motores de IA por un segundo. ¿Qué me decías?"
 
 def preparar_texto_para_voz(texto):
     """Optimiza el texto para que Edge-TTS suene con cadencia humana, pausas de respiración y sin leer símbolos."""
-    # Quitar bloques de código largos para notas de voz
     t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
-    # Quitar caracteres markdown
     t = t.replace("*", "").replace("_", "").replace(chr(96), "").replace("#", "").strip()
-    # Agregar pausas naturales tras interjecciones
     t = re.sub(r'\b(che|mirá|fijate|escuchá|vení|posta)\b', r'\g<1>...', t, flags=re.IGNORECASE)
-    # Acortar si es excesivamente largo para nota de voz
     palabras = t.split()
     if len(palabras) > 60:
         t = " ".join(palabras[:55]) + "... te lo resumo hasta acá y cualquier cosa me avisás, che."
@@ -286,7 +315,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
         if not os.path.exists(mp3_tmp) or os.path.getsize(mp3_tmp) < 100:
             return False, None
 
-        # Convertir a OGG Opus nativo 48kHz mono (estricto para notas de voz de Telegram sin silencio)
         proc = subprocess.run([
             "ffmpeg", "-y", "-i", mp3_tmp,
             "-ar", "48000", "-ac", "1",
@@ -300,7 +328,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
             except Exception: pass
             return True, ogg_salida
 
-        # Fallback a MP3 si ffmpeg falló
         return True, mp3_tmp
     except Exception as e:
         print(f"⚠️ Error sintetizando con edge-tts: {e}")
@@ -313,9 +340,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "¡Qué hacés che! Acá Leandro. Estoy listo para charlar, hacer vibe coding de lo que me pidas o cambiar el código.\n\n"
             "Comandos útiles:\n"
-            "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural (ej: /timbre voz más ronca y pausada de noche)\n"
+            "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural\n"
             "• /codigo <tarea>: Escribo o modifico cualquier parte del código a tu gusto\n"
-            "• O simplemente hablame de lo que quieras por texto o nota de voz!"
+            "• /ollama <texto>: Testea directamente a Llama local\n"
+            "• O simplemente hablame por texto o nota de voz!"
         )
 
 async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -327,8 +355,7 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'\n"
             f"Parámetros: Voz {cfg.get('voice')}, Pitch {cfg.get('pitch')}, Rate {cfg.get('rate')}, Vol {cfg.get('volume')}.\n\n"
-            "Para cambiarlo, escribí: /timbre <como querés que suene>\n"
-            "Ejemplo: /timbre voz bien grave, ronca y pausada de trasnoche"
+            "Para cambiarlo, escribí: /timbre <como querés que suene>"
         )
         return
 
@@ -336,7 +363,6 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nuevo_timbre = parsear_timbre_con_lenguaje_natural(desc)
     guardar_config_timbre(nuevo_timbre)
 
-    # Mandar muestra de audio con el nuevo timbre
     frase_test = f"Mirá che, así suena mi nuevo timbre con la calibración que me pediste. ¿Te va cómo quedó?"
     ogg_test = f"timbre_{int(time.time())}.ogg"
     ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
@@ -353,7 +379,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     instruccion = " ".join(context.args).strip() if context.args else ""
     if not instruccion:
-        await update.message.reply_text("Decime qué querés programar o modificar en el código, che. Ej: /codigo agregá una función para contar palabras.")
+        await update.message.reply_text("Decime qué querés programar o modificar en el código, che. Ej: /codigo agregá una función.")
         return
 
     await update.message.reply_text(f"💻 Entendido, metiendo vibe coding en: '{instruccion}'...")
@@ -368,25 +394,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_text = update.message.text or update.message.caption or "[Audio/Nota de voz]"
     registrar_conversacion("Usuario", u_text)
 
-    # Detección de intención de cambiar timbre por lenguaje natural en charla normal
-    if any(k in u_text.lower() for k in ["cambiá la voz", "cambia la voz", "cambiá el timbre", "cambia el timbre", "poné la voz", "pone la voz"]):
-        desc_limpia = re.sub(r'(cambi[aá]s+(las+voz|els+timbre)|pon[eé]s+las+voz)s*(a|en|como)?', '', u_text, flags=re.IGNORECASE).strip()
-        if len(desc_limpia) > 4:
-            nuevo_t = parsear_timbre_con_lenguaje_natural(desc_limpia)
-            guardar_config_timbre(nuevo_t)
-            resp = f"¡De una che! Ya recalibré mi voz para que suene '{desc_limpia}'. Escuchá cómo me queda ahora."
-            registrar_conversacion("LeandroBot", resp)
-            await update.message.reply_text(resp)
-            ogg_f = f"resp_{int(time.time())}.ogg"
-            ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
-            if ok and path_a and os.path.exists(path_a):
-                with open(path_a, "rb") as vf:
-                    await update.message.reply_voice(voice=vf, caption="📻 Nuevo timbre aplicado")
-                try: os.remove(path_a)
-                except Exception: pass
-            return
-
-    # Generación de respuesta dinámica aprendida
     resp = generar_texto_ia(u_text)
     if not resp or not str(resp).strip():
         resp = "Te capté perfecto che, mirá que ya lo tengo presente."
@@ -394,7 +401,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
-    # Generar y enviar nota de voz con Edge-TTS directo
     ogg_f = f"resp_{int(time.time())}.ogg"
     exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
     if exito and archivo_audio and os.path.exists(archivo_audio):
@@ -420,39 +426,32 @@ async def test_ollama_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": query}]},
-            timeout=15
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": query}],
+                "stream": False
+            },
+            timeout=25
         )
         if r.status_code == 200:
             texto = r.json().get("message", {}).get("content", "").strip()
     except Exception as e:
         print(f"Error test ollama chat: {e}")
 
-    if not texto:
-        try:
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": query},
-                timeout=15
-            )
-            if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
-        except Exception as e:
-            print(f"Error test ollama generate: {e}")
-
     if texto:
         await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:\n\n{texto}")
     else:
-        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}. Verificá que Ollama esté corriendo con: ollama run {OLLAMA_MODEL}")
+        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}.")
 
 def main():
     if not TOKEN:
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
-        print("👉 Entrá a tu repo en GitHub: Settings > Secrets and variables > Actions > New repository secret")
-        print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
         return
 
-    print("🚀 [INIT]: Configurando LeandroBot (Vibe Coding + Timbre Dinámico + Edge-TTS)...")
+    # Inicializar y asegurar Ollama antes de arrancar el bot de Telegram
+    asegurar_e_iniciar_ollama()
+
+    print("🚀 [INIT]: Configurando LeandroBot (Vibe Coding + Timbre + Ollama)...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -468,7 +467,7 @@ def main():
     app.add_handler(CommandHandler("ollama", test_ollama_cmd))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
 
-    print("🔄 [POLLING]: Bot escuchando en Telegram (Sin automatizaciones spam, respondiendo a tus pedidos)...")
+    print("🔄 [POLLING]: Bot escuchando en Telegram...")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
