@@ -124,33 +124,19 @@ def buscar_en_web(query):
 def parsear_timbre_con_lenguaje_natural(descripcion_natural):
     """Traduce cualquier descripción en lenguaje natural a parámetros de Edge-TTS usando IA."""
     prompt_ia = (
-        f"Sos un director de sonido y acústica. El usuario quiere calibrar el timbre de voz con esta descripción: '{descripcion_natural}'.
-"
-        "Configurá los parámetros exactos de Edge-TTS:
-"
-        "- voice: 'es-AR-TomasNeural' (hombre porteño) o 'es-AR-ElenaNeural' (mujer porteña) o 'es-UY-MateoNeural' (uruguayo)
-"
-        "- pitch: entre -12Hz (muy grave/ronco) y +10Hz (agudo/joven). Ejemplo: '-6Hz', '-2Hz', '+4Hz'
-"
-        "- rate: entre -20% (muy pausado/nocturno) y +20% (muy rápido). Ejemplo: '-8%', '-3%', '+5%'
-"
-        "- volume: entre -15% y +15%. Ejemplo: '+10%'
-
-"
-        "Respondé ÚNICAMENTE con este JSON válido (sin código markdown):
-"
-        "{
-"
-        '  "voice": "es-AR-TomasNeural",
-'
-        '  "pitch": "-6Hz",
-'
-        '  "rate": "-6%",
-'
-        '  "volume": "+10%",
-'
-        f'  "descripcion": "{descripcion_natural}"
-'
+        f"Sos un director de sonido y acústica. El usuario quiere calibrar el timbre de voz con esta descripción: '{descripcion_natural}'.\n"
+        "Configurá los parámetros exactos de Edge-TTS:\n"
+        "- voice: 'es-AR-TomasNeural' (hombre porteño) o 'es-AR-ElenaNeural' (mujer porteña) o 'es-UY-MateoNeural' (uruguayo)\n"
+        "- pitch: entre -12Hz (muy grave/ronco) y +10Hz (agudo/joven). Ejemplo: '-6Hz', '-2Hz', '+4Hz'\n"
+        "- rate: entre -20% (muy pausado/nocturno) y +20% (muy rápido). Ejemplo: '-8%', '-3%', '+5%'\n"
+        "- volume: entre -15% y +15%. Ejemplo: '+10%'\n\n"
+        "Respondé ÚNICAMENTE con este JSON válido (sin código markdown):\n"
+        "{\n"
+        '  "voice": "es-AR-TomasNeural",\n'
+        '  "pitch": "-6Hz",\n'
+        '  "rate": "-6%",\n'
+        '  "volume": "+10%",\n'
+        f'  "descripcion": "{descripcion_natural}"\n'
         "}"
     )
 
@@ -183,29 +169,17 @@ def construir_prompt_sistema():
     memoria = obtener_memoria_aprendizaje()
 
     return (
-        "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.
-"
-        "INSTRUCCIONES CLAVE:
-"
-        "1. NO SOS UN ROBOT NI TENÉS RESPUESTAS PREFABRICADAS: Adaptá tu estilo aprendiendo de la conversación del usuario.
-"
+        "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
+        "INSTRUCCIONES CLAVE:\n"
+        "1. NO SOS UN ROBOT NI TENÉS RESPUESTAS PREFABRICADAS: Adaptá tu estilo aprendiendo de la conversación del usuario.\n"
         "2. REGLA LINGÜÍSTICA RIOPLATENSE: Hablá con voseo porteño real, yeísmo rehilado, e imperativos agudos acentuados: "
-        "'mirá', 'vení', 'decime', 'escuchá', 'pasame', 'hacé', 'fijate', 'poné', 'dale', 'posta', 'che'.
-"
-        "3. RITMO Y CADENCIA ORAL: Escribí usando comas y puntos suspensivos para dar respiración y ritmo natural al leerse en voz alta.
-"
+        "'mirá', 'vení', 'decime', 'escuchá', 'pasame', 'hacé', 'fijate', 'poné', 'dale', 'posta', 'che'.\n"
+        "3. RITMO Y CADENCIA ORAL: Escribí usando comas y puntos suspensivos para dar respiración y ritmo natural al leerse en voz alta.\n"
         "4. VIBE CODING: Si te piden programar, corregir, modificar o crear código de cualquier tipo, respondé con código limpio, "
-        "bien explicado y listo para usar en producción.
-"
-        "5. SIN SPAM: Respondé únicamente a lo que te pide el usuario, sin automatizar mensajes ni relleno innecesario.
-
-"
-        f"Timbre de voz activo solicitado: '{timbre.get('descripcion', 'Natural')}'
-
-"
-        f"Historial de charlas previas con el usuario (aprendizaje continuo):
-{memoria}
-"
+        "bien explicado y listo para usar en producción.\n"
+        "5. SIN SPAM: Respondé únicamente a lo que te pide el usuario, sin automatizar mensajes ni relleno innecesario.\n\n"
+        f"Timbre de voz activo solicitado: '{timbre.get('descripcion', 'Natural')}'\n\n"
+        f"Historial de charlas previas con el usuario (aprendizaje continuo):\n{memoria}\n"
     )
 
 def generar_texto_ia(prompt_usuario):
@@ -249,9 +223,7 @@ def generar_texto_ia(prompt_usuario):
         try:
             r = requests.post(
                 f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": f"{system_prompt}
-
-{p}"},
+                json={"model": OLLAMA_MODEL, "prompt": f"{system_prompt}\n\n{p}"},
                 timeout=25
             )
             if r.status_code == 200:
@@ -275,7 +247,7 @@ def generar_texto_ia(prompt_usuario):
 def preparar_texto_para_voz(texto):
     """Optimiza el texto para que Edge-TTS suene con cadencia humana, pausas de respiración y sin leer símbolos."""
     # Quitar bloques de código largos para notas de voz
-    t = re.sub(r'```[sS]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
+    t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
     # Quitar caracteres markdown
     t = t.replace("*", "").replace("_", "").replace(chr(96), "").replace("#", "").strip()
     # Agregar pausas naturales tras interjecciones
@@ -339,15 +311,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
-            "¡Qué hacés che! Acá Leandro. Estoy listo para charlar, hacer vibe coding de lo que me pidas o cambiar el código.
-
-"
-            "Comandos útiles:
-"
-            "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural (ej: /timbre voz más ronca y pausada de noche)
-"
-            "• /codigo <tarea>: Escribo o modifico cualquier parte del código a tu gusto
-"
+            "¡Qué hacés che! Acá Leandro. Estoy listo para charlar, hacer vibe coding de lo que me pidas o cambiar el código.\n\n"
+            "Comandos útiles:\n"
+            "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural (ej: /timbre voz más ronca y pausada de noche)\n"
+            "• /codigo <tarea>: Escribo o modifico cualquier parte del código a tu gusto\n"
             "• O simplemente hablame de lo que quieras por texto o nota de voz!"
         )
 
@@ -358,13 +325,9 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not desc:
         cfg = cargar_config_timbre()
         await update.message.reply_text(
-            f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'
-"
-            f"Parámetros: Voz {cfg.get('voice')}, Pitch {cfg.get('pitch')}, Rate {cfg.get('rate')}, Vol {cfg.get('volume')}.
-
-"
-            "Para cambiarlo, escribí: /timbre <como querés que suene>
-"
+            f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'\n"
+            f"Parámetros: Voz {cfg.get('voice')}, Pitch {cfg.get('pitch')}, Rate {cfg.get('rate')}, Vol {cfg.get('volume')}.\n\n"
+            "Para cambiarlo, escribí: /timbre <como querés que suene>\n"
             "Ejemplo: /timbre voz bien grave, ronca y pausada de trasnoche"
         )
         return
@@ -478,9 +441,7 @@ async def test_ollama_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"Error test ollama generate: {e}")
 
     if texto:
-        await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:
-
-{texto}")
+        await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:\n\n{texto}")
     else:
         await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}. Verificá que Ollama esté corriendo con: ollama run {OLLAMA_MODEL}")
 
