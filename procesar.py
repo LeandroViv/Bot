@@ -4,7 +4,7 @@ Script definitivo para GitHub Actions: procesar.py
 - Memoria persistente en memoria_tareas.json con sincronización automática en Git.
 - Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
 - Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
-- Gemini 3.8-flash principal + Ollama local de fallback (sin timeout, espera paciente).
+- Gemini 3.8-flash principal + Ollama local de fallback (SIN TIMEOUT absoluto).
 """
 
 import asyncio
@@ -24,7 +24,7 @@ from datetime import datetime
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
     os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
-    print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.")
+    print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.", flush=True)
 # ----------------------------------------
 
 print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama (Sin Timeout)...", flush=True)
@@ -99,9 +99,9 @@ def sincronizar_con_github(mensaje_commit="🤖 Sincronización evolutiva y de c
         resultado = subprocess.run(["git", "commit", "-m", mensaje_commit], capture_output=True, text=True)
         if "nothing to commit" not in resultado.stdout:
             subprocess.run(["git", "push"], check=True)
-            print("☁️ Sincronizado y pusheado con éxito en GitHub.")
+            print("☁️ Sincronizado y pusheado con éxito en GitHub.", flush=True)
     except Exception as e:
-        print(f"⚠️ Aviso de git (no crítico): {e}")
+        print(f"⚠️ Aviso de git (no crítico): {e}", flush=True)
 
 
 def obtener_historial_conversaciones(cant_lineas=80):
@@ -120,7 +120,7 @@ def obtener_historial_conversaciones(cant_lineas=80):
             recientes = [l.strip() for l in lineas if l.strip()]
             return "\n".join(recientes[-cant_lineas:])
         except Exception as e:
-            print(f"⚠️ Error leyendo {TXT_FILE}: {e}")
+            print(f"⚠️ Error leyendo {TXT_FILE}: {e}", flush=True)
             return ""
 
 
@@ -161,9 +161,9 @@ def registrar_conversacion(remitente, texto):
                 f.write(linea)
                 f.flush()
                 os.fsync(f.fileno())
-            print(f"📝 [TXT REGISTRADO]: {remitente}: {texto[:40]}...")
+            print(f"📝 [TXT REGISTRADO]: {remitente}: {texto[:40]}...", flush=True)
         except Exception as e:
-            print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}")
+            print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}", flush=True)
     sincronizar_con_github(f"📝 Actualización de bitácora ({remitente})")
 
 
@@ -196,7 +196,7 @@ def registrar_ejemplo_entrenamiento(prompt_usuario, respuesta_bot, resultados_we
             f.flush()
             os.fsync(f.fileno())
     except Exception as e:
-        print(f"⚠️ Error guardando en {FILE_DATASET}: {e}")
+        print(f"⚠️ Error guardando en {FILE_DATASET}: {e}", flush=True)
 
 
 def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
@@ -207,7 +207,7 @@ def registrar_correccion_inductiva(audio_path, error_whisper, correccion_real):
     }
     with open(REGISTRO_INDUCCION, "w", encoding="utf-8") as f:
         json_lib.dump(historial, f, indent=4, ensure_ascii=False)
-    print(f"🧠 [Inducción Registrada]: '{error_whisper}' -> '{correccion_real}'")
+    print(f"🧠 [Inducción Registrada]: '{error_whisper}' -> '{correccion_real}'", flush=True)
     sincronizar_con_github("🧠 Nueva inducción registrada")
 
 
@@ -240,7 +240,7 @@ def buscar_en_la_web(query):
             if limpios:
                 return "\n".join(limpios)
     except Exception as e:
-        print(f"⚠️ Error en búsqueda web: {e}")
+        print(f"⚠️ Error en búsqueda web: {e}", flush=True)
     return ""
 
 
@@ -292,7 +292,7 @@ def registrar_metricas_voz_usuario(path_audio_ogg, texto_transcripto):
             f.flush()
             os.fsync(f.fileno())
     except Exception as e:
-        print(f"⚠️ Error actualizando métricas de voz: {e}")
+        print(f"⚠️ Error actualizando métricas de voz: {e}", flush=True)
 
 
 def obtener_metricas_calibracion():
@@ -323,7 +323,7 @@ def obtener_metricas_calibracion():
             calibracion["intensidad_promedio"] = round(prom_intensidad, 2)
             calibracion["gain_db"] = round(max(-6.0, min(6.0, (-18.0 - prom_intensidad))), 2)
     except Exception as e:
-        print(f"⚠️ Error leyendo calibración: {e}")
+        print(f"⚠️ Error leyendo calibración: {e}", flush=True)
     return calibracion
 
 
@@ -386,7 +386,7 @@ def generar_respuesta_ia(prompt_usuario):
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    # 2. FALLBACK A OLLAMA (Sin timeout, espera paciente indefinida)
+    # 2. FALLBACK A OLLAMA (SIN TIMEOUT ABSOLUTO)
     if not texto_generado_crudo:
         print(f"🦙 [VERIFICANDO OLLAMA]: Comprobando disponibilidad en {OLLAMA_HOST}...", flush=True)
         ollama_disponible = False
@@ -398,7 +398,7 @@ def generar_respuesta_ia(prompt_usuario):
             ollama_disponible = False
 
         if ollama_disponible:
-            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt (sin timeout)...", flush=True)
+            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt (SIN TIMEOUT)...", flush=True)
             payload = {
                 "model": "llama3.2",
                 "messages": [
@@ -410,7 +410,8 @@ def generar_respuesta_ia(prompt_usuario):
             }
             try:
                 url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-                res_local = requests.post(url_llama, json=payload)  # Sin timeout
+                # Llamada sin timeout: se queda esperando pacientemente indefinidamente
+                res_local = requests.post(url_llama, json=payload)
                 if res_local.status_code == 200:
                     texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
                     if texto_generado_crudo:
@@ -462,7 +463,7 @@ async def sintetizar_voz_dinamica_edge(texto, pitch_prompt=0.85, ganancia_prompt
             os.remove(mp3_tmp)
         return os.path.exists(ogg_salida)
     except Exception as e:
-        print(f"⚠️ Error en síntesis Edge-TTS + DSP: {e}")
+        print(f"⚠️ Error en síntesis Edge-TTS + DSP: {e}", flush=True)
         if os.path.exists(mp3_tmp):
             os.remove(mp3_tmp)
         return False
@@ -544,30 +545,35 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def asegurar_e_iniciar_ollama():
     try:
         res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
-        if res.status_code == 200: return
+        if res.status_code == 200:
+            print("🦙 [OLLAMA]: Demonio detectado en ejecución.", flush=True)
+            return
     except Exception:
         pass
     try:
+        print("🦙 [OLLAMA]: Intentando levantar servidor en background...", flush=True)
         subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(4)
+        time.sleep(3)
     except Exception as e:
-        print(f"⚠️ Error iniciando Ollama: {e}")
+        print(f"⚠️ [OLLAMA]: Aviso al iniciar demonio: {e}", flush=True)
 
 
 def main():
     if not TOKEN:
-        print("❌ [ERROR CRÍTICO]: Falta TELEGRAM_BOT_TOKEN.")
+        print("❌ [ERROR CRÍTICO]: Falta TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama Fallback sin timeout)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama Sin Timeout)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+
+    print("✅ [BOT OK]: Escuchando mensajes en Telegram (Polling activo)...", flush=True)
 
     while True:
         try:
