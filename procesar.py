@@ -4,7 +4,7 @@ Script definitivo para GitHub Actions: procesar.py
 - Memoria persistente en memoria_tareas.json con sincronización automática en Git.
 - Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
 - Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
-- Gemini 3.8-flash principal + Ollama local de fallback (optimizado para CPU).
+- Gemini 3.8-flash principal + Ollama local de fallback con traza de errores en vivo.
 - Logs de depuración en tiempo real para rastreo de mensajes de Telegram.
 """
 
@@ -19,6 +19,7 @@ import threading
 import subprocess
 import requests
 import time
+import traceback
 from datetime import datetime
 
 # --- INYECCIÓN AUTOMÁTICA DE HF_TOKEN ---
@@ -28,7 +29,7 @@ if hf_token:
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.", flush=True)
 # ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama Optimizado...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Trazabilidad de IAs...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -332,7 +333,6 @@ def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
     historial_previo = obtener_historial_conversaciones(cant_lineas=80)
-    
     tareas_guardadas = cargar_tareas_memoria()
     texto_tareas = "\n".join([f"- [{t['timestamp']}] {t['tarea']} (Estado: {t['estado']})" for t in tareas_guardadas])
 
@@ -343,13 +343,8 @@ def generar_respuesta_ia(prompt_usuario):
             contexto_web = f"[RESULTADOS BUSQUEDA WEB]:\n{snippets}\n"
 
     pitch_estimado = 0.88
-    if any(kw in prompt_usuario.lower() for kw in ["grave", "tachero", "profundo", "baja el tono"]):
-        pitch_estimado = 0.72
-    elif any(kw in prompt_usuario.lower() for kw in ["agudo", "rápido", "fino"]):
-        pitch_estimado = 1.05
-
     resultado = {
-        "texto_completo": "Che, tuve un tema con los modelos, ¿me repetís?",
+        "texto_completo": "Che, hubo un fallo crítico conectando con los modelos de IA. Revisá los logs de GitHub Actions.",
         "pitch_factor": pitch_estimado,
         "ganancia_db": 0.0
     }
@@ -383,11 +378,12 @@ def generar_respuesta_ia(prompt_usuario):
                 print(f"✅ [GEMINI OK]: Respuesta recibida.", flush=True)
                 modelo_usado = "gemini"
         except Exception as e:
-            print(f"⚠️ [GEMINI ERROR CRÍTICO]: {e}", flush=True)
+            print(f"❌ [GEMINI ERROR REAL]: {e}", flush=True)
+            traceback.print_exc()
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    # 2. FALLBACK A OLLAMA (Optimizado para CPU sin saturación)
+    # 2. FALLBACK A OLLAMA
     if not texto_generado_crudo:
         print(f"🦙 [VERIFICANDO OLLAMA]: Comprobando disponibilidad en {OLLAMA_HOST}...", flush=True)
         ollama_disponible = False
@@ -395,17 +391,13 @@ def generar_respuesta_ia(prompt_usuario):
             test_res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
             if test_res.status_code == 200:
                 ollama_disponible = True
-        except Exception:
-            ollama_disponible = False
+        except Exception as e_test:
+            print(f"⚠️ [OLLAMA TEST ERROR]: {e_test}", flush=True)
 
         if ollama_disponible:
-            print(f"🦙 [CONECTANDO]: Ollama online, procesando prompt liviano...", flush=True)
-            
+            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt...", flush=True)
             historial_corto = obtener_historial_conversaciones(cant_lineas=15)
-            prompt_fallback = (
-                f"--- HISTORIAL CORTO ---\n{historial_corto}\n\n"
-                f"Mensaje actual: {prompt_usuario}"
-            )
+            prompt_fallback = f"--- HISTORIAL CORTO ---\n{historial_corto}\n\nMensaje actual: {prompt_usuario}"
             
             payload = {
                 "model": "llama3.2",
@@ -413,30 +405,26 @@ def generar_respuesta_ia(prompt_usuario):
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt_fallback}
                 ],
-                "options": {
-                    "num_ctx": 1024,
-                    "num_predict": 180,
-                    "temperature": 0.7,
-                    "num_thread": 2
-                },
+                "options": {"num_ctx": 1024, "num_predict": 180, "temperature": 0.7, "num_thread": 2},
                 "stream": False,
             }
             try:
                 url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
                 print("⏳ [OLLAMA]: Generando respuesta con control de tokens...", flush=True)
-                res_local = requests.post(url_llama, json=payload)
+                res_local = requests.post(url_llama, json=payload, timeout=45)
                 if res_local.status_code == 200:
                     texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
                     if texto_generado_crudo:
                         print(f"✅ [LLAMA OK]: Respuesta recibida.", flush=True)
                         modelo_usado = "llama"
+                else:
+                    print(f"⚠️ [LLAMA HTTP ERROR]: Código {res_local.status_code} - {res_local.text}", flush=True)
             except Exception as ex_local:
-                print(f"⚠️ [LLAMA ERROR]: {ex_local}", flush=True)
-        else:
-            print(f"ℹ️ [INFO]: Ollama no respondió en el puerto local.", flush=True)
+                print(f"❌ [LLAMA EXCEPTION REAL]: {ex_local}", flush=True)
+                traceback.print_exc()
 
     if not texto_generado_crudo:
-        texto_generado_crudo = "Che, se me trabaron los motores de IA por un segundo. ¿Qué me decías?"
+        texto_generado_crudo = "Che, fallaron tanto Gemini como Ollama. Mirá los logs de GitHub Actions para ver el error exacto."
 
     if texto_generado_crudo:
         limpio = re.sub(r'^```[a-zA-Z]*\s*', '', texto_generado_crudo)
@@ -583,7 +571,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama Optimizado)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Traza de Errores)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
