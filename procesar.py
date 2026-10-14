@@ -4,7 +4,7 @@ Script definitivo para GitHub Actions: procesar.py
 - Memoria persistente en memoria_tareas.json con sincronización automática en Git.
 - Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
 - Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
-- Gemini 3.8-flash principal + Ollama local de fallback (SIN TIMEOUT absoluto).
+- Gemini 3.8-flash principal + Ollama local de fallback (optimizado para CPU).
 - Logs de depuración en tiempo real para rastreo de mensajes de Telegram.
 """
 
@@ -28,7 +28,7 @@ if hf_token:
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.", flush=True)
 # ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama (Logs Activos)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama Optimizado...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -150,7 +150,7 @@ def guardar_tarea_memoria(texto_tarea):
             json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
             f.flush()
             os.fsync(f.fileno())
-    sincronizar_con_github(f"📋 Actualización de memoria_tareas.json")
+    sincronizar_con_github("📋 Actualización de memoria_tareas.json")
 
 
 def registrar_conversacion(remitente, texto):
@@ -387,7 +387,7 @@ def generar_respuesta_ia(prompt_usuario):
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    # 2. FALLBACK A OLLAMA (SIN TIMEOUT ABSOLUTO)
+    # 2. FALLBACK A OLLAMA (Optimizado para CPU sin saturación)
     if not texto_generado_crudo:
         print(f"🦙 [VERIFICANDO OLLAMA]: Comprobando disponibilidad en {OLLAMA_HOST}...", flush=True)
         ollama_disponible = False
@@ -399,19 +399,32 @@ def generar_respuesta_ia(prompt_usuario):
             ollama_disponible = False
 
         if ollama_disponible:
-            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt (SIN TIMEOUT)...", flush=True)
+            print(f"🦙 [CONECTANDO]: Ollama online, procesando prompt liviano...", flush=True)
+            
+            historial_corto = obtener_historial_conversaciones(cant_lineas=15)
+            prompt_fallback = (
+                f"--- HISTORIAL CORTO ---\n{historial_corto}\n\n"
+                f"Mensaje actual: {prompt_usuario}"
+            )
+            
             payload = {
                 "model": "llama3.2",
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt_completo_con_memoria}
+                    {"role": "user", "content": prompt_fallback}
                 ],
-                "options": {"num_ctx": 4096, "temperature": 0.7},
+                "options": {
+                    "num_ctx": 1024,
+                    "num_predict": 180,
+                    "temperature": 0.7,
+                    "num_thread": 2
+                },
                 "stream": False,
             }
             try:
                 url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-                res_local = requests.post(url_llama, json=payload)  # Sin timeout
+                print("⏳ [OLLAMA]: Generando respuesta con control de tokens...", flush=True)
+                res_local = requests.post(url_llama, json=payload)
                 if res_local.status_code == 200:
                     texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
                     if texto_generado_crudo:
@@ -549,18 +562,18 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def asegurar_e_iniciar_ollama():
     try:
-        res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
+        res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
         if res.status_code == 200:
-            print("🦙 [OLLAMA]: Demonio detectado en ejecución.", flush=True)
+            print("🦙 [OLLAMA]: Servicio local ya activo y escuchando en el puerto 11434.", flush=True)
             return
     except Exception:
         pass
     try:
-        print("🦙 [OLLAMA]: Intentando levantar servidor en background...", flush=True)
+        print("🦙 [OLLAMA]: Levantando demonio en background...", flush=True)
         subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(3)
     except Exception as e:
-        print(f"⚠️ [OLLAMA]: Aviso al iniciar demonio: {e}", flush=True)
+        print(f"⚠️ [OLLAMA]: {e}", flush=True)
 
 
 def main():
@@ -570,7 +583,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama Sin Timeout)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama Optimizado)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
