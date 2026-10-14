@@ -94,8 +94,8 @@ def buscar_en_web(query):
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=3))
             if results:
-                return "
-".join([f"- {r.get('title', '')}: {r.get('body', '')}" for r in results])
+                lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
+                return chr(10).join(lineas)
     except Exception as e:
         print(f"⚠️ Aviso búsqueda web: {e}")
     return ""
@@ -110,10 +110,7 @@ def generar_texto_ia(prompt_usuario, es_proactivo=False):
         if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio", "resultado"]):
             info_web = buscar_en_web(prompt_usuario)
             if info_web:
-                p = f"{prompt_usuario}
-
-[Datos recientes de internet]:
-{info_web}"
+                p = prompt_usuario + chr(10) + chr(10) + "[Datos recientes de internet]:" + chr(10) + info_web
 
     if client:
         try:
