@@ -1,10 +1,10 @@
 """
 Repositorio: https://github.com/LeandroViv/Bot
 Script definitivo para GitHub Actions: procesar.py
+- Memoria persistente en memoria_tareas.json con sincronización automática en Git.
 - Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
 - Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
-- Gemini 3.8-flash principal + Ollama local de fallback.
-- Memoria contextual integrada, búsqueda web y Whisper de transcripción.
+- Gemini 3.8-flash principal + Ollama local de fallback (sin timeout, espera paciente).
 """
 
 import asyncio
@@ -27,7 +27,7 @@ if hf_token:
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.")
 # ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con Edge-TTS, Autonomía y DSP...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama (Sin Timeout)...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -48,6 +48,7 @@ REGISTRO_INDUCCION = "historial_induccion.json"
 REGISTRO_REFINAMIENTO = "historial_refinamiento.json"
 FILE_METRICAS_VOZ = "historial_metricas_voz.json"
 FILE_DATASET = "dataset_entrenamiento_chat.json"
+FILE_TAREAS = "memoria_tareas.json"
 CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
@@ -58,6 +59,7 @@ for archivo_base, contenido_inicial in [
     (REGISTRO_INDUCCION, {}),
     (REGISTRO_REFINAMIENTO, []),
     (FILE_METRICAS_VOZ, []),
+    (FILE_TAREAS, []),
     (TXT_FILE, "")
 ]:
     if not os.path.exists(archivo_base):
@@ -83,7 +85,8 @@ client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 # =====================================================================
 SYSTEM_PROMPT = (
     "Sos Leandro, un compañero y colega de Telegram. Hablás en perfecto español rioplatense (porteño) con voseo natural ('che', 'vós', 'fijate', 'posta').\n"
-    "Tenés acceso al historial completo de la charla guardado en conversaciones.txt. Usalo para entender de qué están hablando y responder con coherencia.\n"
+    "Tenés acceso al historial completo de la charla (conversaciones.txt) y a la memoria persistente de tareas/directivas (memoria_tareas.json).\n"
+    "Usá esa memoria para recordar pedidos anteriores, mantener coherencia y responder con precisión absoluta.\n"
     "No respondas con JSON. Respondé directamente con el texto de tu mensaje tal cual se lo dirías a un colega en un chat."
 )
 
@@ -119,6 +122,34 @@ def obtener_historial_conversaciones(cant_lineas=80):
         except Exception as e:
             print(f"⚠️ Error leyendo {TXT_FILE}: {e}")
             return ""
+
+
+def cargar_tareas_memoria():
+    with file_lock:
+        if os.path.exists(FILE_TAREAS):
+            try:
+                with open(FILE_TAREAS, "r", encoding="utf-8") as f:
+                    return json_lib.load(f)
+            except:
+                return []
+        return []
+
+
+def guardar_tarea_memoria(texto_tarea):
+    with file_lock:
+        tareas = cargar_tareas_memoria()
+        nueva = {
+            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            "tarea": texto_tarea,
+            "estado": "pendiente"
+        }
+        tareas.append(nueva)
+        tareas = tareas[-60:]
+        with open(FILE_TAREAS, "w", encoding="utf-8") as f:
+            json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+    sincronizar_con_github(f"📋 Actualización de memoria_tareas.json")
 
 
 def registrar_conversacion(remitente, texto):
@@ -300,9 +331,12 @@ def generar_respuesta_ia(prompt_usuario):
     global GEMINI_BLOQUEADO_POR_CUOTA
     
     historial_previo = obtener_historial_conversaciones(cant_lineas=80)
+    
+    tareas_guardadas = cargar_tareas_memoria()
+    texto_tareas = "\n".join([f"- [{t['timestamp']}] {t['tarea']} (Estado: {t['estado']})" for t in tareas_guardadas])
 
     contexto_web = ""
-    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info", "links", "link", "copiar", "mensaje"]):
+    if any(kw in prompt_usuario.lower() for kw in ["buscá", "busca", "encontrá", "noticias", "web", "qué pasó", "quien es", "como se", "info", "links", "link", "copiar", "mensaje", "tareas", "memoria"]):
         snippets = buscar_en_la_web(prompt_usuario)
         if snippets:
             contexto_web = f"[RESULTADOS BUSQUEDA WEB]:\n{snippets}\n"
@@ -321,6 +355,9 @@ def generar_respuesta_ia(prompt_usuario):
     modelo_usado = "gemini"
 
     prompt_completo_con_memoria = (
+        f"--- MEMORIA DE TAREAS Y DIRECTIVAS (memoria_tareas.json) ---\n"
+        f"{texto_tareas if texto_tareas else '[Sin tareas registradas]'}\n"
+        f"--- FIN MEMORIA DE TAREAS ---\n\n"
         f"--- HISTORIAL DE CONVERSACIONES ---\n"
         f"{historial_previo if historial_previo else '[Sin historial previo]'}\n"
         f"--- FIN HISTORIAL ---\n\n"
@@ -349,19 +386,19 @@ def generar_respuesta_ia(prompt_usuario):
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "QuotaExceeded" in str(e):
                 GEMINI_BLOQUEADO_POR_CUOTA = True
 
-    # 2. FALLBACK A OLLAMA
+    # 2. FALLBACK A OLLAMA (Sin timeout, espera paciente indefinida)
     if not texto_generado_crudo:
         print(f"🦙 [VERIFICANDO OLLAMA]: Comprobando disponibilidad en {OLLAMA_HOST}...", flush=True)
         ollama_disponible = False
         try:
-            test_res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
+            test_res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3)
             if test_res.status_code == 200:
                 ollama_disponible = True
         except Exception:
             ollama_disponible = False
 
         if ollama_disponible:
-            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt...", flush=True)
+            print(f"🦙 [CONECTANDO]: Ollama online, enviando prompt (sin timeout)...", flush=True)
             payload = {
                 "model": "llama3.2",
                 "messages": [
@@ -373,7 +410,7 @@ def generar_respuesta_ia(prompt_usuario):
             }
             try:
                 url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-                res_local = requests.post(url_llama, json=payload, timeout=30)
+                res_local = requests.post(url_llama, json=payload)  # Sin timeout
                 if res_local.status_code == 200:
                     texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
                     if texto_generado_crudo:
@@ -445,6 +482,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto recibido]"
     
+    guardar_tarea_memoria(u_text)
     registrar_conversacion("Usuario", u_text)
 
     res_ia = generar_respuesta_ia(u_text)
@@ -483,6 +521,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         texto_corregido = cotejar_y_corregir_induccion(texto_crudo)
 
+        guardar_tarea_memoria(texto_corregido)
         registrar_metricas_voz_usuario(path_in, texto_corregido)
         registrar_conversacion("Usuario", f"[AUDIO] {texto_corregido}")
 
@@ -522,7 +561,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Memoria + Inducción + Búsqueda Web + Edge-TTS + DSP)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama Fallback sin timeout)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
