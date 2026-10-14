@@ -4,7 +4,7 @@ Script definitivo para GitHub Actions: procesar.py
 - Memoria persistente en memoria_tareas.json con sincronización automática en Git.
 - Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
 - Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
-- Gemini principal + Conexión blindada a Llama local (Ollama) sin cuelgues.
+- Gemini principal + Conexión blindada a Llama local (Ollama) con resolución de PATH.
 """
 
 import asyncio
@@ -21,6 +21,13 @@ import time
 import traceback
 from datetime import datetime
 
+# --- ASEGURAR OLLAMA EN EL PATH DEL SISTEMA ---
+rutas_posibles_ollama = ["/usr/local/bin", "/usr/bin", os.path.expanduser("~/.local/bin"), "/root/.local/bin"]
+for r in rutas_posibles_ollama:
+    if os.path.exists(os.path.join(r, "ollama")) and r not in os.environ["PATH"]:
+        os.environ["PATH"] += os.pathsep + r
+        print(f"🔧 [PATH]: Ruta de Ollama agregada: {r}", flush=True)
+
 # --- INYECCIÓN AUTOMÁTICA DE HF_TOKEN ---
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
@@ -28,7 +35,7 @@ if hf_token:
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.", flush=True)
 # ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Conexión IA Blindada...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama en PATH...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -384,7 +391,7 @@ def generar_respuesta_ia(prompt_usuario):
 
     # 2. FALLBACK A OLLAMA (CONEXIÓN BLINDADA Y ROBUSTA)
     if not texto_generado_crudo:
-        print(f"🦙 [CONECTANDO LLAma]: Llamando a Ollama local (127.0.0.1:11434)...", flush=True)
+        print(f"🦙 [CONECTANDO LLAMA]: Llamando a Ollama local (127.0.0.1:11434)...", flush=True)
         try:
             historial_corto = obtener_historial_conversaciones(cant_lineas=15)
             prompt_fallback = f"--- HISTORIAL CORTO ---\n{historial_corto}\n\nMensaje actual: {prompt_usuario}"
@@ -407,7 +414,6 @@ def generar_respuesta_ia(prompt_usuario):
             url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
             headers = {'Content-Type': 'application/json'}
             
-            # Petición HTTP robusta con timeout amplio para la CPU del runner
             res_local = requests.post(url_llama, json=payload, headers=headers, timeout=60)
             
             if res_local.status_code == 200:
@@ -573,7 +579,7 @@ def main():
 
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Conexión IA Blindada)...", flush=True)
+    print("🚀 [INIT]: Configurando LeandroBot (Memoria de Tareas + Edge-TTS + Ollama en PATH)...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
