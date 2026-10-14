@@ -5,6 +5,7 @@ Script definitivo para GitHub Actions: procesar.py
 - Integración de Edge-TTS con voz neuronal rioplatense (es-AR-TomasNeural).
 - Pipeline DSP con FFmpeg y Rubberband (tempo, pitch y gain dinámicos).
 - Gemini 3.8-flash principal + Ollama local de fallback (SIN TIMEOUT absoluto).
+- Logs de depuración en tiempo real para rastreo de mensajes de Telegram.
 """
 
 import asyncio
@@ -27,7 +28,7 @@ if hf_token:
     print("🔑 [HUGGING FACE]: Token detectado e inyectado correctamente.", flush=True)
 # ----------------------------------------
 
-print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama (Sin Timeout)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Memoria, Edge-TTS y Ollama (Logs Activos)...", flush=True)
 
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -410,8 +411,7 @@ def generar_respuesta_ia(prompt_usuario):
             }
             try:
                 url_llama = f"{OLLAMA_HOST.rstrip('/')}/api/chat"
-                # Llamada sin timeout: se queda esperando pacientemente indefinidamente
-                res_local = requests.post(url_llama, json=payload)
+                res_local = requests.post(url_llama, json=payload)  # Sin timeout
                 if res_local.status_code == 200:
                     texto_generado_crudo = res_local.json().get("message", {}).get("content", "").strip()
                     if texto_generado_crudo:
@@ -483,6 +483,8 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto recibido]"
     
+    print(f"📥 [MENSAJE RECIBIDO DE TELEGRAM]: '{u_text}' (Chat ID: {CHAT_ID_ACTIVO})", flush=True)
+    
     guardar_tarea_memoria(u_text)
     registrar_conversacion("Usuario", u_text)
 
@@ -509,6 +511,8 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         CHAT_ID_ACTIVO = update.message.chat_id
 
+        print(f"🎙️ [AUDIO RECIBIDO DE TELEGRAM] (Chat ID: {CHAT_ID_ACTIVO})", flush=True)
+
         await update.message.chat.send_action(action="record_voice")
         file = await update.message.voice.get_file()
 
@@ -521,6 +525,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto_crudo = " ".join([s.text for s in segments]).strip() or "Che, te mandé un audio."
 
         texto_corregido = cotejar_y_corregir_induccion(texto_crudo)
+        print(f"✍️ [WHISPER TRANSCRIPCIÓN]: '{texto_corregido}'", flush=True)
 
         guardar_tarea_memoria(texto_corregido)
         registrar_metricas_voz_usuario(path_in, texto_corregido)
