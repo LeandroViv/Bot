@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Vibe Coding & Timbre Dinámico + Ollama Blindado
+# Script: procesar.py - LeandroBot Vibe Coding & Timbre Dinámico + Historial TXT + Fallback
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Timbre + Ollama Blindado)...")
+print("🚀 [INIT]: Inicializando LeandroBot con Historial TXT y Fallback...")
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -69,8 +69,6 @@ except Exception:
 
 def asegurar_e_iniciar_ollama():
     print("🦙 [OLLAMA]: Verificando estado del servicio local...", flush=True)
-    
-    # 1. Verificar si ya está andando
     for _ in range(3):
         try:
             res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
@@ -81,12 +79,9 @@ def asegurar_e_iniciar_ollama():
             pass
         time.sleep(1)
 
-    # 2. Si no está activo, lo levantamos en background
     try:
         print("🦙 [OLLAMA]: Arrancando demonio 'ollama serve'...", flush=True)
         subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # Espera activa hasta 15 segundos a que levante el servidor HTTP
         for i in range(15):
             time.sleep(1)
             try:
@@ -97,7 +92,6 @@ def asegurar_e_iniciar_ollama():
             except Exception:
                 continue
                 
-        # 3. Asegurar que el modelo esté disponible (lo baja si falta)
         print(f"🦙 [OLLAMA]: Verificando si el modelo '{OLLAMA_MODEL}' está disponible...", flush=True)
         subprocess.run(["ollama", "pull", OLLAMA_MODEL], check=False)
         print(f"🦙 [OLLAMA]: Modelo '{OLLAMA_MODEL}' listo para usar.", flush=True)
@@ -133,22 +127,21 @@ def registrar_conversacion(remitente, texto):
         with open(TXT_FILE, "a", encoding="utf-8") as f:
             f.write(f"[{ts}] {remitente}: {texto}" + chr(10))
     except Exception as e:
-        print(f"⚠️ Error conversacion: {e}")
+        print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}")
 
 def obtener_memoria_aprendizaje():
-    """Lee el historial reciente para que el personaje aprenda del usuario sin estar hardcodeado."""
+    """Lee el historial reciente de conversaciones.txt para mantener el contexto."""
     if not os.path.exists(TXT_FILE):
         return ""
     try:
         with open(TXT_FILE, "r", encoding="utf-8") as f:
             lineas = f.readlines()
-        ultimas = lineas[-14:] if len(lineas) >= 14 else lineas
+        ultimas = lineas[-20:] if len(lineas) >= 20 else lineas
         return "".join(ultimas)
     except Exception:
         return ""
 
 def buscar_en_web(query):
-    """Búsqueda web local y gratuita para GitHub Actions (sin API keys)."""
     try:
         from duckduckgo_search import DDGS
         with DDGS() as ddgs:
@@ -161,7 +154,6 @@ def buscar_en_web(query):
     return ""
 
 def parsear_timbre_con_lenguaje_natural(descripcion_natural):
-    """Traduce cualquier descripción en lenguaje natural a parámetros de Edge-TTS usando IA."""
     prompt_ia = (
         f"Sos un director de sonido y acústica. El usuario quiere calibrar el timbre de voz con esta descripción: '{descripcion_natural}'.\n"
         "Configurá los parámetros exactos de Edge-TTS:\n"
@@ -192,7 +184,6 @@ def parsear_timbre_con_lenguaje_natural(descripcion_natural):
         except Exception:
             pass
 
-    # Heurística de respaldo si no hay conexión a IA
     b_pitch = "-6Hz" if any(w in descripcion_natural.lower() for w in ["grave", "ronco", "nocturno", "pesado", "maduro"]) else "-2Hz"
     b_rate = "-8%" if any(w in descripcion_natural.lower() for w in ["lento", "pausado", "tranquilo", "calmo"]) else "+5%" if "rápido" in descripcion_natural.lower() else "-3%"
     return {
@@ -210,31 +201,31 @@ def construir_prompt_sistema():
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
         "INSTRUCCIONES CLAVE:\n"
-        "1. NO SOS UN ROBOT NI TENÉS RESPUESTAS PREFABRICADAS: Adaptá tu estilo aprendiendo de la conversación del usuario.\n"
+        "1. NO SOS UN ROBOT: Adaptá tu estilo aprendiendo de la conversación del usuario.\n"
         "2. REGLA LINGÜÍSTICA RIOPLATENSE: Hablá con voseo porteño real, yeísmo rehilado, e imperativos agudos acentuados: "
         "'mirá', 'vení', 'decime', 'escuchá', 'pasame', 'hacé', 'fijate', 'poné', 'dale', 'posta', 'che'.\n"
         "3. RITMO Y CADENCIA ORAL: Escribí usando comas y puntos suspensivos para dar respiración y ritmo natural al leerse en voz alta.\n"
         "4. VIBE CODING: Si te piden programar, corregir, modificar o crear código de cualquier tipo, respondé con código limpio, "
         "bien explicado y listo para usar en producción.\n"
-        "5. SIN SPAM: Respondé únicamente a lo que te pide el usuario, sin automatizar mensajes ni relleno innecesario.\n\n"
+        "5. SIN SPAM: Respondé únicamente a lo que te pide el usuario, sin relleno innecesario.\n\n"
         f"Timbre de voz activo solicitado: '{timbre.get('descripcion', 'Natural')}'\n\n"
-        f"Historial de charlas previas con el usuario (aprendizaje continuo):\n{memoria}\n"
+        f"Historial reciente de conversaciones.txt:\n{memoria}\n"
     )
 
 def generar_texto_ia(prompt_usuario):
-    """Genera la respuesta dinámica usando Gemini con fallback a Llama y búsqueda web."""
+    """Genera la respuesta con fallback estricto utilizando el historial de conversaciones.txt."""
     system_prompt = construir_prompt_sistema()
     p = prompt_usuario
 
-    # Búsqueda web automática si se pide información reciente o actualidad
     if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio", "resultado", "googlea"]):
         info_web = buscar_en_web(prompt_usuario)
         if info_web:
             p = prompt_usuario + chr(10) + chr(10) + "[Información fresca de internet]:" + chr(10) + info_web
 
-    # Prioridad 1: Gemini 3.8 Flash
+    # 1. Intentar con Gemini
     if client:
         try:
+            print("🤖 [GEMINI]: Consultando nube...", flush=True)
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=p,
@@ -242,13 +233,14 @@ def generar_texto_ia(prompt_usuario):
             )
             raw = (res.text or "").strip()
             if raw:
+                print("✅ [GEMINI OK]: Respuesta obtenida.", flush=True)
                 return raw
         except Exception as e:
-            print(f"⚠️ Gemini fallback a Ollama: {e}")
+            print(f"⚠️ [GEMINI FALLÓ]: {e}. Activando fallback a Ollama...", flush=True)
 
-    # Prioridad 2: Ollama local con payload directo y seguro
+    # 2. Fallback estricto a Ollama Local
     try:
-        print(f"🦙 [OLLAMA]: Enviando prompt a {OLLAMA_MODEL}...", flush=True)
+        print(f"🦙 [OLLAMA]: Consultando modelo local {OLLAMA_MODEL}...", flush=True)
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
             json={
@@ -264,21 +256,20 @@ def generar_texto_ia(prompt_usuario):
                 },
                 "stream": False
             },
-            timeout=40
+            timeout=35
         )
         if r.status_code == 200:
             texto = r.json().get("message", {}).get("content", "").strip()
             if texto:
-                print(f"🦙 [OLLAMA OK]: Respuesta generada con éxito.", flush=True)
+                print("✅ [OLLAMA OK]: Respuesta local generada con éxito.", flush=True)
                 return texto
     except Exception as e_ollama:
-        print(f"⚠️ [OLLAMA ERROR DE INFERENCIA]: {e_ollama}", flush=True)
+        print(f"⚠️ [OLLAMA FALLÓ]: {e_ollama}. Activando respuesta de emergencia...", flush=True)
 
-    # Fallback conversacional rioplatense garantizado si ambos fallan
-    return "Che, se me plancharon los motores de IA por un segundo. ¿Qué me decías?"
+    # 3. Fallback final garantizado
+    return "Che, se me plancharon los motores de IA por un segundo. Decime de nuevo cómo lo seguimos."
 
 def preparar_texto_para_voz(texto):
-    """Optimiza el texto para que Edge-TTS suene con cadencia humana, pausas de respiración y sin leer símbolos."""
     t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
     t = t.replace("*", "").replace("_", "").replace(chr(96), "").replace("#", "").strip()
     t = re.sub(r'\b(che|mirá|fijate|escuchá|vení|posta)\b', r'\g<1>...', t, flags=re.IGNORECASE)
@@ -288,7 +279,6 @@ def preparar_texto_para_voz(texto):
     return t.strip()
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
-    """Sintetiza la voz usando Edge-TTS con el timbre calibrado dinámicamente por lenguaje natural."""
     cfg = cargar_config_timbre()
     voice = cfg.get("voice", "es-AR-TomasNeural")
     pitch = cfg.get("pitch", "-4Hz")
@@ -301,14 +291,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
 
     try:
         import edge_tts
-        print(f"🎙️ [EDGE-TTS]: Generando audio con timbre '{cfg.get('descripcion', '')}' ({voice}, {pitch}, {rate})...")
-        communicate = edge_tts.Communicate(
-            texto_oral,
-            voice=voice,
-            pitch=pitch,
-            rate=rate,
-            volume=volume
-        )
+        communicate = edge_tts.Communicate(texto_oral, voice=voice, pitch=pitch, rate=rate, volume=volume)
         mp3_tmp = f"tmp_edge_{int(time.time()*1000)}.mp3"
         await communicate.save(mp3_tmp)
 
@@ -338,12 +321,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
-            "¡Qué hacés che! Acá Leandro. Estoy listo para charlar, hacer vibe coding de lo que me pidas o cambiar el código.\n\n"
-            "Comandos útiles:\n"
-            "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural\n"
-            "• /codigo <tarea>: Escribo o modifico cualquier parte del código a tu gusto\n"
-            "• /ollama <texto>: Testea directamente a Llama local\n"
-            "• O simplemente hablame por texto o nota de voz!"
+            "¡Qué hacés che! Acá Leandro. Listo para charlar, hacer vibe coding o tirar código.\n\n"
+            "Comandos:\n"
+            "• /timbre <descripción>\n"
+            "• /codigo <tarea>\n"
+            "• /ollama <texto>\n"
+            "• O hablame por texto o nota de voz."
         )
 
 async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -352,38 +335,24 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     desc = " ".join(context.args).strip() if context.args else ""
     if not desc:
         cfg = cargar_config_timbre()
-        await update.message.reply_text(
-            f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'\n"
-            f"Parámetros: Voz {cfg.get('voice')}, Pitch {cfg.get('pitch')}, Rate {cfg.get('rate')}, Vol {cfg.get('volume')}.\n\n"
-            "Para cambiarlo, escribí: /timbre <como querés que suene>"
-        )
+        await update.message.reply_text(f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'")
         return
 
-    await update.message.reply_text(f"🔧 Calibrando timbre acústico a: '{desc}'...")
+    await update.message.reply_text(f"🔧 Calibrando timbre a: '{desc}'...")
     nuevo_timbre = parsear_timbre_con_lenguaje_natural(desc)
     guardar_config_timbre(nuevo_timbre)
-
-    frase_test = f"Mirá che, así suena mi nuevo timbre con la calibración que me pediste. ¿Te va cómo quedó?"
-    ogg_test = f"timbre_{int(time.time())}.ogg"
-    ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
-    if ok and path_a and os.path.exists(path_a):
-        with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre aplicado: '{desc}'")
-        try: os.remove(path_a)
-        except Exception: pass
-    else:
-        await update.message.reply_text(f"✅ Timbre configurado correctamente: {nuevo_timbre}")
+    await update.message.reply_text(f"✅ Timbre configurado correctamente.")
 
 async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
     instruccion = " ".join(context.args).strip() if context.args else ""
     if not instruccion:
-        await update.message.reply_text("Decime qué querés programar o modificar en el código, che. Ej: /codigo agregá una función.")
+        await update.message.reply_text("Decime qué querés programar o modificar, che.")
         return
 
-    await update.message.reply_text(f"💻 Entendido, metiendo vibe coding en: '{instruccion}'...")
-    resp_codigo = generar_texto_ia(f"VIBE CODING: {instruccion}. Generá la solución o modificación de código completa, limpia y lista para aplicar.")
+    await update.message.reply_text(f"💻 Procesando vibe coding: '{instruccion}'...")
+    resp_codigo = generar_texto_ia(f"VIBE CODING: {instruccion}. Generá la solución de código completa y limpia.")
     await update.message.reply_text(resp_codigo)
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -392,15 +361,20 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Audio/Nota de voz]"
+    
+    # 1. Registrar mensaje del usuario en conversaciones.txt
     registrar_conversacion("Usuario", u_text)
 
+    # 2. Generar respuesta con la IA (Gemini -> Ollama)
     resp = generar_texto_ia(u_text)
-    if not resp or not str(resp).strip():
-        resp = "Te capté perfecto che, mirá que ya lo tengo presente."
-
+    
+    # 3. Registrar respuesta del bot en conversaciones.txt
     registrar_conversacion("LeandroBot", resp)
+    
+    # 4. Enviar respuesta en texto por Telegram
     await update.message.reply_text(resp)
 
+    # 5. Generar y enviar la nota de voz exacta usando ESA MISMA respuesta (resp)
     ogg_f = f"resp_{int(time.time())}.ogg"
     exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
     if exito and archivo_audio and os.path.exists(archivo_audio):
@@ -419,47 +393,35 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def test_ollama_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
-    query = " ".join(context.args).strip() if context.args else "Che Leandro, ¿cómo anda Ollama por ahí?"
-    await update.message.reply_text(f"🦙 Consultando fallback de Ollama en {OLLAMA_HOST} (modelo {OLLAMA_MODEL})...")
+    query = " ".join(context.args).strip() if context.args else "Che Leandro, ¿cómo anda Ollama?"
+    await update.message.reply_text(f"🦙 Consultando Ollama ({OLLAMA_MODEL})...")
     
-    texto = ""
     try:
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [{"role": "user", "content": query}],
-                "stream": False
-            },
+            json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": query}], "stream": False},
             timeout=25
         )
         if r.status_code == 200:
             texto = r.json().get("message", {}).get("content", "").strip()
+            if texto:
+                await update.message.reply_text(f"🦙 [OLLAMA RESPUESTA]:\n\n{texto}")
+                return
     except Exception as e:
-        print(f"Error test ollama chat: {e}")
-
-    if texto:
-        await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:\n\n{texto}")
-    else:
-        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}.")
+        print(f"Error ollama cmd: {e}")
+    await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama local.")
 
 def main():
     if not TOKEN:
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
         return
 
-    # Inicializar y asegurar Ollama antes de arrancar el bot de Telegram
     asegurar_e_iniciar_ollama()
 
-    print("🚀 [INIT]: Configurando LeandroBot (Vibe Coding + Timbre + Ollama)...")
+    print("🚀 [INIT]: Configurando LeandroBot con Historial TXT...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
-    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        print(f"⚠️ [Telegram Error]: {context.error}")
-
     app = Application.builder().token(TOKEN).request(request_config).build()
-    app.add_error_handler(error_handler)
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("timbre", cambiar_timbre))
     app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
