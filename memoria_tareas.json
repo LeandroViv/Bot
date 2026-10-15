@@ -213,5 +213,10 @@
         "timestamp": "2026-10-15 04:42:10",
         "tarea": "hay una opción que nos permite ajustar el tono de voz para que sea más femenino,\nSi\nAplica eso",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 04:43:04",
+        "tarea": "Bueno, por eso utiliza el DSP, que suene más segura tu voz.",
+        "estado": "pendiente"
     }
 ]
