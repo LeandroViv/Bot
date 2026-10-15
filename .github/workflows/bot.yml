@@ -34,23 +34,25 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- AQUÍ CONFIGURAMOS Y LEVANTAMOS OLLAMA LOCALMENTE ---
+      # --- CONFIGURACIÓN Y SERVICIO DE OLLAMA LOCAL PARA FALLBACK ---
       - name: Configurar Ollama CLI
         uses: ai-action/setup-ollama@v2
 
-      - name: Iniciar servidor Ollama y descargar modelo de fallback
+      - name: Iniciar servidor Ollama y descargar modelo llama3.2
         run: |
           ollama serve &
-          echo "Esperando a que Ollama levante..."
+          echo "Esperando a que Ollama esté listo..."
           sleep 5
           ollama pull llama3.2
         shell: bash
-      # -------------------------------------------------------
 
+      # --- EJECUCIÓN PRINCIPAL DE LEANDROBOT ---
       - name: Ejecutar Bot de Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          OLLAMA_HOST: "http://127.0.0.1:11434"
+          OLLAMA_MODEL: "llama3.2"
         run: |
           python procesar.py
