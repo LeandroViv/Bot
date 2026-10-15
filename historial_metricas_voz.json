@@ -1,86 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:48:22",
-        "texto": "muy rápido me decís las cosas más despacio por favor que se comprenda lo que",
-        "metricas_palabras": [
-            {
-                "palabra": "muy",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "rápido",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "decís",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "las",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "cosas",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "despacio",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "favor",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "comprenda",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 483,
-                "intensidad_db": -23.96
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:48:41",
         "texto": "Pará, pará... tenés toda la razón, che.... Me aceleré...\n\nBajamos un cambio, dale. Así, tranqui... con pausa, respirando, para que se entienda bien cada cosa. \n\nFijate... si ahí te va mejor el ritmo... y decime, posta..., en qué parte nos habíamos quedado con el código.",
         "metricas_palabras": [
@@ -4001,6 +3920,122 @@
                 "palabra": "Dale.",
                 "duracion_ms": 297,
                 "intensidad_db": -18.23
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:13:58",
+        "texto": "Che..., dale, fijate... que me estás explicando que vas a modificar el código para que entienda mejor qué te está pidiendo, posta...?",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "dale,",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "fijate...",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "explicando",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "vas",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "modificar",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "código",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "entienda",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "mejor",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "qué",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "pidiendo,",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
+            },
+            {
+                "palabra": "posta...?",
+                "duracion_ms": 262,
+                "intensidad_db": -17.58
             }
         ]
     }
