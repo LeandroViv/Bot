@@ -1,19 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 01:11:22",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1105.wav",
-        "texto": "Gracias",
-        "partitura_metrica": [
-            {
-                "palabra": "Gracias",
-                "duracion_ms": 1720,
-                "intensidad_db": 0.92
-            }
-        ],
-        "total_entrenamientos": 14
-    },
-    {
         "timestamp": "2026-10-12 01:18:34",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1107.wav",
@@ -2396,6 +2382,292 @@
                 "palabra": "ahí?",
                 "duracion_ms": 564,
                 "intensidad_db": -20.72
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:04:24",
+        "texto": "Sí, te escucho perfecto, che...... fuerte y claro. Y de paso te respondo lo que me habías preguntado antes: si reiniciás el GitHub Actions, como el runner es efímero y se resetea todo, la memoria en caliente se pierde... así que sí, me la tendrías que reiterar, posta.... Salvo, claro,... te lo resumo hasta acá, che.",
+        "metricas_palabras": [
+            {
+                "palabra": "Sí,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "escucho",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "perfecto,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "che......",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "fuerte",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "claro.",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "Y",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "paso",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "respondo",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "habías",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "preguntado",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "antes:",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "reiniciás",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "GitHub",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "Actions,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "runner",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "efímero",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "resetea",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "todo,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "memoria",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "caliente",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "pierde...",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "así",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "sí,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "tendrías",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "reiterar,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "posta....",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "Salvo,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "claro,...",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "resumo",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "hasta",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "acá,",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
+            },
+            {
+                "palabra": "che.",
+                "duracion_ms": 420,
+                "intensidad_db": -21.92
             }
         ]
     }
