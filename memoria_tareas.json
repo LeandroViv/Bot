@@ -163,5 +163,10 @@
         "timestamp": "2026-10-15 04:03:02",
         "tarea": "Bueno, haceme un timbre que no sea masculino, por favor, gracias.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 04:04:25",
+        "tarea": "A ver, zona como una cantante de pop, por favor.",
+        "estado": "pendiente"
     }
 ]
