@@ -1209,3 +1209,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 05:20:27] Usuario: Haceme una voz más aguda.
 [2026-10-15 05:20:32] Bot: Che, ¿qué pasó con tu voz? Fijate, no la cambiaba en un momento. ¿Qué te pasó?
 [2026-10-15 05:34:11] Usuario: quiero que suenes como elena che
+[2026-10-15 05:34:19] Bot: dale, che, soy lo que soy. qué quiero que suene, eh? ¿tú querés que hable como una tonta o algo más?
