@@ -58,5 +58,10 @@
         "timestamp": "2026-10-15 03:01:19",
         "tarea": "Más grave que se note significativamente así, por favor, a ver como es eso.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:04:01",
+        "tarea": "A ver, poné mi voz de una cantante, de una cantante, por favor.",
+        "estado": "pendiente"
     }
 ]
