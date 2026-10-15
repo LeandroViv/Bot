@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Autónomo con DSP Total, Whisper, Web Search y Hot-Deploy en el Runner
+# Script: procesar.py - LeandroBot Autónomo con Auto-Corrección de Whisper, DSP Dinámico y Web Search
 
 import asyncio
 import json as json_lib
@@ -23,13 +23,14 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando LeandroBot Autónomo con DSP, Web Search y Hot-Deploy...", flush=True)
+print("🚀 [INIT]: Arrancando LeandroBot Autónomo con Auto-Corrección de Whisper y DSP...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
 FILE_DATASET = "dataset_entrenamiento_chat.json"
 FILE_METRICAS_VOZ = "historial_metricas_voz.json"
 CONFIG_TIMBRE = "config_timbre.json"
+FILE_CORRECCIONES = "correcciones_whisper.json"
 CARPETA_MUESTRAS = "muestras_voz"
 
 os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
@@ -39,6 +40,7 @@ for f_path, default_val in [
     (FILE_TAREAS, []),
     (FILE_DATASET, []),
     (FILE_METRICAS_VOZ, []),
+    (FILE_CORRECCIONES, {}),
     (CONFIG_TIMBRE, {
         "voice": "es-AR-TomasNeural",
         "volume": "+0dB",
@@ -87,7 +89,7 @@ def sincronizar_con_github(mensaje_commit="chg: sincronización automática de e
     try:
         subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=False)
         subprocess.run(["git", "config", "user.email", "leandrobot@users.noreply.github.com"], check=False)
-        archivos = [TXT_FILE, FILE_TAREAS, FILE_DATASET, FILE_METRICAS_VOZ, CONFIG_TIMBRE, "procesar.py"]
+        archivos = [TXT_FILE, FILE_TAREAS, FILE_DATASET, FILE_METRICAS_VOZ, CONFIG_TIMBRE, FILE_CORRECCIONES, "procesar.py"]
         for a in archivos:
             if os.path.exists(a):
                 subprocess.run(["git", "add", a], check=False)
@@ -127,6 +129,43 @@ def asegurar_e_iniciar_ollama():
         print(f"⚠️ [OLLAMA ERROR]: {e}", flush=True)
         return False
 
+def registrar_correccion_whisper(texto_mal, texto_corregido):
+    """Guarda reglas de reemplazo para que el bot aprenda modismos o palabras mal interpretadas."""
+    try:
+        correcciones = {}
+        if os.path.exists(FILE_CORRECCIONES):
+            try:
+                with open(FILE_CORRECCIONES, "r", encoding="utf-8") as f:
+                    correcciones = json_lib.load(f)
+            except Exception:
+                correcciones = {}
+        
+        correcciones[texto_mal.strip().lower()] = texto_corregido.strip()
+        with open(FILE_CORRECCIONES, "w", encoding="utf-8") as f:
+            json_lib.dump(correcciones, f, indent=4, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"🧠 [WHISPER APRENDIDO]: '{texto_mal}' -> '{texto_corregido}'", flush=True)
+        sincronizar_con_github("chg: nueva regla de corrección fonética en whisper")
+    except Exception as e:
+        print(f"⚠️ Error guardando corrección: {e}", flush=True)
+
+def aplicar_correcciones_texto(texto):
+    """Aplica el filtro de aprendizaje de palabras sobre el resultado de Whisper."""
+    if not os.path.exists(FILE_CORRECCIONES):
+        return texto
+    try:
+        with open(FILE_CORRECCIONES, "r", encoding="utf-8") as f:
+            correcciones = json_lib.load(f)
+            if isinstance(correcciones, dict):
+                for mal, bien in correcciones.items():
+                    if mal in texto.lower():
+                        pattern = re.compile(re.escape(mal), re.IGNORECASE)
+                        texto = pattern.sub(bien, texto)
+    except Exception:
+        pass
+    return texto
+
 def buscar_en_web(query):
     try:
         from duckduckgo_search import DDGS
@@ -138,20 +177,6 @@ def buscar_en_web(query):
     except Exception as e:
         print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
     return ""
-
-def crear_o_modificar_archivo_en_caliente(nombre_archivo, contenido_codigo):
-    """Crea o sobreescribe cualquier archivo en el runner en el momento, sin reiniciar."""
-    try:
-        with open(nombre_archivo, "w", encoding="utf-8") as f:
-            f.write(contenido_codigo)
-            f.flush()
-            os.fsync(f.fileno())
-        print(f"⚡ [HOT-DEPLOY]: Archivo '{nombre_archivo}' creado/modificado en caliente en el runner.", flush=True)
-        sincronizar_con_github(f"feat: despliegue en caliente de {nombre_archivo}")
-        return True
-    except Exception as e:
-        print(f"⚠️ Error creando archivo en caliente: {e}", flush=True)
-        return False
 
 def cargar_config_timbre():
     try:
@@ -293,12 +318,13 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
     prompt_ia = (
         f"Sos un ingeniero de audio y DSP experto. Analiza el mensaje del usuario: '{prompt_usuario}'.\n"
         "Determina si el usuario pide ajustar voz, tono, timbre, velocidad o efectos.\n"
+        "Si pide una voz más aguda, ajusta 'sample_rate_factor' por encima de 1.0 (ej: 1.25).\n"
         "Devolvé ÚNICAMENTE JSON válido:\n"
         "{\n"
         '  "voice": "es-AR-TomasNeural",\n'
         '  "volume": "+0dB",\n'
         '  "tempo": "1.0",\n'
-        '  "sample_rate_factor": "1.0",\n'
+        '  "sample_rate_factor": "1.25",\n'
         '  "armonicos_hz_db": {},\n'
         '  "aplica_cambio": true,\n'
         f'  "descripcion": "{prompt_usuario}"\n'
@@ -462,7 +488,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con DSP total, Whisper inteligente y Hot-Deploy en el runner.")
+        await update.message.reply_text("¡Hola che! Listo con aprendizaje continuo de oído y DSP total.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -471,11 +497,35 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto]"
 
-    if u_text.lower().startswith("no, quise decir") or u_text.lower().startswith("corrijo:"):
-        registrar_dataset_entrenamiento(u_text, "Corrección de Whisper registrada.", "corrector")
-        await update.message.reply_text("¡Entendido, che! Tomo nota de la corrección para afinar el oído.")
+    # Captura explícita de patrones de corrección
+    if "corregido:" in u_text.lower() or "quise decir" in u_text.lower():
+        partes = re.split(r'corregido:|quise decir', u_text, flags=re.IGNORECASE)
+        mal_entendido = partes[0].replace("Interpretado:", "").strip(" *()\n")
+        bien_dicho = partes[1].strip(" *()\n") if len(partes) > 1 else u_text
+        
+        if mal_entendido and bien_dicho:
+            registrar_correccion_whisper(mal_entendido, bien_dicho)
+        
+        # Evaluamos el texto corregido para ver si exige un cambio de DSP (ej: "más aguda tu voz")
+        dsp_res = interpretar_configuracion_dsp_dinamica(bien_dicho)
+        if dsp_res.get("aplica_cambio"):
+            guardar_config_timbre(dsp_res)
+
+        resp = f"¡Anotado, che! Ya guardé la corrección ('{bien_dicho}'). Te escucho así a partir de ahora."
+        await update.message.reply_text(resp)
+
+        ogg_f = f"resp_{int(time.time())}.ogg"
+        exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
+        if exito and archivo_audio and os.path.exists(archivo_audio):
+            try:
+                with open(archivo_audio, "rb") as vf:
+                    await update.message.reply_voice(voice=vf, caption="📻 LeandroBot")
+            except Exception: pass
+            try: os.remove(archivo_audio)
+            except Exception: pass
         return
 
+    # Proceso conversacional estándar con filtro de DSP dinámico
     dsp_res = interpretar_configuracion_dsp_dinamica(u_text)
     if dsp_res.get("aplica_cambio"):
         guardar_config_timbre(dsp_res)
@@ -516,7 +566,10 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         model = WhisperModel("base", device="cpu", compute_type="int8")
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
-        texto_crudo = " ".join([s.text for s in segments]).strip() or "Audio recibido."
+        texto_raw = " ".join([s.text for s in segments]).strip() or "Audio recibido."
+
+        # Aplicamos la memoria de correcciones antes de procesar el texto
+        texto_crudo = aplicar_correcciones_texto(texto_raw)
 
         dsp_res = interpretar_configuracion_dsp_dinamica(texto_crudo)
         if dsp_res.get("aplica_cambio"):
