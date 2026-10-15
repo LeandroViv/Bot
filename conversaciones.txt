@@ -1188,3 +1188,4 @@ Aplica eso
 [2026-10-15 04:42:20] LeandroBot: Che, fijate que la opción de ajuste de tono de voz que te refieres es como una herramienta de edición de audio, pero no es una configuración específica del DSP. Dale, vamos a ver si hay alguna opción allí que nos permita ajustar el tono de voz para que se sienta más femenina.
 [2026-10-15 04:43:06] Usuario: [AUDIO] Bueno, por eso utiliza el DSP, que suene más segura tu voz.
 [2026-10-15 04:43:13] LeandroBot: Che, entiendo lo que quédese. Si la voz suena más segura con DSP, che, lo voy a utilizar, pero fijate, no voy a dejar de investigar y probar hasta que sepa qué funciona mejor para mí y para los clientes. Dale.
+[2026-10-15 04:44:19] Usuario: *(Corregido: Bueno, por eso, utilizá el DSP, que suene más aguda tu voz.)*
