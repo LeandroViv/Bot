@@ -1,101 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:09:04",
-        "texto": "A ver, ponerme voz de rockero, lo que se te ocurre que sería voz de rockero, por favor.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "ponerme",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "rockero,",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "ocurre",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "sería",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "rockero,",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 371,
-                "intensidad_db": -24.4
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:09:31",
         "texto": "¡Che..., fijate...! Me voy a poner voz de rockero, ¿entiendes? Vamos a ver... Voz de Rockero ¡Ey, chicos! ¡Estoy listo para bailar, pero primero tengo que darle un vistazo a esas tareas pendientes! Tareas Pendientes Revisar los resultados de la búsqueda Vamos a ver qué hay de nuevo, ¿eh? ¡Ey,... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -4316,6 +4220,142 @@
                 "palabra": "más?\"",
                 "duracion_ms": 267,
                 "intensidad_db": -17.67
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:44:11",
+        "texto": "estás diciendo cualquier cosa amigo lo que te digo es que estás poniendo vos  de hombre y eso es lo que yo te pedí de modificar",
+        "metricas_palabras": [
+            {
+                "palabra": "estás",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "diciendo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "cualquier",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "cosa",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "amigo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "digo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "poniendo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "vos",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "hombre",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "yo",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "pedí",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
+            },
+            {
+                "palabra": "modificar",
+                "duracion_ms": 389,
+                "intensidad_db": -25.59
             }
         ]
     }
