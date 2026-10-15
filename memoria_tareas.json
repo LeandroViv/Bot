@@ -1,10 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:10:54",
-        "tarea": "A ver, cambiame un poco el timbre de tu voz, manteniendo lo que es voz de hombre, pero cambia el timbre.  A ver, ahora mismo es eso.",
-        "estado": "pendiente"
-    },
-    {
         "timestamp": "2026-10-15 01:12:07",
         "tarea": "A ver cómo suena ese timbre de distinto, ahora mismo quiero escucharlo.",
         "estado": "pendiente"
@@ -246,6 +241,11 @@
     },
     {
         "timestamp": "2026-10-15 05:34:54",
+        "tarea": "Haceme una voz más aguda.",
+        "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 05:38:55",
         "tarea": "Haceme una voz más aguda.",
         "estado": "pendiente"
     }
