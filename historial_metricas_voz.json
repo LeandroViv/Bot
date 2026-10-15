@@ -1,37 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 06:15:55",
-        "archivo": "muestras_voz/audio_usuario_1326.ogg",
-        "texto": "Che, te mandé un audio.",
-        "partitura_metrica": [
-            {
-                "palabra": "Che,",
-                "duracion_ms": 1306,
-                "intensidad_db": -80.0
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 1306,
-                "intensidad_db": -80.0
-            },
-            {
-                "palabra": "mandé",
-                "duracion_ms": 1306,
-                "intensidad_db": -80.0
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 1306,
-                "intensidad_db": -80.0
-            },
-            {
-                "palabra": "audio.",
-                "duracion_ms": 1306,
-                "intensidad_db": -80.0
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-13 06:16:26",
         "archivo": "muestras_voz/audio_usuario_1327.ogg",
         "texto": "por favor",
@@ -4482,6 +4450,262 @@
                 "palabra": "tubo.",
                 "duracion_ms": 356,
                 "intensidad_db": -21.93
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:00:16",
+        "texto": "Vos estás hablando de mi timbre, che.... Dale, voy a intentar sonar un poco más grave, si no es demasiado para vos. canta \"Riiiii-ooo-ooo...\" En serio, te voy a cambiar el pitch, ¿vale? voz más baja \n\nPitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -10dB.",
+        "metricas_palabras": [
+            {
+                "palabra": "Vos",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "hablando",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "mi",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "timbre,",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "che....",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "Dale,",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "intentar",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "sonar",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "grave,",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "demasiado",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "vos.",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "canta",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "\"Riiiii-ooo-ooo...\"",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "En",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "serio,",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "cambiar",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "pitch,",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "¿vale?",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "baja",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "Pitch:",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "-10Hz.",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "Serie",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "armónica:",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "Armónico",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "1:",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "110Hz",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "0dB,",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "Armónico",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "2:",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "220Hz",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
+            },
+            {
+                "palabra": "-10dB.",
+                "duracion_ms": 544,
+                "intensidad_db": -22.0
             }
         ]
     }
