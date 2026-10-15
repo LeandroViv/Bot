@@ -1,96 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:39:21",
-        "texto": "Rear quiero que suen es como una profesora, una profesora que es hecho, una profesora de letras.",
-        "metricas_palabras": [
-            {
-                "palabra": "Rear",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "quiero",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "suen",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "profesora,",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "profesora",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "hecho,",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "profesora",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            },
-            {
-                "palabra": "letras.",
-                "duracion_ms": 685,
-                "intensidad_db": -26.25
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:40:31",
         "texto": "Pero me estás haciendo voz de hombre, te dije que sea de una profesora.",
         "metricas_palabras": [
@@ -3951,6 +3860,37 @@
                 "palabra": "fijate....",
                 "duracion_ms": 236,
                 "intensidad_db": -17.09
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:56:01",
+        "texto": "A ver, ya está, muestra.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 498,
+                "intensidad_db": -21.68
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 498,
+                "intensidad_db": -21.68
+            },
+            {
+                "palabra": "ya",
+                "duracion_ms": 498,
+                "intensidad_db": -21.68
+            },
+            {
+                "palabra": "está,",
+                "duracion_ms": 498,
+                "intensidad_db": -21.68
+            },
+            {
+                "palabra": "muestra.",
+                "duracion_ms": 498,
+                "intensidad_db": -21.68
             }
         ]
     }
