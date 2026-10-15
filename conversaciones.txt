@@ -1205,3 +1205,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 05:18:28] Usuario: poneme la voz de elena che
 [2026-10-15 05:18:41] Bot: vale, vés che, ¿de qué querés hablar?
 [2026-10-15 05:19:38] Usuario: [AUDIO] Hacen una voz más aguda.
+[2026-10-15 05:19:45] Bot: Che, no, no, no, dale, esa voz es más linda, no más aguda, fijate, me gusta un poco más baja, posta, ¿de dónde la vas a escuchar?
