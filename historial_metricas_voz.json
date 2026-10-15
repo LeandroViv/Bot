@@ -1,94 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 04:14:28",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1128.wav",
-        "texto": "Gracias, y acordate, bueno, durante el día, seguir buscando lo que encontrás, por favor.  Bueno, gracias.",
-        "partitura_metrica": [
-            {
-                "palabra": "Gracias,",
-                "duracion_ms": 681,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 60,
-                "intensidad_db": -3.95
-            },
-            {
-                "palabra": "acordate,",
-                "duracion_ms": 600,
-                "intensidad_db": -3.27
-            },
-            {
-                "palabra": "bueno,",
-                "duracion_ms": 260,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "durante",
-                "duracion_ms": 260,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 160,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "día,",
-                "duracion_ms": 280,
-                "intensidad_db": -1.44
-            },
-            {
-                "palabra": "seguir",
-                "duracion_ms": 380,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "buscando",
-                "duracion_ms": 540,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 660,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 160,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "encontrás,",
-                "duracion_ms": 520,
-                "intensidad_db": 1.8
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 60,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 340,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "Bueno,",
-                "duracion_ms": 640,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "gracias.",
-                "duracion_ms": 440,
-                "intensidad_db": 2.03
-            }
-        ],
-        "total_entrenamientos": 22
-    },
-    {
         "timestamp": "2026-10-12 04:45:04",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1132.wav",
@@ -3377,6 +3288,292 @@
                 "palabra": "eso.",
                 "duracion_ms": 400,
                 "intensidad_db": -23.33
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:11:19",
+        "texto": "VOCES DE ROCKER Vamos a intentarlo, che.... Para que te dé la voz de un roquerito, voy a agregar un poco de grunge y rebeldía a mi voz, pero sin perder la esencia del hombre. Así que, prepárate para algo un poco más intenso, posta.... Voz de Rockero: (En un... te lo resumo hasta acá, che.",
+        "metricas_palabras": [
+            {
+                "palabra": "VOCES",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "DE",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "ROCKER",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "Vamos",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "intentarlo,",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "che....",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "Para",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "dé",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "roquerito,",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "agregar",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "grunge",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "rebeldía",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "mi",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "voz,",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "sin",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "perder",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "esencia",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "del",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "hombre.",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "Así",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "que,",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "prepárate",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "intenso,",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "posta....",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "Voz",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "Rockero:",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "(En",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "un...",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "resumo",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "hasta",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "acá,",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
+            },
+            {
+                "palabra": "che.",
+                "duracion_ms": 350,
+                "intensidad_db": -20.95
             }
         ]
     }
