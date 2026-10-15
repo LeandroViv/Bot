@@ -1,10 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 02:59:28",
-        "tarea": "A ver cómo suena eso",
-        "estado": "pendiente"
-    },
-    {
         "timestamp": "2026-10-15 03:00:02",
         "tarea": "A ver que suene más grave tubo.",
         "estado": "pendiente"
@@ -247,6 +242,11 @@
     {
         "timestamp": "2026-10-15 06:02:32",
         "tarea": "poneme la voz de elena che",
+        "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 06:16:06",
+        "tarea": "activa es-AR-ElenaNeural",
         "estado": "pendiente"
     }
 ]
