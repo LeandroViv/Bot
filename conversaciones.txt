@@ -1105,3 +1105,6 @@ En otras palabras, si una voz normal tiene una frecuencia fundamental de 100 Hz,
 
 En el contexto de la modulación de frecuencia, esto se conoce como una modulación de frecuencia armónica, y se utiliza para alterar la frecuencia
 [2026-10-15 03:04:02] Usuario: [AUDIO] A ver, poné mi voz de una cantante, de una cantante, por favor.
+[2026-10-15 03:04:09] LeandroBot: Che, fijate, vas a escuchar mi voz, dale. Estoy a punto de empezar a hablar como una reina del ritmo, posta. 
+
+¿Qué onda, che? ¿Quieres que te hable sobre algo en particular o solo querés disfrutar de mi voz, eh?
