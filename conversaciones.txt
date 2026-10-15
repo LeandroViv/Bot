@@ -1146,3 +1146,6 @@ Fijate si ahí te va mejor el ritmo... y decime, posta, en qué parte nos había
 [2026-10-15 03:53:06] Usuario: [AUDIO] Bueno, con FFML, bajar el pitch, por favor, para que suene algo más despacio, que se comprenda lo que me decís.
 [2026-10-15 03:53:14] LeandroBot: Che, fijate que hice! Bajé el pitch y ahora la voz suena más lenta, ¿sabés? Dale, que ya te decía eso, que a la gente le gusta que la voz sea más clara, ¿vale?
 [2026-10-15 03:54:15] Usuario: [AUDIO] ¿Qué suene como persona normal, por favor, que se articule en las palabras? No se entiende nada a eso, por favor, que suene una voz más grave y más lenta, así de fácil.
+[2026-10-15 03:54:30] LeandroBot: "Vós, che, te voy a dar una voz que te va a parecer normal, fijate. La voy a hacer más grave y más lenta, ¿vale? Dale, te voy a probar. 
+
+Comienzo... (pausa) 'La persona que me está pidiendo que haga esto... tiene una voz grave y lenta, che. La voy a hacer así... (pausa) 'Es fácil de entender, posta. La persona que me está pidiendo que haga esto... va a parecer como una persona normal, fijate.' ¿Qué te parece, che?"
