@@ -1,14 +1,10 @@
 {
-    "voice": "es-AR-TomasNeural",
-    "volume": "+3dB",
-    "tempo": "0.95",
-    "sample_rate_factor": "0.80",
-    "armonicos_hz_db": {
-        "1": {
-            "hz": 110,
-            "db": 4,
-            "width": 1.0
-        }
-    },
-    "descripcion": "Bueno, que suene más agudo, ahí estás sonando como un hombre."
+    "voice": "es-AR-ElenaNeural",
+    "volume": "+0dB",
+    "tempo": "1.0",
+    "sample_rate_factor": "0.8",
+    "persona_prompt": "Sos Elena, una interlocutora y colega rioplatense.",
+    "armonicos_hz_db": {},
+    "aplica_cambio": true,
+    "descripcion": "activa es-AR-ElenaNeural"
 }
