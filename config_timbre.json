@@ -1,8 +1,8 @@
 {
-    "voice": "es-AR-ElenaNeural",
-    "pitch": "+0Hz",
-    "rate": "+0%",
-    "volume": "+0%",
-    "descripcion": "Persona dinámica adaptativa",
-    "serie_armonica_custom": null
+    "voice": "es-AR-TomasNeural",
+    "pitch": "-2Hz",
+    "rate": "-2%",
+    "volume": "+5%",
+    "serie_armonica_custom": null,
+    "descripcion": "si igual lo que te pido ya nos queda guardado en un archivo así que cuando se reinicia lo es  y listo ahora lo que te quiero pedir es que me pongas bueno nuevamente una voz masculina eso  promete una voz de hombre"
 }
