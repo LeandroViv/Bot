@@ -1015,3 +1015,8 @@ Descansá tranquilo o metele a lo tuyo, que yo te mantengo al tanto. Abrazo gran
 [2026-10-14 00:48:42] USUARIO: [AUDIO] que hago una pregunta, esta tarea que yo te pido, si yo reinicio el GitHub Actions que es donde  corre es bostom, le corre el servidor, vos la podes hacer igual, o te la tengo que reiterar, digamos.
 [2026-10-14 00:49:14] LEANDROBOT: Che, se me trabaron los motores de IA por un segundo. ¿Qué me decías?
 [2026-10-15 01:04:10] Usuario: [AUDIO] Me escuchas ahí?
+[2026-10-15 01:04:20] LeandroBot: Sí, te escucho perfecto, che... fuerte y claro. 
+
+Y de paso te respondo lo que me habías preguntado antes: si reiniciás el GitHub Actions, como el runner es efímero y se resetea todo, la memoria en caliente se pierde... así que sí, me la tendrías que reiterar, posta. Salvo, claro, que lo dejemos persistido en base de datos o en el repo. 
+
+Pero decime nomás... ¿qué estabas por pedirme? Te sigo.
