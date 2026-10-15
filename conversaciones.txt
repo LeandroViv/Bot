@@ -1222,3 +1222,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 06:02:43] Bot: dale, fijate, no te preocupes, vós podés contar conmigo, vésame de nuevo, ¿che querés hablar de?
 [2026-10-15 06:16:07] Usuario: activa es-AR-ElenaNeural
 [2026-10-15 06:16:19] Bot: Che, fijate, no tengo idea de qué estás pasando, pero si activas algo con ese nombre, no sería buena idea, posta. ¿Qué es esa cosa?
+[2026-10-15 06:17:09] Usuario: ponete una voz mas grave che
