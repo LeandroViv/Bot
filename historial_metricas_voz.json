@@ -1,291 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:06:13",
-        "texto": "Fijate..., che..., te voy a dar una noticia buena: ya que lo que te pido ya está guardado en un archivo, cuando se reinicia el bot, todo listo, sin problemas, ¿dale? La memoria en caliente se mantiene intacta, sin resetearte nada, ¿entiendes? Entonces, si te pido algo y ya tienes... te lo resumo hasta acá, che.",
-        "metricas_palabras": [
-            {
-                "palabra": "Fijate...,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "che...,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "dar",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "noticia",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "buena:",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "pido",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "está",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "guardado",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "archivo,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "cuando",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "reinicia",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "bot,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "todo",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "listo,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "sin",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "problemas,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "¿dale?",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "La",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "memoria",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "caliente",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "mantiene",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "intacta,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "sin",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "resetearte",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "nada,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "¿entiendes?",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "Entonces,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "pido",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "algo",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "tienes...",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "resumo",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "hasta",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "acá,",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            },
-            {
-                "palabra": "che.",
-                "duracion_ms": 383,
-                "intensidad_db": -21.05
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:07:31",
         "texto": "bueno para que guardes en tareas te pido eso que a partir de las 9 empiezas a  buscar cosas en la hueve que me puedan interesar y bueno durante el día en  algún momento si te parece que algo vale la pena  me muestra los links",
         "metricas_palabras": [
@@ -4721,6 +4435,147 @@
                 "palabra": "favor",
                 "duracion_ms": 524,
                 "intensidad_db": -23.91
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:42:55",
+        "texto": "Che..., fijate... que eso es un error de nombre, nando como hombre no es una opción válida... va a ser \"nando como mujer\". Dale, te lo corregí.",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "fijate...",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "error",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "nombre,",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "nando",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "hombre",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "opción",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "válida...",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "va",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "ser",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "\"nando",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "mujer\".",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "Dale,",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "corregí.",
+                "duracion_ms": 267,
+                "intensidad_db": -17.5
             }
         ]
     }
