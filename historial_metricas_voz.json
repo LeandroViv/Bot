@@ -1,46 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:00:00",
-        "texto": "A ver que suene más grave tubo.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            },
-            {
-                "palabra": "grave",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            },
-            {
-                "palabra": "tubo.",
-                "duracion_ms": 356,
-                "intensidad_db": -21.93
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:00:16",
         "texto": "Vos estás hablando de mi timbre, che.... Dale, voy a intentar sonar un poco más grave, si no es demasiado para vos. canta \"Riiiii-ooo-ooo...\" En serio, te voy a cambiar el pitch, ¿vale? voz más baja \n\nPitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -10dB.",
         "metricas_palabras": [
@@ -3856,6 +3815,117 @@
                 "palabra": "decir?",
                 "duracion_ms": 155,
                 "intensidad_db": -18.54
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:50:37",
+        "texto": "Podéis bajar por favor el parámetro del ritmo de las palabras para que suene más lento por favor, eso te pido.",
+        "metricas_palabras": [
+            {
+                "palabra": "Podéis",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "bajar",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "parámetro",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "del",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "ritmo",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "palabras",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "lento",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "favor,",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
+            },
+            {
+                "palabra": "pido.",
+                "duracion_ms": 520,
+                "intensidad_db": -25.6
             }
         ]
     }
