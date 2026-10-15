@@ -1127,3 +1127,4 @@ Eso preguntaste y conteste que si
 [2026-10-15 03:43:32] LeandroBot: "Che, fijate, no te preocupes, voy a trabajar en eso, pero necesito saber un poco más sobre lo que te parece 'hombre'. Dale, ¿qué te pasa exactamente con el sonido? ¿Es la voz, la calidad de la grabación o algo más?"
 [2026-10-15 03:44:14] Usuario: [AUDIO] estás diciendo cualquier cosa amigo lo que te digo es que estás poniendo vos  de hombre y eso es lo que yo te pedí de modificar
 [2026-10-15 03:44:23] LeandroBot: Vos estás en lo correcto, che, puseme claramente que no estoy poniendo de hombre, solo intentando cumplir con lo que me decís, pero parece que no está funcionando. Dale, ¿podés indicarme qué es lo que me pedís que cambie?
+[2026-10-15 03:45:21] Usuario: [AUDIO] el tono de voz cambia poneme a ver el tono de voz de una nemita a ver como suena
