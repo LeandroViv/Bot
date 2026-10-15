@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Autónomo con Comprensión Dinámica de Personaje y DSP Total
+# Script: procesar.py - Bot Autónomo con Comprensión Dinámica de Personaje, Auto-Corrección de Whisper, Búsqueda Web y Hot-Deploy
 
 import asyncio
 import json as json_lib
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando Bot con Comprensión Orgánica y DSP Total...", flush=True)
+print("🚀 [INIT]: Arrancando Bot con Comprensión Dinámica y DSP Total...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
@@ -177,6 +177,19 @@ def buscar_en_web(query):
         print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
     return ""
 
+def crear_o_modificar_archivo_en_caliente(nombre_archivo, contenido_codigo):
+    try:
+        with open(nombre_archivo, "w", encoding="utf-8") as f:
+            f.write(contenido_codigo)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"⚡ [HOT-DEPLOY]: Archivo '{nombre_archivo}' creado/modificado en el runner.", flush=True)
+        sincronizar_con_github(f"feat: despliegue en caliente de {nombre_archivo}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Error creando archivo en caliente: {e}", flush=True)
+        return False
+
 def cargar_config_timbre():
     try:
         with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
@@ -317,17 +330,12 @@ def registrar_metricas_voz_palabra_por_palabra(path_audio_ogg, texto_transcripto
 def interpretar_configuracion_dsp_dinamica(prompt_usuario):
     """Comprensión pura por IA: infiere voz de Edge-TTS, parámetros DSP y la persona/actitud idónea."""
     prompt_ia = (
-        f"Sos un ingeniero de audio y director de voz experto. Analizá este mensaje del usuario: '{prompt_usuario}'.\n"
-        "Evaluá si el usuario pide cambiar la voz, el personaje, el tono o los parámetros acústicos.\n"
-        "Determina los valores adecuados:\n"
-        "- voice: la voz neutra o personaje de Edge-TTS ideal (ej: 'es-AR-TomasNeural' para masculino rioplatense, 'es-AR-ElenaNeural' para femenino rioplatense, 'es-ES-AlvaroNeural', etc.).\n"
-        "- volume: ganancia en dB (ej: '+0dB').\n"
-        "- tempo: factor de velocidad (ej: '1.0').\n"
-        "- sample_rate_factor: factor de tono/formantes (ej: '1.25' para agudo, '0.78' para grave/tubo, '1.0' para normal).\n"
-        "- armonicos_hz_db: diccionario de armónicos en Hz y dB si se solicitó.\n"
-        "- persona_prompt: instrucción breve sobre CÓMO debe actuar y hablar este personaje (ej: 'Sos Elena, una interlocutora colega rioplatense.', 'Sos un locutor de radio grave y nocturno.').\n"
-        "- aplica_cambio: true si el usuario pidió explícitamente o implícitamente un cambio de voz/estilo, false en caso contrario.\n\n"
-        "Devolvé ÚNICAMENTE JSON válido sin bloques markdown:\n"
+        f"Analizá el mensaje del usuario: '{prompt_usuario}'.\n"
+        "Determina si el usuario pide cambiar la voz, el personaje, el tono o parámetros acústicos.\n"
+        "Si pide 'voz de Elena' o voz femenina rioplatense, asigná 'voice': 'es-AR-ElenaNeural' y 'persona_prompt': 'Sos Elena, una interlocutora y colega rioplatense.'\n"
+        "Si pide 'voz de Leandro' o masculina rioplatense, asigná 'voice': 'es-AR-TomasNeural' y 'persona_prompt': 'Sos un interlocutor colega y locutor rioplatense experto en vibe coding.'\n"
+        "Si no especifica personaje pero pide cambio acústico (agudo, grave, etc.), mantené el personaje activo y ajustá sample_rate_factor / armonicos_hz_db.\n\n"
+        "Devolvé ÚNICAMENTE JSON válido sin marcas de markdown:\n"
         "{\n"
         '  "voice": "es-AR-TomasNeural",\n'
         '  "volume": "+0dB",\n'
@@ -371,9 +379,9 @@ def construir_prompt_sistema(info_web=""):
     return (
         f"{persona_base}\n"
         "REGLAS ABSOLUTAS DE DIÁLOGO:\n"
-        "1. Te están escribiendo desde el exterior. Respondé SIEMPRE en diálogo directo, natural y espontáneo en voseo rioplatense ('che', 'vós', 'fijate', 'posta', 'dale').\n"
-        "2. NUNCA expliques, preguntes ni comentes tu cambio de voz, tu nombre o tu configuración técnica en la charla. Asumí tu rol de forma transparente e inmediata.\n"
-        "3. PROHIBIDO explicar hertz, decibeles o parámetros de DSP en la respuesta hablada.\n"
+        "1. Respondé SIEMPRE en diálogo directo, natural y espontáneo en voseo rioplatense ('che', 'vós', 'fijate', 'posta', 'dale').\n"
+        "2. Jamás expliques, preguntes ni comentes tu cambio de voz o personaje en la charla. Asumí la personalidad de forma 100% inmediata y transparente.\n"
+        "3. PROHIBIDO mencionar términos técnicos, hertz, decibeles o autodefinirte como IA en la respuesta hablada.\n"
         "4. Usá comas y puntos suspensivos para dar cadencia oral natural.\n"
         f"{f'Contexto web adicional: {info_web}' if info_web else ''}\n"
     )
@@ -384,7 +392,7 @@ def generar_texto_ia(prompt_usuario):
         info_web = buscar_en_web(prompt_usuario)
 
     system_prompt = construir_prompt_sistema(info_web)
-    prompt_con_rol = f"El usuario te escribe la siguiente directiva o mensaje:\n\"{prompt_usuario}\"\n\nRespondé en diálogo directo según tu rol activo:"
+    prompt_con_rol = f"El usuario te escribe el siguiente mensaje:\n\"{prompt_usuario}\"\n\nRespondé directamente en personaje:"
 
     if client:
         try:
@@ -502,7 +510,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con comprensión dinámica de personaje y DSP total.")
+        await update.message.reply_text("¡Hola che! Listo con diálogo continuo y DSP total.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -537,6 +545,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception: pass
         return
 
+    # 1. EVALUAMOS Y GUARDAMOS CONFIGURACIÓN/PERSONAJE ANTES DE GENERAR LA RESPUESTA
     dsp_res = interpretar_configuracion_dsp_dinamica(u_text)
     if dsp_res.get("aplica_cambio"):
         guardar_config_timbre(dsp_res)
@@ -544,6 +553,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     guardar_tarea_memoria(u_text)
     registrar_conversacion("Usuario", u_text)
 
+    # 2. SE GENERA EL TEXTO DIRECTAMENTE EN PERSONAJE
     resp = generar_texto_ia(u_text)
     registrar_conversacion("Bot", resp)
     
@@ -581,6 +591,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         texto_crudo = aplicar_correcciones_texto(texto_raw)
 
+        # EVALUAMOS Y GUARDAMOS CONFIGURACIÓN/PERSONAJE ANTES DE GENERAR LA RESPUESTA
         dsp_res = interpretar_configuracion_dsp_dinamica(texto_crudo)
         if dsp_res.get("aplica_cambio"):
             guardar_config_timbre(dsp_res)
