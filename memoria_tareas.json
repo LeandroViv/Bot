@@ -143,5 +143,10 @@
         "timestamp": "2026-10-15 03:54:14",
         "tarea": "¿Qué suene como persona normal, por favor, que se articule en las palabras? No se entiende nada a eso, por favor, que suene una voz más grave y más lenta, así de fácil.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:55:25",
+        "tarea": "Bueno, me gustó. Con esa velocidad, poné una voz de una niña, por favor.",
+        "estado": "pendiente"
     }
 ]
