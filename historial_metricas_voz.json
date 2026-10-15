@@ -1,22 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 22:39:37",
-        "archivo": "muestras_voz/audio_usuario_1356.ogg",
-        "texto": "¿Estás ahí?",
-        "partitura_metrica": [
-            {
-                "palabra": "¿Estás",
-                "duracion_ms": 746,
-                "intensidad_db": -20.53
-            },
-            {
-                "palabra": "ahí?",
-                "duracion_ms": 746,
-                "intensidad_db": -20.53
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-13 23:05:34",
         "archivo": "muestras_voz/audio_usuario_1359.ogg",
         "texto": "miras los links de llm que ya me había mostrado de sus links por favor",
@@ -5275,6 +5258,97 @@
                 "palabra": "che....",
                 "duracion_ms": 453,
                 "intensidad_db": -22.63
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:39:21",
+        "texto": "Rear quiero que suen es como una profesora, una profesora que es hecho, una profesora de letras.",
+        "metricas_palabras": [
+            {
+                "palabra": "Rear",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "quiero",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "suen",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "profesora,",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "profesora",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "hecho,",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "profesora",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
+            },
+            {
+                "palabra": "letras.",
+                "duracion_ms": 685,
+                "intensidad_db": -26.25
             }
         ]
     }
