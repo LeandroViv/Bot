@@ -1,8 +1,17 @@
 {
     "voice": "es-AR-TomasNeural",
-    "pitch": "-2Hz",
-    "rate": "-2%",
-    "volume": "+5%",
-    "serie_armonica_custom": null,
-    "descripcion": "A ver, cambiame un poco el timbre de tu voz, manteniendo lo que es voz de hombre, pero cambia el timbre.  A ver, ahora mismo es eso."
+    "pitch": "-5Hz",
+    "rate": "-5%",
+    "volume": "+10%",
+    "armonicos_hz_db": {
+        "1": {
+            "hz": 110,
+            "db": 0
+        },
+        "2": {
+            "hz": 220,
+            "db": -3
+        }
+    },
+    "descripcion": "A ver que suene más grave tubo."
 }
