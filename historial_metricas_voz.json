@@ -1,34 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 07:06:06",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1149.ogg",
-        "texto": "para decimé cualquier cosa.",
-        "partitura_metrica": [
-            {
-                "palabra": "para",
-                "duracion_ms": 120,
-                "intensidad_db": 2.74
-            },
-            {
-                "palabra": "decimé",
-                "duracion_ms": 580,
-                "intensidad_db": 2.64
-            },
-            {
-                "palabra": "cualquier",
-                "duracion_ms": 420,
-                "intensidad_db": 0.03
-            },
-            {
-                "palabra": "cosa.",
-                "duracion_ms": 420,
-                "intensidad_db": -1.88
-            }
-        ],
-        "total_entrenamientos": 19
-    },
-    {
         "timestamp": "2026-10-12 07:36:47",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1151.ogg",
@@ -4263,6 +4234,272 @@
                 "palabra": "eso",
                 "duracion_ms": 394,
                 "intensidad_db": -20.74
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 02:59:41",
+        "texto": "Vos estás escuchando un timbre de voz un poco más alto, un poco más claro, pero con un toque de calidez y madurez que le da un tono más cálido y acogedor. Es como si la voz fuera un abrazo cálido, que te hace sentir cómodo y tranquilo. Dale, ¿cómo te parece?",
+        "metricas_palabras": [
+            {
+                "palabra": "Vos",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "escuchando",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "timbre",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "alto,",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "claro,",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "toque",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "calidez",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "madurez",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "le",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "da",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "tono",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "cálido",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "acogedor.",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "Es",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "fuera",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "abrazo",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "cálido,",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "hace",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "sentir",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "cómodo",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "tranquilo.",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "Dale,",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "¿cómo",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
+            },
+            {
+                "palabra": "parece?",
+                "duracion_ms": 326,
+                "intensidad_db": -20.63
             }
         ]
     }
