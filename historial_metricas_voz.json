@@ -1,121 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:08:17",
-        "texto": "Oye, che..., estoy ajustando, pero fijate... que estoy llegando a un punto de equilibrio, ya no estoy pasando de la modulación, Dale.",
-        "metricas_palabras": [
-            {
-                "palabra": "Oye,",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "che...,",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "estoy",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "ajustando,",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "pero",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "fijate...",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "estoy",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "llegando",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "punto",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "equilibrio,",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "estoy",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "pasando",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "modulación,",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            },
-            {
-                "palabra": "Dale.",
-                "duracion_ms": 273,
-                "intensidad_db": -17.19
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:08:47",
         "texto": "Bueno, que suene más agudo, ahí estás sonando como un hombre.",
         "metricas_palabras": [
@@ -4201,6 +4085,107 @@
                 "palabra": "posta....",
                 "duracion_ms": 241,
                 "intensidad_db": -17.15
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:39:41",
+        "texto": "\"che..., me parece bien, la armonía se ve clara, fijate... que la frecuencia fundamental está en el rango adecuado...\"",
+        "metricas_palabras": [
+            {
+                "palabra": "\"che...,",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "parece",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "bien,",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "armonía",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "ve",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "clara,",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "fijate...",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "frecuencia",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "fundamental",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "rango",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
+            },
+            {
+                "palabra": "adecuado...\"",
+                "duracion_ms": 281,
+                "intensidad_db": -17.23
             }
         ]
     }
