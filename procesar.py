@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - Bot Autónomo con Personajes Fijos (Elena/Tomás) y DSP Libre por IA
+# Script: procesar.py - Bot Autónomo con Desacoplamiento DSP, Personajes Fijos y Filtro Anti-Meta
 
 import asyncio
 import json as json_lib
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando Bot con Personajes Fijos y DSP Libre...", flush=True)
+print("🚀 [INIT]: Arrancando Bot con Desacoplamiento DSP y Filtro Anti-Meta...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
@@ -328,46 +328,35 @@ def registrar_metricas_voz_palabra_por_palabra(path_audio_ogg, texto_transcripto
         print(f"⚠️ Error registrando métricas: {e}", flush=True)
 
 def interpretar_configuracion_dsp_dinamica(prompt_usuario):
-    """Hardcodea la selección de personajes (Elena / Tomás-Leandro) e infiere el DSP de forma 100% libre."""
+    """Aplica cambios de personaje hardcodeados y cálculo relativo de pitch de forma limpia."""
     cfg_actual = cargar_config_timbre()
     persona_actual = cfg_actual.get("persona_prompt", "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.")
     voz_actual = cfg_actual.get("voice", "es-AR-TomasNeural")
     sr_actual = float(cfg_actual.get("sample_rate_factor", "1.0"))
 
     u_lower = prompt_usuario.lower()
-    hardcode_personaje = False
+    hubo_cambio = False
 
-    # 1. HARDCODEO EXPLÍCITO DE PERSONAJES
+    # 1. Personajes Fijos
     if any(k in u_lower for k in ["elena", "voz de elena", "hablá como elena", "voz de mujer"]):
         voz_actual = "es-AR-ElenaNeural"
         persona_actual = "Sos Elena, una interlocutora y colega rioplatense."
-        hardcode_personaje = True
+        hubo_cambio = True
     elif any(k in u_lower for k in ["tomas", "tomás", "leandro", "voz de leandro", "hablá como leandro", "voz de hombre", "voz de varón"]):
         voz_actual = "es-AR-TomasNeural"
         persona_actual = "Sos un interlocutor colega y locutor rioplatense experto en vibe coding."
-        hardcode_personaje = True
+        hubo_cambio = True
 
-    # 2. IA INFIERE LIBREMENTE LOS PARÁMETROS ACÚSTICOS Y PITCH (FFMPEG)
+    # 2. Ajuste relativo de Pitch por IA
     prompt_ia = (
-        f"Analizá la intención del usuario sobre el tono de voz: '{prompt_usuario}'.\n"
-        f"Estado actual:\n"
-        f"- voice: '{voz_actual}'\n"
-        f"- sample_rate_factor actual: {sr_actual} (donde 1.0 es normal; >1.0 es agudo/fino; <1.0 es grave/profundo; rango [0.5 a 2.0]).\n"
-        f"- persona_prompt activo: '{persona_actual}'\n\n"
-        "REGLAS:\n"
-        "1. Si el usuario pide cualquier cambio acústico (agudo, grave, fino, alto, bajo, rapido, lento, etc.), calcula libremente los nuevos valores ('sample_rate_factor', 'tempo', 'volume') relativos al actual.\n"
-        "2. Si no hay pedidos acústicos adicionales, mantené los valores actuales.\n"
-        "3. Define 'aplica_cambio': true si cambió el personaje o si calculaste un ajuste acústico.\n\n"
+        f"Analizá únicamente si el mensaje pide modificar el tono o pitch de la voz: '{prompt_usuario}'.\n"
+        f"sample_rate_factor actual: {sr_actual}.\n"
+        "Si pide bajar el pitch/tono o hacer la voz más grave, calcula un valor menor al actual (ej: reduce un 10-15%).\n"
+        "Si pide subir el pitch/tono o hacer la voz más aguda, calcula un valor mayor al actual (ej: aumenta un 10-15%).\n"
         "Devolvé ÚNICAMENTE JSON válido sin markdown:\n"
         "{\n"
-        f'  "voice": "{voz_actual}",\n'
-        '  "volume": "+0dB",\n'
-        '  "tempo": "1.0",\n'
         f'  "sample_rate_factor": "{sr_actual}",\n'
-        '  "armonicos_hz_db": {},\n'
-        f'  "persona_prompt": "{persona_actual}",\n'
-        f'  "aplica_cambio": {json_lib.dumps(hardcode_personaje)},\n'
-        f'  "descripcion": "{prompt_usuario}"\n'
+        '  "pide_cambio_pitch": false\n'
         "}"
     )
 
@@ -379,12 +368,9 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
                 config=dict(response_mime_type="application/json")
             )
             data = json_lib.loads((res.text or "").strip())
-            if "aplica_cambio" in data:
-                if hardcode_personaje:
-                    data["voice"] = voz_actual
-                    data["persona_prompt"] = persona_actual
-                    data["aplica_cambio"] = True
-                return data
+            if data.get("pide_cambio_pitch"):
+                sr_actual = float(data.get("sample_rate_factor", sr_actual))
+                hubo_cambio = True
         except Exception:
             pass
 
@@ -395,7 +381,7 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
         "sample_rate_factor": str(sr_actual),
         "persona_prompt": persona_actual,
         "armonicos_hz_db": {},
-        "aplica_cambio": hardcode_personaje,
+        "aplica_cambio": hubo_cambio,
         "descripcion": prompt_usuario
     }
 
@@ -407,9 +393,9 @@ def construir_prompt_sistema(info_web=""):
         f"{persona_base}\n"
         "REGLAS ABSOLUTAS DE DIÁLOGO:\n"
         "1. Respondé SIEMPRE en diálogo directo, natural y espontáneo en voseo rioplatense ('che', 'vós', 'fijate', 'posta', 'dale').\n"
-        "2. Jamás expliques, preguntes ni comentes tu cambio de voz, tono o personaje en la charla. Asumí la personalidad de forma 100% inmediata y transparente.\n"
-        "3. PROHIBIDO mencionar términos técnicos, frecuencias, hertz, decibeles, o autodefinirte como IA en la respuesta hablada.\n"
-        "4. Usá comas y puntos suspensivos para dar cadencia oral natural.\n"
+        "2. NUNCA menciones tu voz, tu tono, el pitch, cambios de sonido, ni des explicaciones de lo que hacés o sentís respecto a tu audio.\n"
+        "3. PROHIBIDO autodefinirte como IA o mencionar términos técnicos.\n"
+        "4. Si el usuario solo te dio una instrucción de tono o voz, respondé con una frase natural corta y al grano para seguir la charla.\n"
         f"{f'Contexto web adicional: {info_web}' if info_web else ''}\n"
     )
 
@@ -537,7 +523,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con personajes fijos y DSP libre.")
+        await update.message.reply_text("¡Hola che! Listo con diálogo limpio y DSP total.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -563,103 +549,4 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         ogg_f = f"resp_{int(time.time())}.ogg"
         exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
-        if exito and archivo_audio and os.path.exists(archivo_audio):
-            try:
-                with open(archivo_audio, "rb") as vf:
-                    await update.message.reply_voice(voice=vf, caption="📻 Bot DSP")
-            except Exception: pass
-            try: os.remove(archivo_audio)
-            except Exception: pass
-        return
-
-    dsp_res = interpretar_configuracion_dsp_dinamica(u_text)
-    if dsp_res.get("aplica_cambio"):
-        guardar_config_timbre(dsp_res)
-
-    guardar_tarea_memoria(u_text)
-    registrar_conversacion("Usuario", u_text)
-
-    resp = generar_texto_ia(u_text)
-    registrar_conversacion("Bot", resp)
-    
-    await update.message.reply_text(resp)
-
-    ogg_f = f"resp_{int(time.time())}.ogg"
-    exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
-    if exito and archivo_audio and os.path.exists(archivo_audio):
-        try:
-            with open(archivo_audio, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption="📻 Bot DSP")
-        except Exception as ex_send:
-            print(f"⚠️ Error enviando audio: {ex_send}", flush=True)
-        try: os.remove(archivo_audio)
-        except Exception: pass
-
-async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID_ACTIVO
-    async with lock_voz:
-        if not update.message:
-            return
-        CHAT_ID_ACTIVO = update.message.chat_id
-        if not WHISPER_DISPONIBLE:
-            await update.message.reply_text("Whisper no disponible.")
-            return
-
-        await update.message.chat.send_action(action="record_voice")
-        file = await update.message.voice.get_file()
-        path_in = os.path.join(CARPETA_MUESTRAS, f"audio_{update.message.message_id}.ogg")
-        await file.download_to_drive(path_in)
-
-        model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, _ = model.transcribe(path_in, beam_size=5, language="es")
-        texto_raw = " ".join([s.text for s in segments]).strip() or "Audio recibido."
-
-        texto_crudo = aplicar_correcciones_texto(texto_raw)
-
-        dsp_res = interpretar_configuracion_dsp_dinamica(texto_crudo)
-        if dsp_res.get("aplica_cambio"):
-            guardar_config_timbre(dsp_res)
-
-        registrar_metricas_voz_palabra_por_palabra(path_in, texto_crudo)
-        guardar_tarea_memoria(texto_crudo)
-        registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
-
-        resp = generar_texto_ia(texto_crudo)
-        registrar_conversacion("Bot", resp)
-
-        await update.message.reply_text(f"*(Interpretado: {texto_crudo})*\n\n{resp}")
-
-        ogg_f = f"resp_voz_{int(time.time())}.ogg"
-        exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
-        if exito and archivo_audio and os.path.exists(archivo_audio):
-            try:
-                with open(archivo_audio, "rb") as vf:
-                    await update.message.reply_voice(voice=vf, caption="📻 Bot DSP")
-            except Exception as ex_send:
-                print(f"⚠️ Error enviando audio: {ex_send}", flush=True)
-            try: os.remove(archivo_audio)
-            except Exception: pass
-
-        if os.path.exists(path_in):
-            try: os.remove(path_in)
-            except Exception: pass
-
-def main():
-    if not TOKEN:
-        print("❌ Falta TELEGRAM_BOT_TOKEN.", flush=True)
-        return
-    asegurar_e_iniciar_ollama()
-    print("🚀 [INIT]: Arrancando Bot...", flush=True)
-    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
-    try:
-        app = Application.builder().token(TOKEN).request(request_config).build()
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
-        app.run_polling(drop_pending_updates=True)
-    except Exception as e:
-        print(f"❌ Error: {e}", flush=True)
-        traceback.print_exc()
-
-if __name__ == "__main__":
-    main()
+        if exito and archivo_audio
