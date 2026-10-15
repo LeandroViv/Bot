@@ -1099,3 +1099,8 @@ Dale, che, ahora suena un poco más como si estuviera hablando de una cosa lejan
 
 Pitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -10dB.
 [2026-10-15 03:01:20] Usuario: [AUDIO] Más grave que se note significativamente así, por favor, a ver como es eso.
+[2026-10-15 03:01:33] LeandroBot: Fijate, che. Para que te dé idea, la frecuencia que mencionás es una frecuencia fundamental, ¿entiendes? En este caso, hablamos de una frecuencia de -5 Hz, lo que significa que la voz se produce en el mismo nivel de frecuencia de la frecuencia fundamental de la voz humana, pero con una señal de fase alterna. 
+
+En otras palabras, si una voz normal tiene una frecuencia fundamental de 100 Hz, la voz que estás refiriéndote es como si la frecuencia fundamental fuera -100 Hz, lo que significa que se produce en la misma frecuencia, pero con un signo negativo. 
+
+En el contexto de la modulación de frecuencia, esto se conoce como una modulación de frecuencia armónica, y se utiliza para alterar la frecuencia
