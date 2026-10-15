@@ -1,22 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 22:07:24",
-        "archivo": "muestras_voz/audio_usuario_1350.ogg",
-        "texto": "Estas ahí?",
-        "partitura_metrica": [
-            {
-                "palabra": "Estas",
-                "duracion_ms": 526,
-                "intensidad_db": -20.79
-            },
-            {
-                "palabra": "ahí?",
-                "duracion_ms": 526,
-                "intensidad_db": -20.79
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-13 22:27:23",
         "archivo": "muestras_voz/audio_usuario_1353.ogg",
         "texto": "Me puedes copiar el mensaje que me escribiste sobre la LLM, por favor.",
@@ -5127,6 +5110,42 @@
                 "palabra": "eh?",
                 "duracion_ms": 408,
                 "intensidad_db": -21.88
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:04:36",
+        "texto": "Quiero que suene de esa manera.",
+        "metricas_palabras": [
+            {
+                "palabra": "Quiero",
+                "duracion_ms": 475,
+                "intensidad_db": -21.64
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 475,
+                "intensidad_db": -21.64
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 475,
+                "intensidad_db": -21.64
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 475,
+                "intensidad_db": -21.64
+            },
+            {
+                "palabra": "esa",
+                "duracion_ms": 475,
+                "intensidad_db": -21.64
+            },
+            {
+                "palabra": "manera.",
+                "duracion_ms": 475,
+                "intensidad_db": -21.64
             }
         ]
     }
