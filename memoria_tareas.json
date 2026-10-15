@@ -88,5 +88,10 @@
         "timestamp": "2026-10-15 03:42:05",
         "tarea": ". ¿Querés que la haga con una voz más femenina?\nEso preguntaste y conteste que si",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:42:44",
+        "tarea": "se hizo nando como hombre, fíjate de corregir eso por favor",
+        "estado": "pendiente"
     }
 ]
