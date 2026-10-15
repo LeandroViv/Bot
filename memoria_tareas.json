@@ -178,5 +178,10 @@
         "timestamp": "2026-10-15 04:08:06",
         "tarea": "A ver, continúa ajustando lo, por favor.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 04:08:48",
+        "tarea": "Bueno, que suene más agudo, ahí estás sonando como un hombre.",
+        "estado": "pendiente"
     }
 ]
