@@ -1,29 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 02:24:20",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1115.wav",
-        "texto": "¿Qué dijiste, perdón?",
-        "partitura_metrica": [
-            {
-                "palabra": "¿Qué",
-                "duracion_ms": 840,
-                "intensidad_db": 0.02
-            },
-            {
-                "palabra": "dijiste,",
-                "duracion_ms": 580,
-                "intensidad_db": -0.2
-            },
-            {
-                "palabra": "perdón?",
-                "duracion_ms": 300,
-                "intensidad_db": 2.72
-            }
-        ],
-        "total_entrenamientos": 19
-    },
-    {
         "timestamp": "2026-10-12 02:57:25",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1116.wav",
@@ -3141,6 +3117,102 @@
                 "palabra": "che.",
                 "duracion_ms": 367,
                 "intensidad_db": -21.03
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:09:04",
+        "texto": "A ver, ponerme voz de rockero, lo que se te ocurre que sería voz de rockero, por favor.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "ponerme",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "rockero,",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "ocurre",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "sería",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "rockero,",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 371,
+                "intensidad_db": -24.4
             }
         ]
     }
