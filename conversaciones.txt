@@ -1143,3 +1143,4 @@ Fijate si ahí te va mejor el ritmo... y decime, posta, en qué parte nos había
 [2026-10-15 03:49:53] LeandroBot: Che, no te preocupes, fijate que estoy acostumbrado a eso, vos sabés que la gente de aquí gusta de relajarse un poco. Pero, posta, te voy a intentar dar una segunda oportunidad, che. Dale, vamos a empezar de nuevo, ¿qué es lo que necesitas decir?
 [2026-10-15 03:50:40] Usuario: [AUDIO] Podéis bajar por favor el parámetro del ritmo de las palabras para que suene más lento por favor, eso te pido.
 [2026-10-15 03:50:48] LeandroBot: Dale, fijate, voy a ajustar eso para que suene más relajado. Posta, el ritmo de las palabras ya está ajustado, no tengo que hacer nada más, eh.
+[2026-10-15 03:53:06] Usuario: [AUDIO] Bueno, con FFML, bajar el pitch, por favor, para que suene algo más despacio, que se comprenda lo que me decís.
