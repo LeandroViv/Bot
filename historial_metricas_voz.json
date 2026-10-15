@@ -1,146 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:10:53",
-        "texto": "A ver, cambiame un poco el timbre de tu voz, manteniendo lo que es voz de hombre, pero cambia el timbre.  A ver, ahora mismo es eso.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "cambiame",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "poco",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "timbre",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "tu",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "voz,",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "manteniendo",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "hombre,",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "pero",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "cambia",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "timbre.",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "A",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "ahora",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "mismo",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            },
-            {
-                "palabra": "eso.",
-                "duracion_ms": 400,
-                "intensidad_db": -23.33
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:11:19",
         "texto": "VOCES DE ROCKER Vamos a intentarlo, che.... Para que te dé la voz de un roquerito, voy a agregar un poco de grunge y rebeldía a mi voz, pero sin perder la esencia del hombre. Así que, prepárate para algo un poco más intenso, posta.... Voz de Rockero: (En un... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -4271,6 +4130,107 @@
                 "palabra": "cambie?",
                 "duracion_ms": 248,
                 "intensidad_db": -17.48
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:45:18",
+        "texto": "el tono de voz cambia poneme a ver el tono de voz de una nemita a ver como suena",
+        "metricas_palabras": [
+            {
+                "palabra": "el",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "tono",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "cambia",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "poneme",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "tono",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "nemita",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
+            },
+            {
+                "palabra": "suena",
+                "duracion_ms": 371,
+                "intensidad_db": -25.86
             }
         ]
     }
