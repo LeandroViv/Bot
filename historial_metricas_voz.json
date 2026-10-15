@@ -1,87 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 23:05:34",
-        "archivo": "muestras_voz/audio_usuario_1359.ogg",
-        "texto": "miras los links de llm que ya me había mostrado de sus links por favor",
-        "partitura_metrica": [
-            {
-                "palabra": "miras",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "los",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "links",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "llm",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "había",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "mostrado",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "sus",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "links",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            },
-            {
-                "palabra": "favor",
-                "duracion_ms": 395,
-                "intensidad_db": -22.7
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-14 00:20:33",
         "archivo": "muestras_voz/audio_usuario_1362.ogg",
         "texto": "que bueno che gracias te quiero pedir por favor que durante el día me escribas en  algún momento mostrándome alguna cosa que encuentres interesante de la LLM pero sin  que yo te escriba cuando vos quieras y encuentres algo me lo mostras",
@@ -5349,6 +5267,82 @@
                 "palabra": "letras.",
                 "duracion_ms": 685,
                 "intensidad_db": -26.25
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:40:31",
+        "texto": "Pero me estás haciendo voz de hombre, te dije que sea de una profesora.",
+        "metricas_palabras": [
+            {
+                "palabra": "Pero",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "haciendo",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "hombre,",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "dije",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "sea",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
+            },
+            {
+                "palabra": "profesora.",
+                "duracion_ms": 469,
+                "intensidad_db": -22.61
             }
         ]
     }
