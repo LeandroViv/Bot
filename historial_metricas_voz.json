@@ -1,77 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 22:27:23",
-        "archivo": "muestras_voz/audio_usuario_1353.ogg",
-        "texto": "Me puedes copiar el mensaje que me escribiste sobre la LLM, por favor.",
-        "partitura_metrica": [
-            {
-                "palabra": "Me",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "puedes",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "copiar",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "mensaje",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "escribiste",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "sobre",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "LLM,",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 474,
-                "intensidad_db": -24.14
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-13 22:39:37",
         "archivo": "muestras_voz/audio_usuario_1356.ogg",
         "texto": "¿Estás ahí?",
@@ -5146,6 +5074,207 @@
                 "palabra": "manera.",
                 "duracion_ms": 475,
                 "intensidad_db": -21.64
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:04:48",
+        "texto": "Che..., fijate.... Vos querés que cuente algo, ¿che...? Dale, voy a empezar.\n\n¿Qué te interesa, che...? ¿Vamos a hablar de algo en particular o vos querés que te hable de cualquier cosa? Vose es el dueño del tiempo, che....",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "fijate....",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "Vos",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "querés",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "cuente",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "algo,",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "¿che...?",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "Dale,",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "empezar.",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "¿Qué",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "interesa,",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "che...?",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "¿Vamos",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "hablar",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "particular",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "o",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "vos",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "querés",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "hable",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "cualquier",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "cosa?",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "Vose",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "dueño",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "del",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "tiempo,",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
+            },
+            {
+                "palabra": "che....",
+                "duracion_ms": 453,
+                "intensidad_db": -22.63
             }
         ]
     }
