@@ -1,66 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:42:43",
-        "texto": "se hizo nando como hombre, fíjate de corregir eso por favor",
-        "metricas_palabras": [
-            {
-                "palabra": "se",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "hizo",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "nando",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "hombre,",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "fíjate",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "corregir",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            },
-            {
-                "palabra": "favor",
-                "duracion_ms": 524,
-                "intensidad_db": -23.91
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:42:55",
         "texto": "Che..., fijate... que eso es un error de nombre, nando como hombre no es una opción válida... va a ser \"nando como mujer\". Dale, te lo corregí.",
         "metricas_palabras": [
@@ -4086,6 +4025,62 @@
                 "palabra": "¿vale?",
                 "duracion_ms": 251,
                 "intensidad_db": -17.67
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:04:24",
+        "texto": "A ver, zona como una cantante de pop, por favor.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "zona",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "cantante",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "pop,",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 601,
+                "intensidad_db": -25.62
             }
         ]
     }
