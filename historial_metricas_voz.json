@@ -1,106 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:45:18",
-        "texto": "el tono de voz cambia poneme a ver el tono de voz de una nemita a ver como suena",
-        "metricas_palabras": [
-            {
-                "palabra": "el",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "tono",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "cambia",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "poneme",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "tono",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "nemita",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            },
-            {
-                "palabra": "suena",
-                "duracion_ms": 371,
-                "intensidad_db": -25.86
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:45:39",
         "texto": "Che..., fijate..., si querés escuchar el tono de voz de una nemesa, vos necesás escuchar una voz que te haga sentir incómoda, que te haga sentir que algo no está bien, che.... Pero ¿cómo lo haces? Dale, aquí te doy una pista: escucha un tono de voz que sea un... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -3981,6 +3880,67 @@
                 "palabra": "Dale.",
                 "duracion_ms": 273,
                 "intensidad_db": -17.19
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:08:47",
+        "texto": "Bueno, que suene más agudo, ahí estás sonando como un hombre.",
+        "metricas_palabras": [
+            {
+                "palabra": "Bueno,",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "agudo,",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "sonando",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
+            },
+            {
+                "palabra": "hombre.",
+                "duracion_ms": 539,
+                "intensidad_db": -26.41
             }
         ]
     }
