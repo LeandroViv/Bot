@@ -78,5 +78,10 @@
         "timestamp": "2026-10-15 03:40:32",
         "tarea": "Pero me estás haciendo voz de hombre, te dije que sea de una profesora.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:41:10",
+        "tarea": "Sí, por favor.",
+        "estado": "pendiente"
     }
 ]
