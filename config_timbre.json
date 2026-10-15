@@ -1,14 +1,29 @@
 {
-    "voice": "es-AR-TomasNeural",
-    "volume": "+3dB",
-    "tempo": "0.95",
-    "sample_rate_factor": "0.80",
+    "voice": "es-AR-ElenaNeural",
+    "volume": "+1.5dB",
+    "tempo": "1.08",
+    "sample_rate_factor": "1.32",
     "armonicos_hz_db": {
         "1": {
-            "hz": 110,
-            "db": 4,
+            "hz": 180,
+            "db": -8.0,
+            "width": 1.2
+        },
+        "2": {
+            "hz": 1200,
+            "db": 2.5,
+            "width": 1.0
+        },
+        "3": {
+            "hz": 3500,
+            "db": 4.5,
+            "width": 1.5
+        },
+        "4": {
+            "hz": 7000,
+            "db": 2.0,
             "width": 1.0
         }
     },
-    "descripcion": "el tono de voz cambia poneme a ver el tono de voz de una nemita a ver como suena"
+    "descripcion": "el tono de voz de una niña, tenés que poner eso te quiza desh..."
 }
