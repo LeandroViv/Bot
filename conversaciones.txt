@@ -1104,3 +1104,4 @@ Pitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -1
 En otras palabras, si una voz normal tiene una frecuencia fundamental de 100 Hz, la voz que estás refiriéndote es como si la frecuencia fundamental fuera -100 Hz, lo que significa que se produce en la misma frecuencia, pero con un signo negativo. 
 
 En el contexto de la modulación de frecuencia, esto se conoce como una modulación de frecuencia armónica, y se utiliza para alterar la frecuencia
+[2026-10-15 03:04:02] Usuario: [AUDIO] A ver, poné mi voz de una cantante, de una cantante, por favor.
