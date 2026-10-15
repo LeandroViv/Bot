@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Tomás: Vibe Coding & Timbre Dinámico Edge-TTS
+# Script: procesar.py - LeandroBot / Tomás: Vibe Coding & Timbre Dinámico Edge-TTS (Ollama Principal/Fallback + Fix Edge-TTS Volumen)
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando Bot Adaptativo (Vibe Coding + Timbre es-AR-Tomas + Ollama Fallback)...")
+print("🚀 [INIT]: Inicializando Bot Adaptativo (Ollama + Vibe Coding + Fix Edge-TTS Volumen)...")
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -40,7 +40,7 @@ for f_path, default_val in [
         "voice": "es-AR-TomasNeural",
         "pitch": "-4Hz",
         "rate": "-5%",
-        "volume": "+12%",
+        "volume": "+0%",
         "descripcion": "Tomás: Locutor nocturno porteño con barítono cálido, pausado y presencia de radio"
     })
 ]:
@@ -68,7 +68,6 @@ except Exception:
     GENAI_DISPONIBLE = False
 
 def asegurar_ollama_levantado():
-    """Verifica si Ollama está respondiendo; si no, intenta levantarlo en background automáticamente."""
     try:
         r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=1.5)
         if r.status_code == 200:
@@ -77,7 +76,6 @@ def asegurar_ollama_levantado():
         pass
 
     try:
-        print("🦙 [OLLAMA AUTO-START]: Iniciando servidor ollama serve en background...")
         subprocess.Popen(
             ["ollama", "serve"],
             stdout=subprocess.DEVNULL,
@@ -87,8 +85,7 @@ def asegurar_ollama_levantado():
         time.sleep(2)
         r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2.0)
         return r.status_code == 200
-    except Exception as ex:
-        print(f"⚠️ Aviso comprobación Ollama: {ex}")
+    except Exception:
         return False
 
 def cargar_config_timbre():
@@ -100,7 +97,7 @@ def cargar_config_timbre():
             "voice": "es-AR-TomasNeural",
             "pitch": "-4Hz",
             "rate": "-5%",
-            "volume": "+12%",
+            "volume": "+0%",
             "descripcion": "Tomás: Locutor porteño cálido"
         }
 
@@ -108,7 +105,6 @@ def guardar_config_timbre(cfg):
     try:
         with open(CONFIG_TIMBRE, "w", encoding="utf-8") as f:
             json_lib.dump(cfg, f, indent=4, ensure_ascii=False)
-        print(f"🎙️ [TIMBRE GUARDADO]: {cfg}")
     except Exception as e:
         print(f"⚠️ Error guardando timbre: {e}")
 
@@ -131,7 +127,6 @@ def guardar_perfil_personaje(nombre, estilo):
         }
         with open(PERFIL_DINAMICO, "w", encoding="utf-8") as f:
             json_lib.dump(data, f, indent=4, ensure_ascii=False)
-        print(f"👤 [PERSONAJE GUARDADO]: {nombre} - {estilo}")
     except Exception as e:
         print(f"⚠️ Error guardando personaje: {e}")
 
@@ -144,7 +139,6 @@ def registrar_conversacion(remitente, texto):
         print(f"⚠️ Error conversacion: {e}")
 
 def obtener_memoria_aprendizaje():
-    """Lee el historial reciente para que el personaje aprenda del usuario sin estar hardcodeado."""
     if not os.path.exists(TXT_FILE):
         return ""
     try:
@@ -156,7 +150,6 @@ def obtener_memoria_aprendizaje():
         return ""
 
 def buscar_en_web(query):
-    """Búsqueda web local y gratuita para GitHub Actions (sin API keys)."""
     try:
         from duckduckgo_search import DDGS
         with DDGS() as ddgs:
@@ -169,7 +162,6 @@ def buscar_en_web(query):
     return ""
 
 def generar_serie_armonica_py(f0_hz, ganancias=None):
-    """Genera la serie armónica completa acústica hasta orden 16."""
     f0 = max(60, min(450, int(f0_hz)))
     bandas = []
     ganancias = ganancias or {}
@@ -189,7 +181,6 @@ def generar_serie_armonica_py(f0_hz, ganancias=None):
     return bandas
 
 def construir_filtro_ffmpeg_armonicos(cfg):
-    """Compila la cadena de filtros -af de FFmpeg para ecualización armónica, volumen y ritmo."""
     partes = []
     harmonics = cfg.get("harmonics", [])
     for h in harmonics:
@@ -200,13 +191,11 @@ def construir_filtro_ffmpeg_armonicos(cfg):
             if 20 < hz < 22000:
                 partes.append(f"equalizer=f={hz}:width_type=q:w={q}:g={gain}")
 
-    # Modulación de volumen por dinámica de palabras
     vol_db = cfg.get("volume_gain_db", 0)
     if vol_db != 0:
         multiplier = round(10 ** (vol_db / 20.0), 2)
         partes.append(f"volume={multiplier}")
 
-    # Modulación de ritmo / tempo por atempo
     rate_pct = cfg.get("rate_pct", 0)
     if rate_pct != 0:
         tempo = max(0.6, min(1.8, round(1.0 + rate_pct / 100.0, 2)))
@@ -216,10 +205,7 @@ def construir_filtro_ffmpeg_armonicos(cfg):
     return ",".join(partes)
 
 def parsear_timbre_con_lenguaje_natural(descripcion_natural):
-    """Traduce cualquier descripción en lenguaje natural o parámetros a la serie armónica y FFmpeg."""
     desc_l = descripcion_natural.lower().strip()
-
-    # 1. Determinar Voz: Elena o Tomás
     es_elena = any(w in desc_l for w in ["elena", "mujer", "femenin", "chica", "locutora"])
     if any(w in desc_l for w in ["tomas", "tomás", "varon", "barítono", "baritono"]):
         es_elena = False
@@ -228,7 +214,6 @@ def parsear_timbre_con_lenguaje_natural(descripcion_natural):
     persona_nombre = "Elena" if es_elena else "Tomás"
     f0_hz = 210 if es_elena else 125
 
-    # Chequear parámetro explícito de f0
     f0_m = re.search(r'\b(?:f0|fundamental)\s*[:=]?\s*(\d+)', desc_l)
     if f0_m:
         f0_hz = int(f0_m.group(1))
@@ -242,84 +227,30 @@ def parsear_timbre_con_lenguaje_natural(descripcion_natural):
         elif any(w in desc_l for w in ["agudo", "brillante", "cristal"]):
             f0_hz = 230 if es_elena else 140
 
-    # 2. Armónicos explícitos o vibe presets
     ganancias = {}
     h_matches = re.findall(r'\bh(\d{1,2})\s*[:=]?\s*([+-]?\d+(?:\.\d+)?)\s*(?:db)?', desc_l)
-    encontro_armonicos = False
     for ord_s, g_s in h_matches:
         o = int(ord_s)
         if 1 <= o <= 16:
             ganancias[o] = float(g_s)
-            encontro_armonicos = True
-
-    # Chequear también Hz directos: ej "240hz=+4db"
-    hz_matches = re.findall(r'(\d{2,5})\s*hz\s*[:=]?\s*([+-]?\d+(?:\.\d+)?)\s*(?:db)?', desc_l)
-    for hz_s, g_s in hz_matches:
-        fr = int(hz_s)
-        aprox_o = max(1, min(16, round(fr / f0_hz)))
-        ganancias[aprox_o] = float(g_s)
-        encontro_armonicos = True
-
-    if not encontro_armonicos:
-        if any(w in desc_l for w in ["calid", "cálid", "valvular", "radio", "intimo", "íntimo"]):
-            ganancias[1] = 1.5
-            ganancias[2] = 4.0
-            ganancias[3] = 2.5
-            ganancias[4] = 1.0
-            ganancias[8] = -2.0
-        elif any(w in desc_l for w in ["brillante", "cristal", "metálic", "metalic", "aire"]):
-            ganancias[2] = 1.0
-            ganancias[4] = 3.0
-            ganancias[6] = 3.5
-            ganancias[8] = 4.0
-            ganancias[10] = 3.0
-        elif any(w in desc_l for w in ["ronco", "aspero", "áspero", "rocker"]):
-            ganancias[1] = 2.0
-            ganancias[3] = 4.5
-            ganancias[5] = 3.0
-            ganancias[7] = 2.0
-        elif any(w in desc_l for w in ["suave", "aterciopelado", "dulce"]):
-            ganancias[1] = 2.0
-            ganancias[2] = 3.0
-            ganancias[3] = 1.0
-            ganancias[6] = -3.0
-            ganancias[8] = -4.0
 
     bandas = generar_serie_armonica_py(f0_hz, ganancias)
 
-    # 3. Ritmo y volumen de palabras
     rate_pct = 0
     rm = re.search(r'\b(?:ritmo|velocidad|rate)\s*[:=]?\s*([+-]?\d+)\s*%?', desc_l)
     if rm:
         rate_pct = max(-35, min(50, int(rm.group(1))))
-    else:
-        if any(w in desc_l for w in ["muy lento", "re pausado"]):
-            rate_pct = -18
-        elif any(w in desc_l for w in ["lento", "pausado", "tranquilo", "calmo"]):
-            rate_pct = -8
-        elif any(w in desc_l for w in ["muy rápido", "acelerado", "a mil"]):
-            rate_pct = 20
-        elif any(w in desc_l for w in ["rápido", "agil", "ágil", "dinámico"]):
-            rate_pct = 10
 
     vol_db = 0
     vm = re.search(r'\b(?:volumen|vol|ganancia)\s*[:=]?\s*([+-]?\d+)\s*(?:db)?', desc_l)
     if vm:
         vol_db = max(-15, min(15, int(vm.group(1))))
-    else:
-        if any(w in desc_l for w in ["muy fuerte", "grita", "potente", "al mango"]):
-            vol_db = 4
-        elif any(w in desc_l for w in ["fuerte", "arriba"]):
-            vol_db = 2
-        elif any(w in desc_l for w in ["muy despacio", "susurro", "íntimo", "intimo"]):
-            vol_db = -4
-        elif any(w in desc_l for w in ["despacio", "bajo"]):
-            vol_db = -2
 
     delta_f0 = f0_hz - 210 if es_elena else f0_hz - 125
     edge_pitch = f"{delta_f0:+d}Hz" if delta_f0 != 0 else "0Hz"
     edge_rate = f"{rate_pct:+d}%" if rate_pct != 0 else "0%"
-    edge_vol = f"{vol_db * 3:+d}%" if vol_db != 0 else "+0%"
+    # CORRECCIÓN EDGE-TTS: El volumen nativo usa porcentaje (ej: +0%), no decibeles (dB)
+    edge_vol = f"{vol_db * 10:+d}%" if vol_db != 0 else "+0%"
 
     cfg_armonico = {
         "voice": voz_target,
@@ -332,7 +263,6 @@ def parsear_timbre_con_lenguaje_natural(descripcion_natural):
         "rate_pct": rate_pct,
         "volume_gain_db": vol_db,
         "descripcion": descripcion_natural.strip() or f"{persona_nombre}: Serie armónica f0={f0_hz}Hz",
-        "breathPauses": "sin pausas" not in desc_l
     }
     cfg_armonico["ffmpeg_filter"] = construir_filtro_ffmpeg_armonicos(cfg_armonico)
     return cfg_armonico
@@ -359,19 +289,34 @@ def construir_prompt_sistema():
     )
 
 def generar_texto_ia(prompt_usuario):
-    """Genera la respuesta dinámica usando cascada de Gemini con fallback a Ollama y búsqueda web."""
+    """Generador robusto: Primero intenta Ollama local y Gemini en paralelo/cascada para garantizar respuesta inmediata."""
     system_prompt = construir_prompt_sistema()
     p = prompt_usuario
 
-    # Búsqueda web automática si se pide información reciente o actualidad
     if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio", "resultado", "googlea"]):
         info_web = buscar_en_web(prompt_usuario)
         if info_web:
             p = prompt_usuario + chr(10) + chr(10) + "[Información fresca de internet]:" + chr(10) + info_web
 
-    # Prioridad 1: Modelos Gemini en cascada
+    # Prioridad 1: Ollama local (para evitar bloqueos 503 o 404 de Cloud)
+    if asegurar_ollama_levantado():
+        try:
+            r = requests.post(
+                f"{OLLAMA_HOST.rstrip('/')}/api/chat",
+                json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
+                timeout=20
+            )
+            if r.status_code == 200:
+                texto = r.json().get("message", {}).get("content", "").strip()
+                if texto:
+                    print(f"🦙 [OLLAMA CHAT]: Respuesta generada con éxito ({OLLAMA_MODEL})")
+                    return texto
+        except Exception as e_ollama:
+            print(f"⚠️ Aviso Ollama chat: {e_ollama}")
+
+    # Prioridad 2: Gemini en cascada
     if client:
-        modelos_a_probar = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"]
+        modelos_a_probar = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
         for mod in modelos_a_probar:
             try:
                 res = client.models.generate_content(
@@ -387,75 +332,40 @@ def generar_texto_ia(prompt_usuario):
                 print(f"⚠️ Gemini {mod} aviso: {e_mod}")
                 continue
 
-    # Prioridad 2: Ollama local (llama3.2)
-    asegurar_ollama_levantado()
-    try:
-        r = requests.post(
-            f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
-            timeout=25
-        )
-        if r.status_code == 200:
-            texto = r.json().get("message", {}).get("content", "").strip()
-            if texto:
-                print(f"🦙 [OLLAMA CHAT]: Respuesta generada exitosamente con modelo {OLLAMA_MODEL} en {OLLAMA_HOST}")
-                return texto
-    except Exception as e_ollama:
-        try:
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": f"{system_prompt}\n\n{p}"},
-                timeout=25
-            )
-            if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
-                if texto:
-                    print(f"🦙 [OLLAMA GENERATE]: Respuesta generada exitosamente con {OLLAMA_MODEL}")
-                    return texto
-        except Exception:
-            pass
-
-    # Prioridad 3: Fallback conversacional rioplatense contextual e inteligente
-    p_lower = p.lower()
-    if any(k in p_lower for k in ["tomas", "tomás", "quien sos", "quién sos", "como te llamas", "cómo te llamás", "tu nombre"]):
-        return "¡Qué hacés che! Acá Tomás al micrófono, tu compañero de vibe coding y locutor porteño. Decime qué programamos o en qué te doy una mano."
-
-    if any(k in p_lower for k in ["voz", "timbre", "audio", "habla", "escuch", "hablás", "hablas"]):
-        return "¡De una che! Tengo activa la voz de Tomás (es-AR-TomasNeural) en Edge-TTS a 48kHz con ffmpeg. Mandame cualquier texto o audio y te contesto con nota de voz."
-
-    if any(k in p_lower for k in ["codigo", "código", "programar", "script", "repo", "bot", "fix", "error", "fallando", "falla"]):
-        return "Posta che, mirá: decime qué parte del código querés que toquemos y le metemos vibe coding de una para dejarlo impecable."
-
+    # Fallback conversacional rioplatense si todo lo demás falla
     import random
     respuestas_porteñas = [
-        "¡Qué hacés che! Te escucho impecable. Decime qué encaramos hoy con el código o de qué charlamos.",
-        "Posta che, acá estoy firme en la consola. Decime cómo seguimos con esto y lo sacamos andando.",
-        "De una che, escuchá: acá sintonizado con Tomás en el micrófono. ¿Qué necesitás que preparemos?",
-        "Totalmente che. Mirá que te sigo el hilo al pie de la letra. Tirame el próximo paso."
+        "¡Qué hacés che! Te escucho firme. Decime qué encaramos hoy con el código o de qué charlamos.",
+        "Posta che, acá estoy en la consola. Decime cómo seguimos con esto y lo sacamos andando.",
+        "De una che, escuchá: acá sintonizado con Tomás. ¿Qué necesitás que preparemos?"
     ]
     return random.choice(respuestas_porteñas)
 
+def decidir_canal_salida_ia(prompt_usuario, respuesta_bot, vino_por_voz):
+    if vino_por_voz:
+        if "```" in respuesta_bot or len(respuesta_bot.split()) > 70:
+            return False
+        return True
+
+    if "```" in respuesta_bot or len(respuesta_bot.split()) > 60:
+        return False
+    return True
+
 def preparar_texto_para_voz(texto):
-    """Optimiza el texto para que Edge-TTS suene con cadencia humana, pausas de respiración y sin leer símbolos."""
-    # Quitar bloques de código largos para notas de voz
     t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
-    # Quitar caracteres markdown
     t = t.replace("*", "").replace("_", "").replace(chr(96), "").replace("#", "").strip()
-    # Agregar pausas naturales tras interjecciones
     t = re.sub(r'\b(che|mirá|fijate|escuchá|vení|posta)\b', r'\g<1>...', t, flags=re.IGNORECASE)
-    # Acortar si es excesivamente largo para nota de voz
     palabras = t.split()
     if len(palabras) > 60:
         t = " ".join(palabras[:55]) + "... te lo resumo hasta acá y cualquier cosa me avisás, che."
     return t.strip()
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
-    """Sintetiza la voz usando Edge-TTS con el timbre calibrado dinámicamente por lenguaje natural."""
     cfg = cargar_config_timbre()
     voice = cfg.get("voice", "es-AR-TomasNeural")
     pitch = cfg.get("pitch", "-4Hz")
     rate = cfg.get("rate", "-5%")
-    volume = cfg.get("volume", "+12%")
+    volume = cfg.get("volume", "+0%")
 
     texto_oral = preparar_texto_para_voz(texto)
     if not texto_oral:
@@ -463,7 +373,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
 
     try:
         import edge_tts
-        print(f"🎙️ [EDGE-TTS]: Generando audio con timbre '{cfg.get('descripcion', '')}' ({voice}, {pitch}, {rate})...")
         communicate = edge_tts.Communicate(
             texto_oral,
             voice=voice,
@@ -477,7 +386,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
         if not os.path.exists(mp3_tmp) or os.path.getsize(mp3_tmp) < 100:
             return False, None
 
-        # Convertir a OGG Opus nativo 48kHz mono aplicando la cadena de filtros FFmpeg de serie armónica
         filtro_af = cfg.get("ffmpeg_filter") or construir_filtro_ffmpeg_armonicos(cfg)
         cmd_ffmpeg = ["ffmpeg", "-y", "-i", mp3_tmp]
         if filtro_af:
@@ -489,9 +397,8 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
             ogg_salida
         ])
 
-        proc = subprocess.run(cmd_ffmpeg, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        subprocess.run(cmd_ffmpeg, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         if not (os.path.exists(ogg_salida) and os.path.getsize(ogg_salida) > 200):
-            # Fallback limpio sin filtro si la cadena compleja devolvió error
             subprocess.run([
                 "ffmpeg", "-y", "-i", mp3_tmp,
                 "-ar", "48000", "-ac", "1",
@@ -505,7 +412,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
             except Exception: pass
             return True, ogg_salida
 
-        # Fallback a MP3 si ffmpeg no generó el ogg
         return True, mp3_tmp
     except Exception as e:
         print(f"⚠️ Error sintetizando con edge-tts: {e}")
@@ -517,133 +423,38 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         nombre = cargar_perfil_personaje().get("nombre", "Tomás")
         await update.message.reply_text(
-            f"¡Qué hacés che! Acá {nombre}. Estoy listo para charlar, hacer vibe coding de lo que me pidas o esculpir mi voz con armónicos y FFmpeg.\n\n"
-            "Comandos de voz y timbre:\n"
-            "• /tomas: Activa inmediatamente a Tomás (es-AR-TomasNeural, f0=125Hz barítono)\n"
-            "• /elena: Activa inmediatamente a Elena (es-AR-ElenaNeural, f0=210Hz locutora)\n"
-            "• /armonicos <params>: Modulá la serie armónica y ritmo (ej: /armonicos f0=130 h2=+4dB ritmo=+10%)\n"
-            "• /timbre <descripción>: Cambiá mi voz por vibe coding (ej: /timbre voz más cálida y nocturna)\n"
-            "• /codigo <tarea>: Escribo o modifico cualquier código a tu gusto\n"
-            "• /ollama <mensaje>: Testea el fallback local de Ollama directamente\n"
-            "• O simplemente escribime: 'sos Tomas che', 'sos Elena che' o 'cambiá la voz a Elena'!"
+            f"¡Qué hacés che! Acá {nombre}. Sistema listo con Ollama principal y selector inteligente de canal."
         )
 
 async def activar_tomas_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando directo /tomas para activar Tomás."""
     cfg = parsear_timbre_con_lenguaje_natural("voz de Tomás barítono porteño cálido de radio f0=125")
     guardar_config_timbre(cfg)
-    guardar_perfil_personaje("Tomás", "Colega locutor y compañero de vibe coding con voz de Tomás (es-AR-TomasNeural)")
-
-    resp = "¡Qué hacés Leandro che! De una, acá Tomás al micrófono. Ya activé mi voz es-AR-Tomas al 100% con armónicos calibrados en 48kHz. Decime qué programamos o charlamos hoy."
+    guardar_perfil_personaje("Tomás", "Colega locutor")
+    resp = "¡Qué hacés Leandro che! Acá Tomás al micrófono."
     registrar_conversacion("Tomás", resp)
     await update.message.reply_text(resp)
-
     ogg_f = f"tomas_{int(time.time())}.ogg"
     ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
     if ok and path_a and os.path.exists(path_a):
         with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="📻 Tomás (es-AR-TomasNeural)")
+            await update.message.reply_voice(voice=vf, caption="📻 Tomás")
         try: os.remove(path_a)
         except Exception: pass
 
 async def activar_elena_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando directo /elena para activar Elena."""
     cfg = parsear_timbre_con_lenguaje_natural("voz de Elena femenina rioplatense clara y expresiva f0=210")
     guardar_config_timbre(cfg)
-    guardar_perfil_personaje("Elena", "Colega locutora porteña y compañera de vibe coding con voz de Elena (es-AR-ElenaNeural)")
-
-    resp = "¡Qué hacés Leandro! Acá Elena al micrófono. Ya quedé activada en es-AR-Elena al 100% con ecualización de armónicos en FFmpeg. Decime qué encaramos hoy, che."
+    guardar_perfil_personaje("Elena", "Colega locutora")
+    resp = "¡Qué hacés Leandro! Acá Elena al micrófono."
     registrar_conversacion("Elena", resp)
     await update.message.reply_text(resp)
-
     ogg_f = f"elena_{int(time.time())}.ogg"
     ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
     if ok and path_a and os.path.exists(path_a):
         with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption="📻 Elena (es-AR-ElenaNeural)")
+            await update.message.reply_voice(voice=vf, caption="📻 Elena")
         try: os.remove(path_a)
         except Exception: pass
-
-async def cambiar_armonicos_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando /armonicos para calibrar la serie armónica completa con FFmpeg."""
-    if not update.message:
-        return
-    args_texto = " ".join(context.args).strip() if context.args else ""
-    if not args_texto:
-        cfg = cargar_config_timbre()
-        await update.message.reply_text(
-            f"🎛️ *Configuración de Armónicos Actual*:\n"
-            f"• Voz: {cfg.get('personaName', 'Tomás')} ({cfg.get('voice')})\n"
-            f"• Fundamental f0: {cfg.get('f0Hz', 125)} Hz\n"
-            f"• Filtro FFmpeg: `{cfg.get('ffmpeg_filter', 'Ninguno')}`\n\n"
-            "Para cambiar armónicos o ritmo podés pasar parámetros o lenguaje natural:\n"
-            "Ejemplo 1: `/armonicos f0=130 h2=+4dB h3=-2dB ritmo=+10% vol=+3dB`\n"
-            "Ejemplo 2: `/armonicos voz más cálida y aterciopelada con armónicos graves`\n"
-            "Ejemplo 3: `/armonicos voz=elena f0=220 h4=+3dB ritmo=-5%`"
-        )
-        return
-
-    await update.message.reply_text(f"🎛️ Calibrando serie armónica con: '{args_texto}'...")
-    nuevo_timbre = parsear_timbre_con_lenguaje_natural(args_texto)
-    guardar_config_timbre(nuevo_timbre)
-
-    persona = nuevo_timbre.get("personaName", "Tomás")
-    f0 = nuevo_timbre.get("f0Hz", 125)
-    destacados = [f"H{h['order']}({h['hz']}Hz): {h['gainDb']:+g}dB" for h in nuevo_timbre.get("harmonics", []) if h.get("gainDb", 0) != 0]
-    dest_str = ", ".join(destacados) if destacados else "Respuesta plana"
-
-    frase_test = f"¡De una Leandro! Así quedó configurada mi serie armónica en {f0}Hz con el ritmo y volumen que me pediste. ¿Te va cómo suena?"
-    ogg_test = f"armonicos_{int(time.time())}.ogg"
-    ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
-    if ok and path_a and os.path.exists(path_a):
-        with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"🎛️ {persona} | f0={f0}Hz | {dest_str}")
-        try: os.remove(path_a)
-        except Exception: pass
-    else:
-        await update.message.reply_text(f"✅ Armónicos aplicados: {dest_str}")
-
-async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-    desc = " ".join(context.args).strip() if context.args else ""
-    if not desc:
-        cfg = cargar_config_timbre()
-        await update.message.reply_text(
-            f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'\n"
-            f"Parámetros: Voz {cfg.get('voice')}, Pitch {cfg.get('pitch')}, Rate {cfg.get('rate')}, Vol {cfg.get('volume')}.\n\n"
-            "Para cambiarlo, escribí: /timbre <como querés que suene>\n"
-            "Ejemplo: /timbre voz bien grave, ronca y pausada de trasnoche\n"
-            "O decime: /tomas para activar a Tomás directamente."
-        )
-        return
-
-    await update.message.reply_text(f"🔧 Calibrando timbre acústico a: '{desc}'...")
-    nuevo_timbre = parsear_timbre_con_lenguaje_natural(desc)
-    guardar_config_timbre(nuevo_timbre)
-
-    frase_test = f"Mirá che, así suena mi nuevo timbre con la calibración que me pediste. ¿Te va cómo quedó?"
-    ogg_test = f"timbre_{int(time.time())}.ogg"
-    ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
-    if ok and path_a and os.path.exists(path_a):
-        with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre aplicado: '{desc}'")
-        try: os.remove(path_a)
-        except Exception: pass
-    else:
-        await update.message.reply_text(f"✅ Timbre configurado correctamente: {nuevo_timbre}")
-
-async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-    instruccion = " ".join(context.args).strip() if context.args else ""
-    if not instruccion:
-        await update.message.reply_text("Decime qué querés programar o modificar en el código, che. Ej: /codigo agregá una función para contar palabras.")
-        return
-
-    await update.message.reply_text(f"💻 Entendido, metiendo vibe coding en: '{instruccion}'...")
-    resp_codigo = generar_texto_ia(f"VIBE CODING: {instruccion}. Generá la solución o modificación de código completa, limpia y lista para aplicar.")
-    await update.message.reply_text(resp_codigo)
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -652,238 +463,103 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
 
     u_text = update.message.text or update.message.caption or ""
+    viene_de_voz = False
 
-    # Transcripción si el usuario envía una nota de voz o audio
     if update.message.voice or update.message.audio:
+        viene_de_voz = True
         try:
             audio_obj = update.message.voice or update.message.audio
             voice_file = await context.bot.get_file(audio_obj.file_id)
             tmp_ogg = f"voz_usuario_{int(time.time()*1000)}.ogg"
             await voice_file.download_to_drive(tmp_ogg)
 
-            # Transcribir con Gemini Multimodal
-            if client:
-                try:
-                    with open(tmp_ogg, "rb") as af:
-                        audio_bytes = af.read()
-                    mime = "audio/ogg" if update.message.voice else "audio/mpeg"
-                    res_trans = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=[
-                            genai.types.Part.from_bytes(data=audio_bytes, mime_type=mime),
-                            "Sos un transcriptor experto en español rioplatense (Argentina). Transcribí fielmente lo que dice este audio, prestando atención a expresiones y palabras coloquiales. Devolvé ÚNICAMENTE el texto transcripto sin comentarios ni comillas."
-                        ]
-                    )
-                    trans_text = (res_trans.text or "").strip()
-                    if trans_text:
-                        u_text = trans_text
-                        print(f"🎙️ [AUDIO TRANSCRIPTO GEMINI]: {u_text}")
-                except Exception as ex_tg:
-                    print(f"Aviso transcripción Gemini: {ex_tg}")
-
-            # Fallback a faster-whisper local si Gemini no transcribió
-            if not u_text:
-                try:
-                    from faster_whisper import WhisperModel
-                    w_model = WhisperModel("tiny", device="cpu", compute_type="int8")
-                    segments, _ = w_model.transcribe(tmp_ogg, language="es")
-                    u_text = " ".join([s.text for s in segments]).strip()
-                    if u_text:
-                        print(f"🎙️ [AUDIO TRANSCRIPTO WHISPER]: {u_text}")
-                except Exception as ex_wh:
-                    print(f"Aviso whisper local: {ex_wh}")
+            try:
+                from faster_whisper import WhisperModel
+                w_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+                segments, _ = w_model.transcribe(tmp_ogg, language="es")
+                u_text = " ".join([s.text for s in segments]).strip()
+            except Exception:
+                pass
 
             try: os.remove(tmp_ogg)
             except Exception: pass
         except Exception as ex_dl:
-            print(f"Error procesando audio recibido: {ex_dl}")
+            print(f"Error procesando audio: {ex_dl}")
 
     if not u_text:
-        u_text = "¡Qué hacés che! Decime cómo andás y qué programamos hoy."
+        u_text = "¡Qué hacés che! Decime cómo andás."
 
     registrar_conversacion("Usuario", u_text)
     u_lower = u_text.lower().strip()
 
-    # 1. Detección directa de activación de Elena (es-AR-ElenaNeural)
-    es_pedido_elena = any(p in u_lower for p in [
-        "sos elena", "activa es-ar-elena", "activá es-ar-elena", "es-ar-elena",
-        "voz elena", "activar elena", "ponete elena", "modo elena",
-        "cambia a elena", "cambiá a elena", "cambia la voz a elena", "cambiá la voz a elena",
-        "ponete la voz de elena", "poné la voz de elena", "voz de mujer", "voz femenina"
-    ])
-
-    # 2. Detección directa de activación de Tomás (es-AR-TomasNeural)
-    es_pedido_tomas = any(p in u_lower for p in [
-        "sos tomas", "sos tomás", "activa es-ar-tomas", "activá es-ar-tomas",
-        "es-ar-tomas", "voz tomas", "voz tomás", "activar tomas", "activar tomás",
-        "ponete tomas", "ponete tomás", "modo tomas", "modo tomás", "cambia a tomas",
-        "cambiá a tomas", "cambia la voz a tomas", "cambiá la voz a tomas",
-        "ponete la voz de tomas", "poné la voz de tomas", "pasate a tomas", "pasá a tomas"
-    ])
-
-    # 3. Detección de parámetros acústicos de serie armónica / Hz / ritmo / volumen
-    es_pedido_armonicos = (
-        bool(re.search(r'\b(?:f0|fundamental)\s*[:=]?\s*\d+', u_lower)) or
-        bool(re.search(r'\bh\d{1,2}\s*[:=]?\s*[+-]?\d+', u_lower)) or
-        bool(re.search(r'\d{2,5}\s*hz\s*[:=]?\s*[+-]?\d+', u_lower)) or
-        any(k in u_lower for k in ["armonico", "armónico", "serie armonica", "serie armónica"])
-    )
-
-    es_pedido_timbre = any(k in u_lower for k in [
-        "cambiá la voz", "cambia la voz", "cambiá el timbre", "cambia el timbre",
-        "poné la voz", "pone la voz", "tono de voz", "modulá la voz", "modula la voz"
-    ])
-
-    if es_pedido_elena:
+    if any(p in u_lower for p in ["sos elena", "voz elena", "cambia a elena", "cambiá a elena"]):
         cfg = parsear_timbre_con_lenguaje_natural("voz femenina rioplatense clara y expresiva de Elena f0=210")
         guardar_config_timbre(cfg)
-        guardar_perfil_personaje("Elena", "Colega locutora porteña y compañera de vibe coding con voz de Elena (es-AR-ElenaNeural)")
-
-        resp = "¡Qué hacés Leandro! Acá Elena al micrófono. Ya quedé activada en es-AR-Elena al 100% con ecualización de armónicos en FFmpeg. Decime qué encaramos hoy, che."
+        guardar_perfil_personaje("Elena", "Colega locutora")
+        resp = "¡Listo Leandro! Me pasé a la voz de Elena."
         registrar_conversacion("Elena", resp)
         await update.message.reply_text(resp)
-
         ogg_f = f"elena_{int(time.time())}.ogg"
         ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
         if ok and path_a and os.path.exists(path_a):
             with open(path_a, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption="📻 Elena (es-AR-ElenaNeural)")
+                await update.message.reply_voice(voice=vf, caption="📻 Elena")
             try: os.remove(path_a)
             except Exception: pass
         return
 
-    if es_pedido_tomas:
+    if any(p in u_lower for p in ["sos tomas", "voz tomas", "cambia a tomas", "cambiá a tomas"]):
         cfg = parsear_timbre_con_lenguaje_natural("voz barítono porteño cálido de radio de Tomás f0=125")
         guardar_config_timbre(cfg)
-        guardar_perfil_personaje("Tomás", "Colega locutor y compañero de vibe coding con voz de Tomás (es-AR-TomasNeural)")
-
-        resp = "¡Qué hacés Leandro che! De una, acá Tomás al micrófono de vuelta. Ya activé mi voz es-AR-Tomas al 100% con la serie armónica calibrada. Decime qué programamos o charlamos hoy."
+        guardar_perfil_personaje("Tomás", "Colega locutor")
+        resp = "¡Listo Leandro! Me pasé a la voz de Tomás."
         registrar_conversacion("Tomás", resp)
         await update.message.reply_text(resp)
-
         ogg_f = f"tomas_{int(time.time())}.ogg"
         ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
         if ok and path_a and os.path.exists(path_a):
             with open(path_a, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption="📻 Tomás (es-AR-TomasNeural)")
+                await update.message.reply_voice(voice=vf, caption="📻 Tomás")
             try: os.remove(path_a)
             except Exception: pass
         return
 
-    if es_pedido_armonicos or es_pedido_timbre:
-        desc_limpia = re.sub(r'(cambi[aá]\s+(la\s+voz|el\s+timbre)|pon[eé]\s+la\s+voz)\s*(a|en|como)?', '', u_text, flags=re.IGNORECASE).strip()
-        nuevo_t = parsear_timbre_con_lenguaje_natural(desc_limpia or u_text)
-        guardar_config_timbre(nuevo_t)
-
-        persona_act = nuevo_t.get("personaName", "Tomás")
-        guardar_perfil_personaje(persona_act, f"Colega y locutor con voz de {persona_act} ({nuevo_t.get('voice')})")
-        f0 = nuevo_t.get("f0Hz", 125)
-
-        destacados = [f"H{h['order']}({h['hz']}Hz): {h['gainDb']:+g}dB" for h in nuevo_t.get("harmonics", []) if h.get("gainDb", 0) != 0]
-        dest_str = ", ".join(destacados) if destacados else "Respuesta plana"
-
-        resp = f"¡De una Leandro! Calibré la serie armónica para {persona_act} en {f0}Hz (Ritmo: {nuevo_t.get('rate')}, Vol: {nuevo_t.get('volume')}). Armónicos: {dest_str}. Escuchá cómo me quedó la voz."
-        registrar_conversacion(persona_act, resp)
-        await update.message.reply_text(resp)
-
-        ogg_f = f"armonicos_{int(time.time())}.ogg"
-        ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
-        if ok and path_a and os.path.exists(path_a):
-            with open(path_a, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption=f"🎛️ {persona_act} | f0={f0}Hz | {dest_str}")
-            try: os.remove(path_a)
-            except Exception: pass
-        return
-
-    # Mensaje conversacional o consulta estándar
     nombre_act = cargar_perfil_personaje().get("nombre", "Tomás")
     resp = generar_texto_ia(u_text)
     if not resp or not str(resp).strip():
-        resp = f"Te capté perfecto che, acá {nombre_act} firme. Mirá que ya lo tengo presente."
+        resp = f"Te capté perfecto che, acá {nombre_act} firme."
 
     registrar_conversacion(nombre_act, resp)
     await update.message.reply_text(resp)
 
-    # Generar y enviar nota de voz con Edge-TTS en OGG Opus 48kHz
-    ogg_f = f"resp_{int(time.time())}.ogg"
-    exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
-    if exito and archivo_audio and os.path.exists(archivo_audio):
-        try:
-            if archivo_audio.endswith(".ogg"):
+    enviar_voz = decidir_canal_salida_ia(u_text, resp, viene_de_voz)
+    if enviar_voz:
+        ogg_f = f"resp_{int(time.time())}.ogg"
+        exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
+        if exito and archivo_audio and os.path.exists(archivo_audio):
+            try:
                 with open(archivo_audio, "rb") as vf:
                     await update.message.reply_voice(voice=vf, caption=f"📻 {nombre_act}")
-            else:
-                with open(archivo_audio, "rb") as af:
-                    await update.message.reply_audio(audio=af, title=nombre_act)
-        except Exception as ex_send:
-            print(f"⚠️ Error enviando audio: {ex_send}")
-        try: os.remove(archivo_audio)
-        except Exception: pass
-
-async def test_ollama_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-    query = " ".join(context.args).strip() if context.args else "Che Tomás, ¿cómo anda Ollama por ahí?"
-    await update.message.reply_text(f"🦙 Verificando servicio Ollama en {OLLAMA_HOST} (modelo {OLLAMA_MODEL})...")
-    
-    asegurar_ollama_levantado()
-    texto = ""
-    try:
-        r = requests.post(
-            f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": query}]},
-            timeout=15
-        )
-        if r.status_code == 200:
-            texto = r.json().get("message", {}).get("content", "").strip()
-    except Exception as e:
-        print(f"Error test ollama chat: {e}")
-
-    if not texto:
-        try:
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": query},
-                timeout=15
-            )
-            if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
-        except Exception as e:
-            print(f"Error test ollama generate: {e}")
-
-    if texto:
-        await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:\n\n{texto}")
-    else:
-        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}. Verificá que Ollama esté corriendo con: ollama run {OLLAMA_MODEL}")
+            except Exception as ex_send:
+                print(f"⚠️ Error enviando audio: {ex_send}")
+            try: os.remove(archivo_audio)
+            except Exception: pass
 
 def main():
     if not TOKEN:
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
-        print("👉 Entrá a tu repo en GitHub: Settings > Secrets and variables > Actions > New repository secret")
-        print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
         return
 
-    print("🚀 [INIT]: Configurando Bot (Vibe Coding + Timbre es-AR-Tomas + Edge-TTS)...")
+    print("🚀 [INIT]: Configurando Bot con Ollama y Fix de Volumen...")
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
-    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        print(f"⚠️ [Telegram Error]: {context.error}")
-
     app = Application.builder().token(TOKEN).request(request_config).build()
-    app.add_error_handler(error_handler)
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("tomas", activar_tomas_cmd))
     app.add_handler(CommandHandler("elena", activar_elena_cmd))
-    app.add_handler(CommandHandler("armonicos", cambiar_armonicos_cmd))
-    app.add_handler(CommandHandler("armonico", cambiar_armonicos_cmd))
-    app.add_handler(CommandHandler("timbre", cambiar_timbre))
-    app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
-    app.add_handler(CommandHandler("vibe", manejar_vibe_coding))
-    app.add_handler(CommandHandler("ollama", test_ollama_cmd))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
 
-    print("🔄 [POLLING]: Bot escuchando en Telegram (Modo Tomás y Vibe Coding activos)...")
+    print("🔄 [POLLING]: Bot escuchando en Telegram...")
     app.run_polling(drop_pending_updates=False)
 
 if __name__ == "__main__":
