@@ -1,36 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 02:59:27",
-        "texto": "A ver cómo suena eso",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 394,
-                "intensidad_db": -20.74
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 394,
-                "intensidad_db": -20.74
-            },
-            {
-                "palabra": "cómo",
-                "duracion_ms": 394,
-                "intensidad_db": -20.74
-            },
-            {
-                "palabra": "suena",
-                "duracion_ms": 394,
-                "intensidad_db": -20.74
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 394,
-                "intensidad_db": -20.74
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 02:59:41",
         "texto": "Vos estás escuchando un timbre de voz un poco más alto, un poco más claro, pero con un toque de calidez y madurez que le da un tono más cálido y acogedor. Es como si la voz fuera un abrazo cálido, que te hace sentir cómodo y tranquilo. Dale, ¿cómo te parece?",
         "metricas_palabras": [
@@ -3791,6 +3760,137 @@
                 "palabra": "código.",
                 "duracion_ms": 193,
                 "intensidad_db": -18.67
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:49:41",
+        "texto": "me parece que te sorpaste con el pitch y la delocity, amigo, algo más despacio,  más lento que se entiendan las palabras de haber recientadibles.",
+        "metricas_palabras": [
+            {
+                "palabra": "me",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "parece",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "sorpaste",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "pitch",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "delocity,",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "amigo,",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "despacio,",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "lento",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "entiendan",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "palabras",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "haber",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
+            },
+            {
+                "palabra": "recientadibles.",
+                "duracion_ms": 621,
+                "intensidad_db": -25.65
             }
         ]
     }
