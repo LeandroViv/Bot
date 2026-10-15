@@ -43,5 +43,10 @@
         "timestamp": "2026-10-15 02:58:27",
         "tarea": "¿Qué pero está sonando igual? Modifica por favor el código en este momento para que los parámetros  cambien y suene con borrón.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 02:59:28",
+        "tarea": "A ver cómo suena eso",
+        "estado": "pendiente"
     }
 ]
