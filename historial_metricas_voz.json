@@ -1,56 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:43:21",
-        "texto": "Quiero decir que estás sonando como hombre, modifica eso.",
-        "metricas_palabras": [
-            {
-                "palabra": "Quiero",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "decir",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "estás",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "sonando",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "hombre,",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "modifica",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            },
-            {
-                "palabra": "eso.",
-                "duracion_ms": 765,
-                "intensidad_db": -21.0
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:43:35",
         "texto": "\"Che..., fijate..., no te preocupes, voy a trabajar en eso, pero necesito saber un poco más sobre lo que te parece 'hombre'. Dale, ¿qué te pasa exactamente con el sonido? ¿Es la voz, la calidad de la grabación o algo más?\"",
         "metricas_palabras": [
@@ -4061,6 +4010,82 @@
                 "palabra": "claro.",
                 "duracion_ms": 222,
                 "intensidad_db": -16.93
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:06:57",
+        "texto": "Quiero que suenes como una cantante de pop, modificar el timbre en ese sentido.",
+        "metricas_palabras": [
+            {
+                "palabra": "Quiero",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "suenes",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "cantante",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "pop,",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "modificar",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "timbre",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "ese",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
+            },
+            {
+                "palabra": "sentido.",
+                "duracion_ms": 529,
+                "intensidad_db": -22.72
             }
         ]
     }
