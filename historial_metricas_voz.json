@@ -1,81 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:46:40",
-        "texto": "el tono de voz de una niña, tenés que poner eso te quiza desh...",
-        "metricas_palabras": [
-            {
-                "palabra": "el",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "tono",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "niña,",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "tenés",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "poner",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "quiza",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            },
-            {
-                "palabra": "desh...",
-                "duracion_ms": 400,
-                "intensidad_db": -25.78
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:46:53",
         "texto": "Che..., dale, fijate..., no es tan complicado. Necesito saber el tipo de voz, la frecuencia de campaña, el rango de tonos... ¿Te quiza puedo hacer algo con eso?",
         "metricas_palabras": [
@@ -3891,6 +3815,92 @@
                 "palabra": "eh?",
                 "duracion_ms": 204,
                 "intensidad_db": -17.39
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:09:48",
+        "texto": "que tu voz suene más aguda así de simple, eso es lo que te estoy pidiendo.",
+        "metricas_palabras": [
+            {
+                "palabra": "que",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "tu",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "aguda",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "así",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "simple,",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "estoy",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
+            },
+            {
+                "palabra": "pidiendo.",
+                "duracion_ms": 353,
+                "intensidad_db": -25.74
             }
         ]
     }
