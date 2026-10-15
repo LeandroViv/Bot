@@ -1,26 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:04:09",
-        "texto": "Me escuchas ahí?",
-        "metricas_palabras": [
-            {
-                "palabra": "Me",
-                "duracion_ms": 564,
-                "intensidad_db": -20.72
-            },
-            {
-                "palabra": "escuchas",
-                "duracion_ms": 564,
-                "intensidad_db": -20.72
-            },
-            {
-                "palabra": "ahí?",
-                "duracion_ms": 564,
-                "intensidad_db": -20.72
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:04:24",
         "texto": "Sí, te escucho perfecto, che...... fuerte y claro. Y de paso te respondo lo que me habías preguntado antes: si reiniciás el GitHub Actions, como el runner es efímero y se resetea todo, la memoria en caliente se pierde... así que sí, me la tendrías que reiterar, posta.... Salvo, claro,... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -5096,6 +5075,52 @@
                 "palabra": "favor.",
                 "duracion_ms": 524,
                 "intensidad_db": -22.08
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:41:18",
+        "texto": "¿Qué es que te hace decir eso, che...?",
+        "metricas_palabras": [
+            {
+                "palabra": "¿Qué",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "hace",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "decir",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "eso,",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "che...?",
+                "duracion_ms": 265,
+                "intensidad_db": -17.53
             }
         ]
     }
