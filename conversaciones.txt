@@ -1092,3 +1092,4 @@ Y ahora, voy a agregar un poco de borroso a la voz, como si estuviera hablando d
 Voz: es-AR-TomasNeural | Pitch: -5Hz | Serie armónica: Armonía desafinada, con una fuerte disminución de la intensidad de la serie armónica en el rango más bajo. 
 
 Dale, che, ahora suena un poco más como si estuviera hablando de una cosa lejana.
+[2026-10-15 02:59:29] Usuario: [AUDIO] A ver cómo suena eso
