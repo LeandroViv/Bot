@@ -133,5 +133,10 @@
         "timestamp": "2026-10-15 03:50:39",
         "tarea": "Podéis bajar por favor el parámetro del ritmo de las palabras para que suene más lento por favor, eso te pido.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:53:05",
+        "tarea": "Bueno, con FFML, bajar el pitch, por favor, para que suene algo más despacio, que se comprenda lo que me decís.",
+        "estado": "pendiente"
     }
 ]
