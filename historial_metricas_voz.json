@@ -1,141 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:44:11",
-        "texto": "estás diciendo cualquier cosa amigo lo que te digo es que estás poniendo vos  de hombre y eso es lo que yo te pedí de modificar",
-        "metricas_palabras": [
-            {
-                "palabra": "estás",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "diciendo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "cualquier",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "cosa",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "amigo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "digo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "estás",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "poniendo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "vos",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "hombre",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "yo",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "pedí",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            },
-            {
-                "palabra": "modificar",
-                "duracion_ms": 389,
-                "intensidad_db": -25.59
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:44:26",
         "texto": "Vos estás en lo correcto, che..., puseme claramente que no estoy poniendo de hombre, solo intentando cumplir con lo que me decís, pero parece que no está funcionando. Dale, ¿podés indicarme qué es lo que me pedís que cambie?",
         "metricas_palabras": [
@@ -4161,6 +4025,47 @@
                 "palabra": "che.",
                 "duracion_ms": 255,
                 "intensidad_db": -17.26
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:08:05",
+        "texto": "A ver, continúa ajustando lo, por favor.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
+            },
+            {
+                "palabra": "continúa",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
+            },
+            {
+                "palabra": "ajustando",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
+            },
+            {
+                "palabra": "lo,",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 807,
+                "intensidad_db": -27.74
             }
         ]
     }
