@@ -1,91 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:12:35",
-        "texto": "Bueno, ahí voy a modificar el código para que entiendas mejor lo que te esté pidiendo.",
-        "metricas_palabras": [
-            {
-                "palabra": "Bueno,",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "ahí",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "modificar",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "código",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "para",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "entiendas",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "mejor",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "esté",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            },
-            {
-                "palabra": "pidiendo.",
-                "duracion_ms": 423,
-                "intensidad_db": -26.93
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:12:46",
         "texto": "Fijate..., che..., no te preocupes, sós hablé por eso, ¿si no te di claridad? ¿Cuál es la modificación que vas a hacer? Dale.",
         "metricas_palabras": [
@@ -4016,6 +3930,47 @@
                 "palabra": "dale.",
                 "duracion_ms": 255,
                 "intensidad_db": -20.72
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 06:17:55",
+        "texto": "\"vale, pero qué pasó che..., ¿qué sucedió?\"",
+        "metricas_palabras": [
+            {
+                "palabra": "\"vale,",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
+            },
+            {
+                "palabra": "qué",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
+            },
+            {
+                "palabra": "pasó",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
+            },
+            {
+                "palabra": "che...,",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
+            },
+            {
+                "palabra": "¿qué",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
+            },
+            {
+                "palabra": "sucedió?\"",
+                "duracion_ms": 366,
+                "intensidad_db": -23.62
             }
         ]
     }
