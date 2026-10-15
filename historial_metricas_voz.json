@@ -1,41 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:04:36",
-        "texto": "Quiero que suene de esa manera.",
-        "metricas_palabras": [
-            {
-                "palabra": "Quiero",
-                "duracion_ms": 475,
-                "intensidad_db": -21.64
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 475,
-                "intensidad_db": -21.64
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 475,
-                "intensidad_db": -21.64
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 475,
-                "intensidad_db": -21.64
-            },
-            {
-                "palabra": "esa",
-                "duracion_ms": 475,
-                "intensidad_db": -21.64
-            },
-            {
-                "palabra": "manera.",
-                "duracion_ms": 475,
-                "intensidad_db": -21.64
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:04:48",
         "texto": "Che..., fijate.... Vos querés que cuente algo, ¿che...? Dale, voy a empezar.\n\n¿Qué te interesa, che...? ¿Vamos a hablar de algo en particular o vos querés que te hable de cualquier cosa? Vose es el dueño del tiempo, che....",
         "metricas_palabras": [
@@ -3916,6 +3880,82 @@
                 "palabra": "che.",
                 "duracion_ms": 274,
                 "intensidad_db": -17.54
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:55:24",
+        "texto": "Bueno, me gustó. Con esa velocidad, poné una voz de una niña, por favor.",
+        "metricas_palabras": [
+            {
+                "palabra": "Bueno,",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "gustó.",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "Con",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "esa",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "velocidad,",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "poné",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "niña,",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 535,
+                "intensidad_db": -22.28
             }
         ]
     }
