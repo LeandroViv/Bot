@@ -8,5 +8,10 @@
         "timestamp": "2026-10-12 04:45:04",
         "instruccion": "Bueno, durante el día me puedes hacer esa búsqueda, por favor, gracias.",
         "pendiente": true
+    },
+    {
+        "timestamp": "2026-10-15 01:05:41",
+        "tarea": "si igual lo que te pido ya nos queda guardado en un archivo así que cuando se reinicia lo es  y listo ahora lo que te quiero pedir es que me pongas bueno nuevamente una voz masculina eso  promete una voz de hombre",
+        "estado": "pendiente"
     }
 ]
