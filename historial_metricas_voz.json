@@ -1,116 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:53:04",
-        "texto": "Bueno, con FFML, bajar el pitch, por favor, para que suene algo más despacio, que se comprenda lo que me decís.",
-        "metricas_palabras": [
-            {
-                "palabra": "Bueno,",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "con",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "FFML,",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "bajar",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "pitch,",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "favor,",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "para",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "algo",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "despacio,",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "comprenda",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "decís.",
-                "duracion_ms": 543,
-                "intensidad_db": -24.71
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:53:17",
         "texto": "Che..., fijate... que hice! Bajé el pitch y ahora la voz suena más lenta, ¿sabés? Dale, que ya te decía eso, que a la gente le gusta que la voz sea más clara, ¿vale?",
         "metricas_palabras": [
@@ -4186,6 +4075,72 @@
                 "palabra": "femenina.",
                 "duracion_ms": 224,
                 "intensidad_db": -16.76
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:43:03",
+        "texto": "Bueno, por eso utiliza el DSP, que suene más segura tu voz.",
+        "metricas_palabras": [
+            {
+                "palabra": "Bueno,",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "utiliza",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "DSP,",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "segura",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "tu",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
+            },
+            {
+                "palabra": "voz.",
+                "duracion_ms": 601,
+                "intensidad_db": -27.95
             }
         ]
     }
