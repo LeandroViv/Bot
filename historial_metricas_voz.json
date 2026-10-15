@@ -1,202 +1,5 @@
 [
     {
-        "timestamp": "2026-10-14 00:48:42",
-        "archivo": "muestras_voz/audio_usuario_1365.ogg",
-        "texto": "que hago una pregunta, esta tarea que yo te pido, si yo reinicio el GitHub Actions que es donde  corre es bostom, le corre el servidor, vos la podes hacer igual, o te la tengo que reiterar, digamos.",
-        "partitura_metrica": [
-            {
-                "palabra": "que",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "hago",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "pregunta,",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "esta",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "tarea",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "yo",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "pido,",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "yo",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "reinicio",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "GitHub",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "Actions",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "donde",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "corre",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "bostom,",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "le",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "corre",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "servidor,",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "vos",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "podes",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "hacer",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "igual,",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "o",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "tengo",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "reiterar,",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            },
-            {
-                "palabra": "digamos.",
-                "duracion_ms": 524,
-                "intensidad_db": -24.52
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:04:09",
         "texto": "Me escuchas ahí?",
         "metricas_palabras": [
@@ -5272,6 +5075,27 @@
                 "palabra": "femenina?",
                 "duracion_ms": 347,
                 "intensidad_db": -18.03
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:41:09",
+        "texto": "Sí, por favor.",
+        "metricas_palabras": [
+            {
+                "palabra": "Sí,",
+                "duracion_ms": 524,
+                "intensidad_db": -22.08
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 524,
+                "intensidad_db": -22.08
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 524,
+                "intensidad_db": -22.08
             }
         ]
     }
