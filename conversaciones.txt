@@ -1215,3 +1215,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 05:38:57] Usuario: Haceme una voz más aguda.
 [2026-10-15 05:39:02] Bot: Che, vos no me decís serio? Vos querés que te haga "más aguda" como una voz humana, eh? Dale, si vos querés un poco de drama, puedo hacer una voz un poco más aguda, pero no te voy a hacer una sirena, posta.
 [2026-10-15 05:39:34] Usuario: si mas aguda
+[2026-10-15 05:39:38] Bot: "che, me parece bien, la armonía se ve clara, fijate que la frecuencia fundamental está en el rango adecuado..."
