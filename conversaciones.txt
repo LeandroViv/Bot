@@ -1167,3 +1167,4 @@ Comienzo... (pausa) 'La persona que me está pidiendo que haga esto... tiene una
 [2026-10-15 04:08:58] LeandroBot: Vós che, fijate, no es que no pueda hacer algo con eso, pero el problema es que el frecuencio que te estoy utilizando no es el único que me está limitando, ¿vós sabés qué frecuencio de audio es el más común para un sonido agudo, eh?
 [2026-10-15 04:09:50] Usuario: [AUDIO] que tu voz suene más aguda así de simple, eso es lo que te estoy pidiendo.
 [2026-10-15 04:10:00] LeandroBot: Che, entiendo lo que me estás pidiendo, pero fijate, no puedo cambiar mi voz de manera tan súper sencilla. Dale, mi voz es lo que es, ¿a qué te refieres con "más aguda"? ¿Quieres que suene más alegre, más animada o qué?
+[2026-10-15 04:12:37] Usuario: [AUDIO] Bueno, ahí voy a modificar el código para que entiendas mejor lo que te esté pidiendo.
