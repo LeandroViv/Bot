@@ -148,5 +148,10 @@
         "timestamp": "2026-10-15 03:55:25",
         "tarea": "Bueno, me gustó. Con esa velocidad, poné una voz de una niña, por favor.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:56:03",
+        "tarea": "A ver, ya está, muestra.",
+        "estado": "pendiente"
     }
 ]
