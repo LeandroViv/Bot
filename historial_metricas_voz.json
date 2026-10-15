@@ -1,64 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 07:36:47",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1151.ogg",
-        "texto": "A ver, decime cualquier cosa, por favor, así te escucho.",
-        "partitura_metrica": [
-            {
-                "palabra": "A",
-                "duracion_ms": 1080,
-                "intensidad_db": -3.16
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 160,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "decime",
-                "duracion_ms": 440,
-                "intensidad_db": 1.75
-            },
-            {
-                "palabra": "cualquier",
-                "duracion_ms": 620,
-                "intensidad_db": -0.95
-            },
-            {
-                "palabra": "cosa,",
-                "duracion_ms": 1120,
-                "intensidad_db": 2.24
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 60,
-                "intensidad_db": 0.15
-            },
-            {
-                "palabra": "favor,",
-                "duracion_ms": 440,
-                "intensidad_db": -1.34
-            },
-            {
-                "palabra": "así",
-                "duracion_ms": 360,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 340,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "escucho.",
-                "duracion_ms": 560,
-                "intensidad_db": -6.0
-            }
-        ],
-        "total_entrenamientos": 20
-    },
-    {
         "timestamp": "2026-10-13 06:15:55",
         "archivo": "muestras_voz/audio_usuario_1326.ogg",
         "texto": "Che, te mandé un audio.",
@@ -4500,6 +4441,47 @@
                 "palabra": "parece?",
                 "duracion_ms": 326,
                 "intensidad_db": -20.63
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:00:00",
+        "texto": "A ver que suene más grave tubo.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
+            },
+            {
+                "palabra": "grave",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
+            },
+            {
+                "palabra": "tubo.",
+                "duracion_ms": 356,
+                "intensidad_db": -21.93
             }
         ]
     }
