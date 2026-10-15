@@ -93,5 +93,10 @@
         "timestamp": "2026-10-15 03:42:44",
         "tarea": "se hizo nando como hombre, fíjate de corregir eso por favor",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:43:23",
+        "tarea": "Quiero decir que estás sonando como hombre, modifica eso.",
+        "estado": "pendiente"
     }
 ]
