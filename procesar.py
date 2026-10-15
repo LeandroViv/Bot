@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Tomás: Vibe Coding & Timbre Dinámico (Gemini Primero + Ollama Fallback + Logs)
+# Script: procesar.py - LeandroBot / Tomás: Vibe Coding & Timbre Dinámico (Gemini Principal + Ollama Runner + Fix Volumen 0%)
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Gemini Principal + Ollama Fallback + Logs Activos)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Gemini Principal + Ollama Runner + Fix Volumen)...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -40,7 +40,7 @@ for f_path, default_val in [
         "voice": "es-AR-TomasNeural",
         "pitch": "-4Hz",
         "rate": "-5%",
-        "volume": "+10%",
+        "volume": "+0%", # <-- Corregido de +0dB a +0% para evitar el error en Edge-TTS
         "descripcion": "Locutor nocturno porteño con barítono cálido, pausado y presencia de radio"
     })
 ]:
@@ -54,6 +54,7 @@ for f_path, default_val in [
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# Configurado para leer el puerto y host del runner de GitHub Actions o entorno asignado
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 
@@ -67,6 +68,32 @@ except Exception:
     client = None
     GENAI_DISPONIBLE = False
 
+def asegurar_ollama_en_runner():
+    """Verifica si Ollama responde en el runner o servicio configurado; si no, intenta arrancarlo."""
+    try:
+        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2.0)
+        if r.status_code == 200:
+            return True
+    except Exception:
+        pass
+
+    try:
+        print(f"🦙 [OLLAMA RUNNER]: Intentando conectar / levantar servicio en {OLLAMA_HOST}...", flush=True)
+        subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        time.sleep(3)
+        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
+        if r.status_code == 200:
+            print("🦙 [OLLAMA RUNNER]: ¡Servicio conectado con éxito en el runner!", flush=True)
+            return True
+    except Exception as ex:
+        print(f"⚠️ Aviso conexión Ollama en runner: {ex}", flush=True)
+    return False
+
 def cargar_config_timbre():
     try:
         with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
@@ -76,7 +103,7 @@ def cargar_config_timbre():
             "voice": "es-AR-TomasNeural",
             "pitch": "-4Hz",
             "rate": "-5%",
-            "volume": "+10%",
+            "volume": "+0%",
             "descripcion": "Locutor porteño cálido"
         }
 
@@ -181,7 +208,7 @@ def construir_prompt_sistema():
     )
 
 def generar_texto_ia(prompt_usuario):
-    """Prioridad 1: Gemini 3.8 Flash (rápido). Prioridad 2: Ollama local con timeout generoso como fallback."""
+    """Prioridad 1: Gemini 3.8 Flash. Prioridad 2: Ollama en el runner/host configurado."""
     system_prompt = construir_prompt_sistema()
     p = prompt_usuario
 
@@ -204,35 +231,24 @@ def generar_texto_ia(prompt_usuario):
                 print(f"✨ [GEMINI gemini-3.8-flash]: ¡Éxito!", flush=True)
                 return raw
         except Exception as e:
-            print(f"⚠️ Gemini fallback a Ollama: {e}", flush=True)
+            print(f"⚠️ Gemini fallback a Ollama en runner: {e}", flush=True)
 
-    # Prioridad 2: Ollama local (si Gemini falla o no hay cliente)
-    try:
-        print(f"🦙 [OLLAMA FALLBACK]: Consultando servidor local con modelo {OLLAMA_MODEL}...", flush=True)
-        r = requests.post(
-            f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
-            timeout=30
-        )
-        if r.status_code == 200:
-            texto = r.json().get("message", {}).get("content", "").strip()
-            if texto:
-                print(f"🦙 [OLLAMA FALLBACK]: ¡Éxito!", flush=True)
-                return texto
-    except Exception as e_ollama:
+    # Prioridad 2: Ollama en el runner (OLLAMA_HOST)
+    if asegurar_ollama_en_runner():
         try:
+            print(f"🦙 [OLLAMA RUNNER]: Consultando en {OLLAMA_HOST} con modelo {OLLAMA_MODEL}...", flush=True)
             r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": f"{system_prompt}\n\n{p}"},
+                f"{OLLAMA_HOST.rstrip('/')}/api/chat",
+                json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
                 timeout=30
             )
             if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
+                texto = r.json().get("message", {}).get("content", "").strip()
                 if texto:
-                    print(f"🦙 [OLLAMA GENERATE]: ¡Éxito!", flush=True)
+                    print(f"🦙 [OLLAMA RUNNER]: ¡Éxito!", flush=True)
                     return texto
-        except Exception:
-            pass
+        except Exception as e_ollama:
+            print(f"⚠️ Aviso Ollama runner chat: {e_ollama}", flush=True)
 
     # Fallback rioplatense garantizado
     import random
@@ -260,7 +276,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
     voice = cfg.get("voice", "es-AR-TomasNeural")
     pitch = cfg.get("pitch", "-4Hz")
     rate = cfg.get("rate", "-5%")
-    volume = cfg.get("volume", "+10%")
+    volume = cfg.get("volume", "+0%")
 
     texto_oral = preparar_texto_para_voz(texto)
     if not texto_oral:
@@ -311,7 +327,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Comandos útiles:\n"
             "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural (ej: /timbre voz más ronca y pausada de noche)\n"
             "• /codigo <tarea>: Escribo o modifico cualquier parte del código a tu gusto\n"
-            "• O simplemente hablame de lo que quieras por texto o nota de voz!"
+            "• O Trichodesmium hablame de lo que quieras por texto o nota de voz!"
         )
 
 async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -437,7 +453,7 @@ async def test_ollama_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if texto:
         await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:\n\n{texto}")
     else:
-        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}. Verificá que Ollama esté corriendo con: ollama run {OLLAMA_MODEL}")
+        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}. Verificá que Ollama esté corriendo en el runner con: ollama run {OLLAMA_MODEL}")
 
 def main():
     if not TOKEN:
