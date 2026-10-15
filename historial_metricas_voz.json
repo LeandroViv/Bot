@@ -1,134 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 03:20:43",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1118.wav",
-        "texto": "Bueno, podés ponerme lo en el chat, los links, en lugar de decir Milo, ponerme los links acá  para que haga clic, por favor.",
-        "partitura_metrica": [
-            {
-                "palabra": "Bueno,",
-                "duracion_ms": 1040,
-                "intensidad_db": -2.9
-            },
-            {
-                "palabra": "podés",
-                "duracion_ms": 300,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "ponerme",
-                "duracion_ms": 620,
-                "intensidad_db": 2.29
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 180,
-                "intensidad_db": 1.37
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 540,
-                "intensidad_db": -4.57
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 920,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "chat,",
-                "duracion_ms": 220,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "los",
-                "duracion_ms": 80,
-                "intensidad_db": -4.86
-            },
-            {
-                "palabra": "links,",
-                "duracion_ms": 300,
-                "intensidad_db": 0.12
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 80,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "lugar",
-                "duracion_ms": 240,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 440,
-                "intensidad_db": -3.54
-            },
-            {
-                "palabra": "decir",
-                "duracion_ms": 340,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "Milo,",
-                "duracion_ms": 440,
-                "intensidad_db": 0.81
-            },
-            {
-                "palabra": "ponerme",
-                "duracion_ms": 1180,
-                "intensidad_db": -2.67
-            },
-            {
-                "palabra": "los",
-                "duracion_ms": 260,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "links",
-                "duracion_ms": 220,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "acá",
-                "duracion_ms": 300,
-                "intensidad_db": 2.97
-            },
-            {
-                "palabra": "para",
-                "duracion_ms": 320,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 180,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "haga",
-                "duracion_ms": 140,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "clic,",
-                "duracion_ms": 340,
-                "intensidad_db": 2.7
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 60,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 320,
-                "intensidad_db": 2.33
-            }
-        ],
-        "total_entrenamientos": 21
-    },
-    {
         "timestamp": "2026-10-12 04:14:28",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1128.wav",
@@ -3365,6 +3236,147 @@
                 "palabra": "che.",
                 "duracion_ms": 435,
                 "intensidad_db": -21.14
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:10:53",
+        "texto": "A ver, cambiame un poco el timbre de tu voz, manteniendo lo que es voz de hombre, pero cambia el timbre.  A ver, ahora mismo es eso.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "cambiame",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "timbre",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "tu",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "voz,",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "manteniendo",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "hombre,",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "cambia",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "timbre.",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "A",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "ahora",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "mismo",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
+            },
+            {
+                "palabra": "eso.",
+                "duracion_ms": 400,
+                "intensidad_db": -23.33
             }
         ]
     }
