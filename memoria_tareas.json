@@ -1,10 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:04:01",
-        "tarea": "A ver, poné mi voz de una cantante, de una cantante, por favor.",
-        "estado": "pendiente"
-    },
-    {
         "timestamp": "2026-10-15 03:04:38",
         "tarea": "Quiero que suene de esa manera.",
         "estado": "pendiente"
@@ -247,6 +242,11 @@
     {
         "timestamp": "2026-10-15 06:17:47",
         "tarea": "mas grave que suene che",
+        "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 06:18:18",
+        "tarea": "bajame el pitch por favor",
         "estado": "pendiente"
     }
 ]
