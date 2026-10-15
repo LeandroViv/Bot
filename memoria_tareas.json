@@ -1,10 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:00:02",
-        "tarea": "A ver que suene más grave tubo.",
-        "estado": "pendiente"
-    },
-    {
         "timestamp": "2026-10-15 03:01:19",
         "tarea": "Más grave que se note significativamente así, por favor, a ver como es eso.",
         "estado": "pendiente"
@@ -247,6 +242,11 @@
     {
         "timestamp": "2026-10-15 06:16:06",
         "tarea": "activa es-AR-ElenaNeural",
+        "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 06:17:07",
+        "tarea": "ponete una voz mas grave che",
         "estado": "pendiente"
     }
 ]
