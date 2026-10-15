@@ -1,54 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 01:30:08",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1111.wav",
-        "texto": "A ver, decimito, yo me llamo el voto.",
-        "partitura_metrica": [
-            {
-                "palabra": "A",
-                "duracion_ms": 740,
-                "intensidad_db": -3.9
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 200,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "decimito,",
-                "duracion_ms": 780,
-                "intensidad_db": 1.39
-            },
-            {
-                "palabra": "yo",
-                "duracion_ms": 380,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 460,
-                "intensidad_db": 1.44
-            },
-            {
-                "palabra": "llamo",
-                "duracion_ms": 540,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 740,
-                "intensidad_db": -2.46
-            },
-            {
-                "palabra": "voto.",
-                "duracion_ms": 680,
-                "intensidad_db": -0.32
-            }
-        ],
-        "total_entrenamientos": 17
-    },
-    {
         "timestamp": "2026-10-12 02:11:32",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1113.wav",
@@ -2837,6 +2788,242 @@
                 "palabra": "che.",
                 "duracion_ms": 383,
                 "intensidad_db": -21.05
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:07:31",
+        "texto": "bueno para que guardes en tareas te pido eso que a partir de las 9 empiezas a  buscar cosas en la hueve que me puedan interesar y bueno durante el día en  algún momento si te parece que algo vale la pena  me muestra los links",
+        "metricas_palabras": [
+            {
+                "palabra": "bueno",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "guardes",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "tareas",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "pido",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "partir",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "9",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "empiezas",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "buscar",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "cosas",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "hueve",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "puedan",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "interesar",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "bueno",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "durante",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "día",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "algún",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "momento",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "parece",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "vale",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "pena",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "muestra",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "los",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
+            },
+            {
+                "palabra": "links",
+                "duracion_ms": 450,
+                "intensidad_db": -24.46
             }
         ]
     }
