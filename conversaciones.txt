@@ -1122,3 +1122,4 @@ En el contexto de la modulación de frecuencia, esto se conoce como una modulaci
 Eso preguntaste y conteste que si
 [2026-10-15 03:42:12] LeandroBot: Sí, fijate, la hago con la voz femenina.
 [2026-10-15 03:42:46] Usuario: [AUDIO] se hizo nando como hombre, fíjate de corregir eso por favor
+[2026-10-15 03:42:52] LeandroBot: Che, fijate que eso es un error de nombre, nando como hombre no es una opción válida... va a ser "nando como mujer". Dale, te lo corregí.
