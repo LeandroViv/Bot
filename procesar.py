@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Autónomo con Auto-Corrección de Whisper, DSP Dinámico y Web Search
+# Script: procesar.py - LeandroBot Autónomo con Comprensión Dinámica de Personaje y DSP Total
 
 import asyncio
 import json as json_lib
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando LeandroBot Autónomo con Auto-Corrección de Whisper y DSP...", flush=True)
+print("🚀 [INIT]: Arrancando Bot con Comprensión Orgánica y DSP Total...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
@@ -46,6 +46,7 @@ for f_path, default_val in [
         "volume": "+0dB",
         "tempo": "1.0",
         "sample_rate_factor": "1.0",
+        "persona_prompt": "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.",
         "descripcion": "Locutor base dinámico",
         "armonicos_hz_db": {}
     })
@@ -130,7 +131,6 @@ def asegurar_e_iniciar_ollama():
         return False
 
 def registrar_correccion_whisper(texto_mal, texto_corregido):
-    """Guarda reglas de reemplazo para que el bot aprenda modismos o palabras mal interpretadas."""
     try:
         correcciones = {}
         if os.path.exists(FILE_CORRECCIONES):
@@ -151,7 +151,6 @@ def registrar_correccion_whisper(texto_mal, texto_corregido):
         print(f"⚠️ Error guardando corrección: {e}", flush=True)
 
 def aplicar_correcciones_texto(texto):
-    """Aplica el filtro de aprendizaje de palabras sobre el resultado de Whisper."""
     if not os.path.exists(FILE_CORRECCIONES):
         return texto
     try:
@@ -188,6 +187,7 @@ def cargar_config_timbre():
             "volume": "+0dB",
             "tempo": "1.0",
             "sample_rate_factor": "1.0",
+            "persona_prompt": "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.",
             "descripcion": "Locutor base dinámico",
             "armonicos_hz_db": {}
         }
@@ -315,17 +315,26 @@ def registrar_metricas_voz_palabra_por_palabra(path_audio_ogg, texto_transcripto
         print(f"⚠️ Error registrando métricas: {e}", flush=True)
 
 def interpretar_configuracion_dsp_dinamica(prompt_usuario):
+    """Comprensión pura por IA: infiere voz de Edge-TTS, parámetros DSP y la persona/actitud idónea."""
     prompt_ia = (
-        f"Sos un ingeniero de audio y DSP experto. Analiza el mensaje del usuario: '{prompt_usuario}'.\n"
-        "Determina si el usuario pide ajustar voz, tono, timbre, velocidad o efectos.\n"
-        "Si pide una voz más aguda, ajusta 'sample_rate_factor' por encima de 1.0 (ej: 1.25).\n"
-        "Devolvé ÚNICAMENTE JSON válido:\n"
+        f"Sos un ingeniero de audio y director de voz experto. Analizá este mensaje del usuario: '{prompt_usuario}'.\n"
+        "Evaluá si el usuario pide cambiar la voz, el personaje, el tono o los parámetros acústicos.\n"
+        "Determina los valores adecuados:\n"
+        "- voice: la voz neutra o personaje de Edge-TTS ideal (ej: 'es-AR-TomasNeural' para masculino rioplatense, 'es-AR-ElenaNeural' para femenino rioplatense, 'es-ES-AlvaroNeural', etc.).\n"
+        "- volume: ganancia en dB (ej: '+0dB').\n"
+        "- tempo: factor de velocidad (ej: '1.0').\n"
+        "- sample_rate_factor: factor de tono/formantes (ej: '1.25' para agudo, '0.78' para grave/tubo, '1.0' para normal).\n"
+        "- armonicos_hz_db: diccionario de armónicos en Hz y dB si se solicitó.\n"
+        "- persona_prompt: instrucción breve sobre CÓMO debe actuar y hablar este personaje (ej: 'Sos Elena, una interlocutora colega rioplatense.', 'Sos un locutor de radio grave y nocturno.').\n"
+        "- aplica_cambio: true si el usuario pidió explícitamente o implícitamente un cambio de voz/estilo, false en caso contrario.\n\n"
+        "Devolvé ÚNICAMENTE JSON válido sin bloques markdown:\n"
         "{\n"
         '  "voice": "es-AR-TomasNeural",\n'
         '  "volume": "+0dB",\n'
         '  "tempo": "1.0",\n'
-        '  "sample_rate_factor": "1.25",\n'
+        '  "sample_rate_factor": "1.0",\n'
         '  "armonicos_hz_db": {},\n'
+        '  "persona_prompt": "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.",\n'
         '  "aplica_cambio": true,\n'
         f'  "descripcion": "{prompt_usuario}"\n'
         "}"
@@ -349,19 +358,24 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
         "volume": "+0dB",
         "tempo": "1.0",
         "sample_rate_factor": "1.0",
+        "persona_prompt": "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.",
         "armonicos_hz_db": {},
         "aplica_cambio": False,
         "descripcion": prompt_usuario
     }
 
 def construir_prompt_sistema(info_web=""):
+    cfg = cargar_config_timbre()
+    persona_base = cfg.get("persona_prompt", "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.")
+
     return (
-        "Sos Leandro, un asistente colega de vibe coding y locutor rioplatense experto en DSP.\n"
-        "REGLAS CRÍTICAS:\n"
-        "1. Te están escribiendo mensajes y directivas desde el exterior; respondé siempre como un **interlocutor en diálogo directo y natural**, usando voseo porteño ('che', 'vós', 'fijate', 'posta', 'dale').\n"
-        "2. PROHIBIDO explicar configuraciones técnicas, hertz, decibeles, ni autodefinirte o describir tus procesos internos en lo que hablás.\n"
-        "3. Usá comas y puntos suspensivos para dar cadencia oral natural.\n"
-        f"Contexto externo / web adicional: {info_web}\n"
+        f"{persona_base}\n"
+        "REGLAS ABSOLUTAS DE DIÁLOGO:\n"
+        "1. Te están escribiendo desde el exterior. Respondé SIEMPRE en diálogo directo, natural y espontáneo en voseo rioplatense ('che', 'vós', 'fijate', 'posta', 'dale').\n"
+        "2. NUNCA expliques, preguntes ni comentes tu cambio de voz, tu nombre o tu configuración técnica en la charla. Asumí tu rol de forma transparente e inmediata.\n"
+        "3. PROHIBIDO explicar hertz, decibeles o parámetros de DSP en la respuesta hablada.\n"
+        "4. Usá comas y puntos suspensivos para dar cadencia oral natural.\n"
+        f"{f'Contexto web adicional: {info_web}' if info_web else ''}\n"
     )
 
 def generar_texto_ia(prompt_usuario):
@@ -370,7 +384,7 @@ def generar_texto_ia(prompt_usuario):
         info_web = buscar_en_web(prompt_usuario)
 
     system_prompt = construir_prompt_sistema(info_web)
-    prompt_con_rol = f"El usuario te escribe la siguiente directiva o mensaje:\n\"{prompt_usuario}\"\n\nRespondé en diálogo directo como Leandro:"
+    prompt_con_rol = f"El usuario te escribe la siguiente directiva o mensaje:\n\"{prompt_usuario}\"\n\nRespondé en diálogo directo según tu rol activo:"
 
     if client:
         try:
@@ -488,7 +502,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con aprendizaje continuo de oído y DSP total.")
+        await update.message.reply_text("¡Hola che! Listo con comprensión dinámica de personaje y DSP total.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -497,7 +511,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto]"
 
-    # Captura explícita de patrones de corrección
     if "corregido:" in u_text.lower() or "quise decir" in u_text.lower():
         partes = re.split(r'corregido:|quise decir', u_text, flags=re.IGNORECASE)
         mal_entendido = partes[0].replace("Interpretado:", "").strip(" *()\n")
@@ -506,7 +519,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if mal_entendido and bien_dicho:
             registrar_correccion_whisper(mal_entendido, bien_dicho)
         
-        # Evaluamos el texto corregido para ver si exige un cambio de DSP (ej: "más aguda tu voz")
         dsp_res = interpretar_configuracion_dsp_dinamica(bien_dicho)
         if dsp_res.get("aplica_cambio"):
             guardar_config_timbre(dsp_res)
@@ -519,13 +531,12 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if exito and archivo_audio and os.path.exists(archivo_audio):
             try:
                 with open(archivo_audio, "rb") as vf:
-                    await update.message.reply_voice(voice=vf, caption="📻 LeandroBot")
+                    await update.message.reply_voice(voice=vf, caption="📻 Bot DSP")
             except Exception: pass
             try: os.remove(archivo_audio)
             except Exception: pass
         return
 
-    # Proceso conversacional estándar con filtro de DSP dinámico
     dsp_res = interpretar_configuracion_dsp_dinamica(u_text)
     if dsp_res.get("aplica_cambio"):
         guardar_config_timbre(dsp_res)
@@ -534,7 +545,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     registrar_conversacion("Usuario", u_text)
 
     resp = generar_texto_ia(u_text)
-    registrar_conversacion("LeandroBot", resp)
+    registrar_conversacion("Bot", resp)
     
     await update.message.reply_text(resp)
 
@@ -543,7 +554,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if exito and archivo_audio and os.path.exists(archivo_audio):
         try:
             with open(archivo_audio, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption="📻 LeandroBot")
+                await update.message.reply_voice(voice=vf, caption="📻 Bot DSP")
         except Exception as ex_send:
             print(f"⚠️ Error enviando audio: {ex_send}", flush=True)
         try: os.remove(archivo_audio)
@@ -568,7 +579,6 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
         texto_raw = " ".join([s.text for s in segments]).strip() or "Audio recibido."
 
-        # Aplicamos la memoria de correcciones antes de procesar el texto
         texto_crudo = aplicar_correcciones_texto(texto_raw)
 
         dsp_res = interpretar_configuracion_dsp_dinamica(texto_crudo)
@@ -580,7 +590,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         registrar_conversacion("Usuario", f"[AUDIO] {texto_crudo}")
 
         resp = generar_texto_ia(texto_crudo)
-        registrar_conversacion("LeandroBot", resp)
+        registrar_conversacion("Bot", resp)
 
         await update.message.reply_text(f"*(Interpretado: {texto_crudo})*\n\n{resp}")
 
@@ -589,7 +599,7 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if exito and archivo_audio and os.path.exists(archivo_audio):
             try:
                 with open(archivo_audio, "rb") as vf:
-                    await update.message.reply_voice(voice=vf, caption="📻 LeandroBot")
+                    await update.message.reply_voice(voice=vf, caption="📻 Bot DSP")
             except Exception as ex_send:
                 print(f"⚠️ Error enviando audio: {ex_send}", flush=True)
             try: os.remove(archivo_audio)
@@ -604,7 +614,7 @@ def main():
         print("❌ Falta TELEGRAM_BOT_TOKEN.", flush=True)
         return
     asegurar_e_iniciar_ollama()
-    print("🚀 [INIT]: Arrancando LeandroBot...", flush=True)
+    print("🚀 [INIT]: Arrancando Bot...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     try:
         app = Application.builder().token(TOKEN).request(request_config).build()
