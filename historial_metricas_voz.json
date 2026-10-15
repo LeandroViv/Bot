@@ -1,181 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:53:17",
-        "texto": "Che..., fijate... que hice! Bajé el pitch y ahora la voz suena más lenta, ¿sabés? Dale, que ya te decía eso, que a la gente le gusta que la voz sea más clara, ¿vale?",
-        "metricas_palabras": [
-            {
-                "palabra": "Che...,",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "fijate...",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "hice!",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "Bajé",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "pitch",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "ahora",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "suena",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "lenta,",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "¿sabés?",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "Dale,",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "decía",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "eso,",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "gente",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "le",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "gusta",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "sea",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "clara,",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            },
-            {
-                "palabra": "¿vale?",
-                "duracion_ms": 152,
-                "intensidad_db": -18.72
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:54:13",
         "texto": "¿Qué suene como persona normal, por favor, que se articule en las palabras? No se entiende nada a eso, por favor, que suene una voz más grave y más lenta, así de fácil.",
         "metricas_palabras": [
@@ -4141,6 +3965,217 @@
                 "palabra": "voz.",
                 "duracion_ms": 601,
                 "intensidad_db": -27.95
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:43:16",
+        "texto": "Che..., entiendo lo que quédese. Si la voz suena más segura con DSP, che..., lo voy a utilizar, pero fijate..., no voy a dejar de investigar y probar hasta que sepa qué funciona mejor para mí y para los clientes. Dale.",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "entiendo",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "quédese.",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "Si",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "suena",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "segura",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "DSP,",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "che...,",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "utilizar,",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "fijate...,",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "dejar",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "investigar",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "probar",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "hasta",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "sepa",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "qué",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "funciona",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "mejor",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "mí",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "los",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "clientes.",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
+            },
+            {
+                "palabra": "Dale.",
+                "duracion_ms": 251,
+                "intensidad_db": -17.5
             }
         ]
     }
