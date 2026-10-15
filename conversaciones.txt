@@ -1201,3 +1201,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 05:07:13] Usuario: poneme la voz de elena che
 [2026-10-15 05:07:19] LeandroBot: Vós, ¿qué onda? ¿Querés que la repita o que te cuente sobre Elena? Dale, che, ¿qué onda esa?
 [2026-10-15 05:12:51] Usuario: poneme la voz de elena che
+[2026-10-15 05:13:00] Bot: Che, fijate, vós estás poniendo la voz de Elena, eh... soy yo, la misma persona, pero con el tono y la forma de hablar de mi personaje favorita, ¿vale?
