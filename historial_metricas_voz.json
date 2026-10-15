@@ -1,71 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:12:06",
-        "texto": "A ver cómo suena ese timbre de distinto, ahora mismo quiero escucharlo.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "cómo",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "suena",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "ese",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "timbre",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "distinto,",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "ahora",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "mismo",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "quiero",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            },
-            {
-                "palabra": "escucharlo.",
-                "duracion_ms": 484,
-                "intensidad_db": -21.03
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:12:31",
         "texto": "Che..., te voy a dar un intento, pero te aviso, no va a ser exacto, pero te voy a dar una idea. La voz de rockero, eh, es como... (pausa) es como si alguien estuviera gritando en tu oído, pero no de manera agresiva, sino más bien con pasión, con... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -4231,6 +4165,82 @@
                 "palabra": "che.",
                 "duracion_ms": 241,
                 "intensidad_db": -17.24
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:46:40",
+        "texto": "el tono de voz de una niña, tenés que poner eso te quiza desh...",
+        "metricas_palabras": [
+            {
+                "palabra": "el",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "tono",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "niña,",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "tenés",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "poner",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "quiza",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
+            },
+            {
+                "palabra": "desh...",
+                "duracion_ms": 400,
+                "intensidad_db": -25.78
             }
         ]
     }
