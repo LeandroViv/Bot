@@ -1,76 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:03:59",
-        "texto": "A ver, poné mi voz de una cantante, de una cantante, por favor.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "poné",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "mi",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "cantante,",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "cantante,",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 496,
-                "intensidad_db": -21.52
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:04:12",
         "texto": "Che..., fijate..., vas a escuchar mi voz, dale. Estoy a punto de empezar a hablar como una reina del ritmo, posta.... \n\n¿Qué onda, che...? ¿Quieres que te hable sobre algo en particular o solo querés disfrutar de mi voz, eh?",
         "metricas_palabras": [
@@ -3736,6 +3665,177 @@
                 "palabra": "¿vale?",
                 "duracion_ms": 152,
                 "intensidad_db": -18.72
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:54:13",
+        "texto": "¿Qué suene como persona normal, por favor, que se articule en las palabras? No se entiende nada a eso, por favor, que suene una voz más grave y más lenta, así de fácil.",
+        "metricas_palabras": [
+            {
+                "palabra": "¿Qué",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "persona",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "normal,",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "favor,",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "articule",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "palabras?",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "No",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "entiende",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "nada",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "eso,",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "favor,",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "grave",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "lenta,",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "así",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
+            },
+            {
+                "palabra": "fácil.",
+                "duracion_ms": 448,
+                "intensidad_db": -23.92
             }
         ]
     }
