@@ -1223,3 +1223,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 06:16:07] Usuario: activa es-AR-ElenaNeural
 [2026-10-15 06:16:19] Bot: Che, fijate, no tengo idea de qué estás pasando, pero si activas algo con ese nombre, no sería buena idea, posta. ¿Qué es esa cosa?
 [2026-10-15 06:17:09] Usuario: ponete una voz mas grave che
+[2026-10-15 06:17:14] Bot: vale che, te voy a hablar con una voz un poco más ronca, pero no demasiado, dale.
