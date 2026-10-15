@@ -1,66 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:08:47",
-        "texto": "Bueno, que suene más agudo, ahí estás sonando como un hombre.",
-        "metricas_palabras": [
-            {
-                "palabra": "Bueno,",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "agudo,",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "ahí",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "estás",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "sonando",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            },
-            {
-                "palabra": "hombre.",
-                "duracion_ms": 539,
-                "intensidad_db": -26.41
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:09:01",
         "texto": "Vós che..., fijate..., no es que no pueda hacer algo con eso, pero el problema es que el frecuencio que te estoy utilizando no es el único que me está limitando, ¿vós sabés qué frecuencio de audio es el más común para un sonido agudo, eh?",
         "metricas_palabras": [
@@ -4186,6 +4125,127 @@
                 "palabra": "adecuado...\"",
                 "duracion_ms": 281,
                 "intensidad_db": -17.23
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:44:08",
+        "texto": "Che..., fijate... que siento un poco de estrés en la cabeza, dale, puede que necesite un descanso o algo de aire fresco, che....",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "fijate...",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "siento",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "estrés",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "cabeza,",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "dale,",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "puede",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "necesite",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "descanso",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "o",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "aire",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "fresco,",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "che....",
+                "duracion_ms": 259,
+                "intensidad_db": -17.53
             }
         ]
     }
