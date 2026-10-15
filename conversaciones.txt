@@ -1095,3 +1095,6 @@ Dale, che, ahora suena un poco más como si estuviera hablando de una cosa lejan
 [2026-10-15 02:59:29] Usuario: [AUDIO] A ver cómo suena eso
 [2026-10-15 02:59:37] LeandroBot: Vos estás escuchando un timbre de voz un poco más alto, un poco más claro, pero con un toque de calidez y madurez que le da un tono más cálido y acogedor. Es como si la voz fuera un abrazo cálido, que te hace sentir cómodo y tranquilo. Dale, ¿cómo te parece?
 [2026-10-15 03:00:03] Usuario: [AUDIO] A ver que suene más grave tubo.
+[2026-10-15 03:00:13] LeandroBot: Vos estás hablando de mi timbre, che. Dale, voy a intentar sonar un poco más grave, si no es demasiado para vos. *canta* "Riiiii-ooo-ooo..." En serio, te voy a cambiar el pitch, ¿vale? *voz más baja* 
+
+Pitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -10dB.
