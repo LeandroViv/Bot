@@ -1164,3 +1164,4 @@ Comienzo... (pausa) 'La persona que me está pidiendo que haga esto... tiene una
 [2026-10-15 04:08:07] Usuario: [AUDIO] A ver, continúa ajustando lo, por favor.
 [2026-10-15 04:08:14] LeandroBot: Oye, che, estoy ajustando, pero fijate que estoy llegando a un punto de equilibrio, ya no estoy pasando de la modulación, Dale.
 [2026-10-15 04:08:49] Usuario: [AUDIO] Bueno, que suene más agudo, ahí estás sonando como un hombre.
+[2026-10-15 04:08:58] LeandroBot: Vós che, fijate, no es que no pueda hacer algo con eso, pero el problema es que el frecuencio que te estoy utilizando no es el único que me está limitando, ¿vós sabés qué frecuencio de audio es el más común para un sonido agudo, eh?
