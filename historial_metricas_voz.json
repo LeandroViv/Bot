@@ -1,291 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 02:58:44",
-        "texto": "Che..., fijate..., voy a cambiar el timbre de la voz para que suene un poco más cansado, como si estuviera hablando de una cosa que ya le ha pasado. Voz: es-AR-TomasNeural | Pitch: -5Hz | Serie armónica: Armonía desafinada Y ahora, voy a agregar un poco de borroso a la... te lo resumo hasta acá, che.",
-        "metricas_palabras": [
-            {
-                "palabra": "Che...,",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "fijate...,",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "cambiar",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "timbre",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "para",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "poco",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "cansado,",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "estuviera",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "hablando",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "cosa",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "le",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "ha",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "pasado.",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "Voz:",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "es-AR-TomasNeural",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "|",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "Pitch:",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "-5Hz",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "|",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "Serie",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "armónica:",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "Armonía",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "desafinada",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "Y",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "ahora,",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "agregar",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "poco",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "borroso",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "la...",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "resumo",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "hasta",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "acá,",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            },
-            {
-                "palabra": "che.",
-                "duracion_ms": 350,
-                "intensidad_db": -20.46
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 02:59:27",
         "texto": "A ver cómo suena eso",
         "metricas_palabras": [
@@ -3846,6 +3560,237 @@
                 "palabra": "que",
                 "duracion_ms": 483,
                 "intensidad_db": -23.96
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:48:41",
+        "texto": "Pará, pará... tenés toda la razón, che.... Me aceleré...\n\nBajamos un cambio, dale. Así, tranqui... con pausa, respirando, para que se entienda bien cada cosa. \n\nFijate... si ahí te va mejor el ritmo... y decime, posta..., en qué parte nos habíamos quedado con el código.",
+        "metricas_palabras": [
+            {
+                "palabra": "Pará,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "pará...",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "tenés",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "toda",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "razón,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "che....",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "Me",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "aceleré...",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "Bajamos",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "cambio,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "dale.",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "Así,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "tranqui...",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "pausa,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "respirando,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "entienda",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "bien",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "cada",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "cosa.",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "Fijate...",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "va",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "mejor",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "ritmo...",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "decime,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "posta...,",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "qué",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "parte",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "nos",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "habíamos",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "quedado",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
+            },
+            {
+                "palabra": "código.",
+                "duracion_ms": 193,
+                "intensidad_db": -18.67
             }
         ]
     }
