@@ -1,17 +1,14 @@
 {
     "voice": "es-AR-TomasNeural",
-    "pitch": "-5Hz",
-    "rate": "-5%",
-    "volume": "+10%",
+    "volume": "+3dB",
+    "tempo": "0.95",
+    "sample_rate_factor": "0.80",
     "armonicos_hz_db": {
         "1": {
             "hz": 110,
-            "db": 0
-        },
-        "2": {
-            "hz": 220,
-            "db": -3
+            "db": 4,
+            "width": 1.0
         }
     },
-    "descripcion": "A ver, poné mi voz de una cantante, de una cantante, por favor."
+    "descripcion": "Pero me estás haciendo voz de hombre, te dije que sea de una profesora."
 }
