@@ -1,10 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:07:32",
-        "tarea": "bueno para que guardes en tareas te pido eso que a partir de las 9 empiezas a  buscar cosas en la hueve que me puedan interesar y bueno durante el día en  algún momento si te parece que algo vale la pena  me muestra los links",
-        "estado": "pendiente"
-    },
-    {
         "timestamp": "2026-10-15 01:09:05",
         "tarea": "A ver, ponerme voz de rockero, lo que se te ocurre que sería voz de rockero, por favor.",
         "estado": "pendiente"
@@ -247,6 +242,11 @@
     {
         "timestamp": "2026-10-15 05:20:26",
         "tarea": "Haceme una voz más aguda.",
+        "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 05:34:10",
+        "tarea": "quiero que suenes como elena che",
         "estado": "pendiente"
     }
 ]
