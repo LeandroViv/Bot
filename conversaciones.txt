@@ -1027,3 +1027,16 @@ Entonces, si te pido algo y ya tienes el resultado guardado en un archivo, cuand
 
 Y para que te dé más tranquilidad, puedo decirte que, si lo que te pido no está guardado en un archivo, puedo empezar a generar la respuesta desde cero, sin necesidad de que el bot tenga que
 [2026-10-15 01:07:34] Usuario: [AUDIO] bueno para que guardes en tareas te pido eso que a partir de las 9 empiezas a  buscar cosas en la hueve que me puedan interesar y bueno durante el día en  algún momento si te parece que algo vale la pena  me muestra los links
+[2026-10-15 01:07:59] LeandroBot: Vós, desde mañana, a partir de las 9, vós te vas a empezar a buscar en la hueve, che. Vós vas a buscar cosas que te puedan interesar, che, y vós vas a mostrarme los links, si te parece que vale la pena, posta. Dale, comencé a trabajar, che.
+
+**Tareas Programadas para el Día de Mañana**
+
+*   Buscar en la hueve:
+    *   Artículos de investigación en ciencia de datos
+    *   Noticias de tecnología
+    *   Publicaciones en blogs de programación
+*   Verificar si ya hay resultados guardados en el archivo de tareas, si no, comencé a generar los resultados desde cero, posta.
+
+**Tareas Pendientes**
+
+*   Revisar los resultados de la búsqueda
