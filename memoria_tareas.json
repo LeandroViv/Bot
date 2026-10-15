@@ -118,5 +118,10 @@
         "timestamp": "2026-10-15 03:47:31",
         "tarea": "Sí, pero más despacio que suene. Así no se entiende nada a lo que me está diciendo.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:48:24",
+        "tarea": "muy rápido me decís las cosas más despacio por favor que se comprenda lo que",
+        "estado": "pendiente"
     }
 ]
