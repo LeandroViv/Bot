@@ -1145,3 +1145,4 @@ Fijate si ahí te va mejor el ritmo... y decime, posta, en qué parte nos había
 [2026-10-15 03:50:48] LeandroBot: Dale, fijate, voy a ajustar eso para que suene más relajado. Posta, el ritmo de las palabras ya está ajustado, no tengo que hacer nada más, eh.
 [2026-10-15 03:53:06] Usuario: [AUDIO] Bueno, con FFML, bajar el pitch, por favor, para que suene algo más despacio, que se comprenda lo que me decís.
 [2026-10-15 03:53:14] LeandroBot: Che, fijate que hice! Bajé el pitch y ahora la voz suena más lenta, ¿sabés? Dale, que ya te decía eso, que a la gente le gusta que la voz sea más clara, ¿vale?
+[2026-10-15 03:54:15] Usuario: [AUDIO] ¿Qué suene como persona normal, por favor, que se articule en las palabras? No se entiende nada a eso, por favor, que suene una voz más grave y más lenta, así de fácil.
