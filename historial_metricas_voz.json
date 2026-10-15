@@ -1,148 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 00:08:12",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1101.wav",
-        "texto": "A ver recién me grabaste algo que no se entendía nada. A ver si ahora te llevo a comprender lo que me decís.",
-        "partitura_metrica": [
-            {
-                "palabra": "A",
-                "duracion_ms": 440,
-                "intensidad_db": -1.31
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 200,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "recién",
-                "duracion_ms": 620,
-                "intensidad_db": -1.25
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 120,
-                "intensidad_db": 2.88
-            },
-            {
-                "palabra": "grabaste",
-                "duracion_ms": 400,
-                "intensidad_db": 1.15
-            },
-            {
-                "palabra": "algo",
-                "duracion_ms": 200,
-                "intensidad_db": 1.32
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 160,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 140,
-                "intensidad_db": -1.56
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 160,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "entendía",
-                "duracion_ms": 480,
-                "intensidad_db": -3.53
-            },
-            {
-                "palabra": "nada.",
-                "duracion_ms": 380,
-                "intensidad_db": -5.67
-            },
-            {
-                "palabra": "A",
-                "duracion_ms": 160,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "ver",
-                "duracion_ms": 140,
-                "intensidad_db": -1.07
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 220,
-                "intensidad_db": -6.0
-            },
-            {
-                "palabra": "ahora",
-                "duracion_ms": 260,
-                "intensidad_db": 0.95
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 240,
-                "intensidad_db": -0.96
-            },
-            {
-                "palabra": "llevo",
-                "duracion_ms": 240,
-                "intensidad_db": -2.56
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 80,
-                "intensidad_db": -0.82
-            },
-            {
-                "palabra": "comprender",
-                "duracion_ms": 360,
-                "intensidad_db": -0.81
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 240,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 120,
-                "intensidad_db": -0.92
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 100,
-                "intensidad_db": 0.27
-            },
-            {
-                "palabra": "decís.",
-                "duracion_ms": 300,
-                "intensidad_db": -1.47
-            }
-        ],
-        "total_entrenamientos": 12
-    },
-    {
-        "timestamp": "2026-10-12 00:11:36",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1103.wav",
-        "texto": "¡Sí, gracias!",
-        "partitura_metrica": [
-            {
-                "palabra": "¡Sí,",
-                "duracion_ms": 520,
-                "intensidad_db": 0.03
-            },
-            {
-                "palabra": "gracias!",
-                "duracion_ms": 120,
-                "intensidad_db": 3.0
-            }
-        ],
-        "total_entrenamientos": 13
-    },
-    {
         "timestamp": "2026-10-12 01:11:22",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1105.wav",
@@ -2518,6 +2375,27 @@
                 "palabra": "digamos.",
                 "duracion_ms": 524,
                 "intensidad_db": -24.52
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:04:09",
+        "texto": "Me escuchas ahí?",
+        "metricas_palabras": [
+            {
+                "palabra": "Me",
+                "duracion_ms": 564,
+                "intensidad_db": -20.72
+            },
+            {
+                "palabra": "escuchas",
+                "duracion_ms": 564,
+                "intensidad_db": -20.72
+            },
+            {
+                "palabra": "ahí?",
+                "duracion_ms": 564,
+                "intensidad_db": -20.72
             }
         ]
     }
