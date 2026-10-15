@@ -1,81 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:06:57",
-        "texto": "Quiero que suenes como una cantante de pop, modificar el timbre en ese sentido.",
-        "metricas_palabras": [
-            {
-                "palabra": "Quiero",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "suenes",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "cantante",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "pop,",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "modificar",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "timbre",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "ese",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            },
-            {
-                "palabra": "sentido.",
-                "duracion_ms": 529,
-                "intensidad_db": -22.72
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:07:15",
         "texto": "Che..., fijate..., eso es fácil! Dale, voy a activar el efecto de \"voz femenina\" y ajustar un poco la frecuencia del timbre para que suene más a la nueva escena. Posta..., vamos a probar con una frecuencia de 4 kHz y ajustar la amplitud para que sea más brillante. Dale,... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -4071,6 +3995,117 @@
                 "palabra": "pasó?",
                 "duracion_ms": 324,
                 "intensidad_db": -18.23
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:34:22",
+        "texto": "dale, che..., soy lo que soy. qué quiero que suene, eh? ¿tú querés que hable como una tonta o algo más?",
+        "metricas_palabras": [
+            {
+                "palabra": "dale,",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "che...,",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "soy",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "soy.",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "qué",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "quiero",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "suene,",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "eh?",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "¿tú",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "querés",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "hable",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "tonta",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "o",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
+            },
+            {
+                "palabra": "más?",
+                "duracion_ms": 287,
+                "intensidad_db": -18.1
             }
         ]
     }
