@@ -1218,3 +1218,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 05:39:38] Bot: "che, me parece bien, la armonía se ve clara, fijate que la frecuencia fundamental está en el rango adecuado..."
 [2026-10-15 05:44:01] Usuario: voz mas aguda
 [2026-10-15 05:44:05] Bot: Che, fijate que siento un poco de estrés en la cabeza, dale, puede que necesite un descanso o algo de aire fresco, che.
+[2026-10-15 06:02:34] Usuario: poneme la voz de elena che
