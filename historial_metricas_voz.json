@@ -1,226 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 01:05:40",
-        "texto": "si igual lo que te pido ya nos queda guardado en un archivo así que cuando se reinicia lo es  y listo ahora lo que te quiero pedir es que me pongas bueno nuevamente una voz masculina eso  promete una voz de hombre",
-        "metricas_palabras": [
-            {
-                "palabra": "si",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "igual",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "pido",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "nos",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "queda",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "guardado",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "archivo",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "así",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "cuando",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "reinicia",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "listo",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "ahora",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "quiero",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "pedir",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "pongas",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "bueno",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "nuevamente",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "masculina",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "promete",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            },
-            {
-                "palabra": "hombre",
-                "duracion_ms": 457,
-                "intensidad_db": -23.98
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 01:06:13",
         "texto": "Fijate..., che..., te voy a dar una noticia buena: ya que lo que te pido ya está guardado en un archivo, cuando se reinicia el bot, todo listo, sin problemas, ¿dale? La memoria en caliente se mantiene intacta, sin resetearte nada, ¿entiendes? Entonces, si te pido algo y ya tienes... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -4881,6 +4660,67 @@
                 "palabra": "femenina.",
                 "duracion_ms": 344,
                 "intensidad_db": -17.73
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:42:43",
+        "texto": "se hizo nando como hombre, fíjate de corregir eso por favor",
+        "metricas_palabras": [
+            {
+                "palabra": "se",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "hizo",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "nando",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "hombre,",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "fíjate",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "corregir",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 524,
+                "intensidad_db": -23.91
             }
         ]
     }
