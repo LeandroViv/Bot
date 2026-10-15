@@ -1132,3 +1132,4 @@ Eso preguntaste y conteste que si
 [2026-10-15 03:46:43] Usuario: [AUDIO] el tono de voz de una niña, tenés que poner eso te quiza desh...
 [2026-10-15 03:46:50] LeandroBot: Che, dale, fijate, no es tan complicado. Necesito saber el tipo de voz, la frecuencia de campaña, el rango de tonos... ¿Te quiza puedo hacer algo con eso?
 [2026-10-15 03:47:32] Usuario: [AUDIO] Sí, pero más despacio que suene. Así no se entiende nada a lo que me está diciendo.
+[2026-10-15 03:47:38] LeandroBot: Che, fijate, no se te va a pasar. Dale, vamos a intentar con algo más lento.
