@@ -1,61 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:04:24",
-        "texto": "A ver, zona como una cantante de pop, por favor.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "zona",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "cantante",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "pop,",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 601,
-                "intensidad_db": -25.62
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:04:35",
         "texto": "Che..., fijate..., si vas a que la zona suene como una cantante de pop, te voy a hacer un ajuste rápido y claro.",
         "metricas_palabras": [
@@ -4021,6 +3965,147 @@
                 "palabra": "aguda.",
                 "duracion_ms": 658,
                 "intensidad_db": -22.71
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:19:48",
+        "texto": "Che..., no, no, no, dale, esa voz es más linda, no más aguda, fijate..., me gusta un poco más baja, posta..., ¿de dónde la vas a escuchar?",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "no,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "no,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "no,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "dale,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "esa",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "linda,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "aguda,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "fijate...,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "gusta",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "poco",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "baja,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "posta...,",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "¿de",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "dónde",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "vas",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
+            },
+            {
+                "palabra": "escuchar?",
+                "duracion_ms": 274,
+                "intensidad_db": -17.43
             }
         ]
     }
