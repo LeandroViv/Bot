@@ -1,36 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:56:01",
-        "texto": "A ver, ya está, muestra.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 498,
-                "intensidad_db": -21.68
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 498,
-                "intensidad_db": -21.68
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 498,
-                "intensidad_db": -21.68
-            },
-            {
-                "palabra": "está,",
-                "duracion_ms": 498,
-                "intensidad_db": -21.68
-            },
-            {
-                "palabra": "muestra.",
-                "duracion_ms": 498,
-                "intensidad_db": -21.68
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:56:10",
         "texto": "Vos estás listo, che....",
         "metricas_palabras": [
@@ -4096,6 +4065,52 @@
                 "palabra": "¿che...?",
                 "duracion_ms": 290,
                 "intensidad_db": -17.67
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:04:13",
+        "texto": "A ver, ponen mis labos esa de linda.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "ponen",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "mis",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "labos",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "esa",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
+            },
+            {
+                "palabra": "linda.",
+                "duracion_ms": 411,
+                "intensidad_db": -21.46
             }
         ]
     }
