@@ -168,5 +168,10 @@
         "timestamp": "2026-10-15 04:04:25",
         "tarea": "A ver, zona como una cantante de pop, por favor.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 04:06:58",
+        "tarea": "Quiero que suenes como una cantante de pop, modificar el timbre en ese sentido.",
+        "estado": "pendiente"
     }
 ]
