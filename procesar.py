@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - Bot Autónomo con Comprensión Dinámica de Personaje, Auto-Corrección de Whisper, Métricas de Voz, Búsqueda Web y Hot-Deploy
+# Script: procesar.py - Bot Autónomo con Personajes Fijos (Elena/Tomás) y DSP Libre por IA
 
 import asyncio
 import json as json_lib
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando Bot con Comprensión Dinámica y DSP Total...", flush=True)
+print("🚀 [INIT]: Arrancando Bot con Personajes Fijos y DSP Libre...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
@@ -328,28 +328,45 @@ def registrar_metricas_voz_palabra_por_palabra(path_audio_ogg, texto_transcripto
         print(f"⚠️ Error registrando métricas: {e}", flush=True)
 
 def interpretar_configuracion_dsp_dinamica(prompt_usuario):
+    """Hardcodea la selección de personajes (Elena / Tomás-Leandro) e infiere el DSP de forma 100% libre."""
     cfg_actual = cargar_config_timbre()
     persona_actual = cfg_actual.get("persona_prompt", "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.")
     voz_actual = cfg_actual.get("voice", "es-AR-TomasNeural")
+    sr_actual = float(cfg_actual.get("sample_rate_factor", "1.0"))
 
+    u_lower = prompt_usuario.lower()
+    hardcode_personaje = False
+
+    # 1. HARDCODEO EXPLÍCITO DE PERSONAJES
+    if any(k in u_lower for k in ["elena", "voz de elena", "hablá como elena", "voz de mujer"]):
+        voz_actual = "es-AR-ElenaNeural"
+        persona_actual = "Sos Elena, una interlocutora y colega rioplatense."
+        hardcode_personaje = True
+    elif any(k in u_lower for k in ["tomas", "tomás", "leandro", "voz de leandro", "hablá como leandro", "voz de hombre", "voz de varón"]):
+        voz_actual = "es-AR-TomasNeural"
+        persona_actual = "Sos un interlocutor colega y locutor rioplatense experto en vibe coding."
+        hardcode_personaje = True
+
+    # 2. IA INFIERE LIBREMENTE LOS PARÁMETROS ACÚSTICOS Y PITCH (FFMPEG)
     prompt_ia = (
-        f"Analizá con precisión el mensaje del usuario: '{prompt_usuario}'.\n"
-        "Determina si el usuario pide cambiar la voz, el personaje, el tono o parámetros acústicos.\n"
-        "- Si pide voz más aguda, fina o alta: asigná 'sample_rate_factor' mayor a 1.0 (ej: 1.25).\n"
-        "- Si pide voz más grave, baja, profunda o tubo: asigná 'sample_rate_factor' menor a 1.0 (ej: 0.78).\n"
-        "- Si pide voz de Elena o mujer: asigná 'voice': 'es-AR-ElenaNeural' y 'persona_prompt': 'Sos Elena, una interlocutora y colega rioplatense.'\n"
-        "- Si pide voz de Leandro o varón: asigná 'voice': 'es-AR-TomasNeural' y 'persona_prompt': 'Sos un interlocutor colega y locutor rioplatense experto en vibe coding.'\n"
-        f"Si el usuario no especifica personaje nuevo, conservá el 'persona_prompt' activo ('{persona_actual}') y la 'voice' activa ('{voz_actual}').\n"
-        "Asegurate de poner 'aplica_cambio': true si hay una orden explícita de modificar audio/voz/tono, o false si es una charla normal.\n\n"
-        "Devolvé ÚNICAMENTE JSON válido sin marcas de markdown:\n"
+        f"Analizá la intención del usuario sobre el tono de voz: '{prompt_usuario}'.\n"
+        f"Estado actual:\n"
+        f"- voice: '{voz_actual}'\n"
+        f"- sample_rate_factor actual: {sr_actual} (donde 1.0 es normal; >1.0 es agudo/fino; <1.0 es grave/profundo; rango [0.5 a 2.0]).\n"
+        f"- persona_prompt activo: '{persona_actual}'\n\n"
+        "REGLAS:\n"
+        "1. Si el usuario pide cualquier cambio acústico (agudo, grave, fino, alto, bajo, rapido, lento, etc.), calcula libremente los nuevos valores ('sample_rate_factor', 'tempo', 'volume') relativos al actual.\n"
+        "2. Si no hay pedidos acústicos adicionales, mantené los valores actuales.\n"
+        "3. Define 'aplica_cambio': true si cambió el personaje o si calculaste un ajuste acústico.\n\n"
+        "Devolvé ÚNICAMENTE JSON válido sin markdown:\n"
         "{\n"
         f'  "voice": "{voz_actual}",\n'
         '  "volume": "+0dB",\n'
         '  "tempo": "1.0",\n'
-        '  "sample_rate_factor": "1.0",\n'
+        f'  "sample_rate_factor": "{sr_actual}",\n'
         '  "armonicos_hz_db": {},\n'
         f'  "persona_prompt": "{persona_actual}",\n'
-        '  "aplica_cambio": true,\n'
+        f'  "aplica_cambio": {json_lib.dumps(hardcode_personaje)},\n'
         f'  "descripcion": "{prompt_usuario}"\n'
         "}"
     )
@@ -363,6 +380,10 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
             )
             data = json_lib.loads((res.text or "").strip())
             if "aplica_cambio" in data:
+                if hardcode_personaje:
+                    data["voice"] = voz_actual
+                    data["persona_prompt"] = persona_actual
+                    data["aplica_cambio"] = True
                 return data
         except Exception:
             pass
@@ -371,10 +392,10 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
         "voice": voz_actual,
         "volume": "+0dB",
         "tempo": "1.0",
-        "sample_rate_factor": "1.0",
+        "sample_rate_factor": str(sr_actual),
         "persona_prompt": persona_actual,
         "armonicos_hz_db": {},
-        "aplica_cambio": False,
+        "aplica_cambio": hardcode_personaje,
         "descripcion": prompt_usuario
     }
 
@@ -386,8 +407,8 @@ def construir_prompt_sistema(info_web=""):
         f"{persona_base}\n"
         "REGLAS ABSOLUTAS DE DIÁLOGO:\n"
         "1. Respondé SIEMPRE en diálogo directo, natural y espontáneo en voseo rioplatense ('che', 'vós', 'fijate', 'posta', 'dale').\n"
-        "2. Jamás expliques, preguntes ni comentes tu cambio de voz o personaje en la charla. Asumí la personalidad de forma 100% inmediata y transparente.\n"
-        "3. PROHIBIDO mencionar términos técnicos, hertz, decibeles o autodefinirte como IA en la respuesta hablada.\n"
+        "2. Jamás expliques, preguntes ni comentes tu cambio de voz, tono o personaje en la charla. Asumí la personalidad de forma 100% inmediata y transparente.\n"
+        "3. PROHIBIDO mencionar términos técnicos, frecuencias, hertz, decibeles, o autodefinirte como IA en la respuesta hablada.\n"
         "4. Usá comas y puntos suspensivos para dar cadencia oral natural.\n"
         f"{f'Contexto web adicional: {info_web}' if info_web else ''}\n"
     )
@@ -516,7 +537,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con diálogo continuo y DSP total.")
+        await update.message.reply_text("¡Hola che! Listo con personajes fijos y DSP libre.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
