@@ -1,10 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 02:56:43",
-        "tarea": "A ver, ponen mi voz ronca, por favor, como si estuvieras, como con la voz tomada o algo así, por favor.",
-        "estado": "pendiente"
-    },
-    {
         "timestamp": "2026-10-15 02:58:27",
         "tarea": "¿Qué pero está sonando igual? Modifica por favor el código en este momento para que los parámetros  cambien y suene con borrón.",
         "estado": "pendiente"
@@ -247,6 +242,11 @@
     {
         "timestamp": "2026-10-15 05:39:32",
         "tarea": "si mas aguda",
+        "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 05:43:59",
+        "tarea": "voz mas aguda",
         "estado": "pendiente"
     }
 ]
