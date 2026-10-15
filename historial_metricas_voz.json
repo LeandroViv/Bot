@@ -1,81 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:40:31",
-        "texto": "Pero me estás haciendo voz de hombre, te dije que sea de una profesora.",
-        "metricas_palabras": [
-            {
-                "palabra": "Pero",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "estás",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "haciendo",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "hombre,",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "dije",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "sea",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            },
-            {
-                "palabra": "profesora.",
-                "duracion_ms": 469,
-                "intensidad_db": -22.61
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:40:45",
         "texto": "Che..., fijate..., me disculpé. ¿Qué onda, qué te pasa? ¿Querés que vuelva a hacerla? Dale, déjame empezar de nuevo. ¿Querés que la haga con una voz más femenina?",
         "metricas_palabras": [
@@ -3891,6 +3815,32 @@
                 "palabra": "muestra.",
                 "duracion_ms": 498,
                 "intensidad_db": -21.68
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:56:10",
+        "texto": "Vos estás listo, che....",
+        "metricas_palabras": [
+            {
+                "palabra": "Vos",
+                "duracion_ms": 457,
+                "intensidad_db": -19.34
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 457,
+                "intensidad_db": -19.34
+            },
+            {
+                "palabra": "listo,",
+                "duracion_ms": 457,
+                "intensidad_db": -19.34
+            },
+            {
+                "palabra": "che....",
+                "duracion_ms": 457,
+                "intensidad_db": -19.34
             }
         ]
     }
