@@ -1181,3 +1181,4 @@ Si nos detenemos a reflexionar sobre la naturaleza intrínseca del código que e
 
 Dale, decime si va por ahí la mano, o si le metemos todavía más solemnidad al asunto...
 [2026-10-15 04:41:01] Usuario: [AUDIO] Bueno, pero modificar el tono de voz está sonando como un hombre y no es eso lo que yo quiero, me comprende.
+[2026-10-15 04:41:15] LeandroBot: "Che, no te preocupés, entiendo que lo que querés no es el tono masculino, pero fijate, hay una opción que nos permite ajustar el tono de voz para que sea más femenino, pero también podemos probar con un tono más neutral o incluso una voz más youthful, ¿vale?"
