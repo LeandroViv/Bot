@@ -1,96 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:47:30",
-        "texto": "Sí, pero más despacio que suene. Así no se entiende nada a lo que me está diciendo.",
-        "metricas_palabras": [
-            {
-                "palabra": "Sí,",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "pero",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "despacio",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "suene.",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "Así",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "se",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "entiende",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "nada",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "está",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            },
-            {
-                "palabra": "diciendo.",
-                "duracion_ms": 379,
-                "intensidad_db": -26.73
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:47:40",
         "texto": "Che..., fijate..., no se te va a pasar. Dale, vamos a intentar con algo más lento.",
         "metricas_palabras": [
@@ -3971,6 +3880,92 @@
                 "palabra": "qué?",
                 "duracion_ms": 251,
                 "intensidad_db": -17.43
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:12:35",
+        "texto": "Bueno, ahí voy a modificar el código para que entiendas mejor lo que te esté pidiendo.",
+        "metricas_palabras": [
+            {
+                "palabra": "Bueno,",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "ahí",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "modificar",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "código",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "entiendas",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "mejor",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "esté",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
+            },
+            {
+                "palabra": "pidiendo.",
+                "duracion_ms": 423,
+                "intensidad_db": -26.93
             }
         ]
     }
