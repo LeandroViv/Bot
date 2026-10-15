@@ -1,51 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:41:18",
-        "texto": "¿Qué es que te hace decir eso, che...?",
-        "metricas_palabras": [
-            {
-                "palabra": "¿Qué",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "hace",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "decir",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "eso,",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            },
-            {
-                "palabra": "che...?",
-                "duracion_ms": 265,
-                "intensidad_db": -17.53
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:42:14",
         "texto": "Sí, fijate..., la hago con la voz femenina.",
         "metricas_palabras": [
@@ -3941,6 +3895,67 @@
                 "palabra": "puedo.",
                 "duracion_ms": 271,
                 "intensidad_db": -17.43
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 04:03:01",
+        "texto": "Bueno, haceme un timbre que no sea masculino, por favor, gracias.",
+        "metricas_palabras": [
+            {
+                "palabra": "Bueno,",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "haceme",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "timbre",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "sea",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "masculino,",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "favor,",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
+            },
+            {
+                "palabra": "gracias.",
+                "duracion_ms": 579,
+                "intensidad_db": -23.93
             }
         ]
     }
