@@ -1,101 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:56:31",
-        "texto": "Vos de niña ponemos, seguís teniendo vos de hombre, y eso es lo que estoy viendo que ca...",
-        "metricas_palabras": [
-            {
-                "palabra": "Vos",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "niña",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "ponemos,",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "seguís",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "teniendo",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "vos",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "hombre,",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "lo",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "estoy",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "viendo",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            },
-            {
-                "palabra": "ca...",
-                "duracion_ms": 334,
-                "intensidad_db": -21.6
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:56:44",
         "texto": "\"Che..., fijate..., no me hagas así, vos no entenés nada. Si no te importa, me vas a tener que recordar que soy vos de hombre de nuevo... Dale, che..., ya no me puedo.",
         "metricas_palabras": [
@@ -4206,6 +4110,102 @@
                 "palabra": "más?",
                 "duracion_ms": 294,
                 "intensidad_db": -18.04
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:07:21",
+        "texto": "Vós, ¿qué onda? ¿Querés que la repita o que te cuente sobre Elena? Dale, che..., ¿qué onda esa?",
+        "metricas_palabras": [
+            {
+                "palabra": "Vós,",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "¿qué",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "onda?",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "¿Querés",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "repita",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "o",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "cuente",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "sobre",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "Elena?",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "Dale,",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "che...,",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "¿qué",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "onda",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
+            },
+            {
+                "palabra": "esa?",
+                "duracion_ms": 324,
+                "intensidad_db": -18.22
             }
         ]
     }
