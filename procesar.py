@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot con DSP Total en FFmpeg, Roles Claros y Diálogo Directo
+# Script: procesar.py - LeandroBot Autónomo con DSP Total, Whisper, Web Search y Hot-Deploy en el Runner
 
 import asyncio
 import json as json_lib
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando LeandroBot con DSP Total y Roles Claros...", flush=True)
+print("🚀 [INIT]: Arrancando LeandroBot Autónomo con DSP, Web Search y Hot-Deploy...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 FILE_TAREAS = "memoria_tareas.json"
@@ -125,6 +125,32 @@ def asegurar_e_iniciar_ollama():
         return True
     except Exception as e:
         print(f"⚠️ [OLLAMA ERROR]: {e}", flush=True)
+        return False
+
+def buscar_en_web(query):
+    try:
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=3))
+            if results:
+                lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
+                return chr(10).join(lineas)
+    except Exception as e:
+        print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
+    return ""
+
+def crear_o_modificar_archivo_en_caliente(nombre_archivo, contenido_codigo):
+    """Crea o sobreescribe cualquier archivo en el runner en el momento, sin reiniciar."""
+    try:
+        with open(nombre_archivo, "w", encoding="utf-8") as f:
+            f.write(contenido_codigo)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"⚡ [HOT-DEPLOY]: Archivo '{nombre_archivo}' creado/modificado en caliente en el runner.", flush=True)
+        sincronizar_con_github(f"feat: despliegue en caliente de {nombre_archivo}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Error creando archivo en caliente: {e}", flush=True)
         return False
 
 def cargar_config_timbre():
@@ -263,22 +289,18 @@ def registrar_metricas_voz_palabra_por_palabra(path_audio_ogg, texto_transcripto
     except Exception as e:
         print(f"⚠️ Error registrando métricas: {e}", flush=True)
 
-def interpretar_configuracion_dsp_avanzada(prompt_usuario):
+def interpretar_configuracion_dsp_dinamica(prompt_usuario):
     prompt_ia = (
-        f"Sos un ingeniero de audio y DSP. Un usuario te mandó este mensaje/pedido de ajuste: '{prompt_usuario}'.\n"
-        "Calculá los parámetros precisos de audio:\n"
-        "- voice: voz de Edge-TTS ('es-AR-TomasNeural', 'es-AR-ElenaNeural', etc.)\n"
-        "- volume: ganancia general en dB (ej: '+3dB', '-2dB')\n"
-        "- tempo: factor de velocidad (ej: '0.85' para lento/pesado, '1.15' para rápido)\n"
-        "- sample_rate_factor: factor para alterar formantes y tono de forma nativa en DSP (ej: '0.75' para voz muy grave tipo tubo, '1.25' para aguda)\n"
-        "- armonicos_hz_db: diccionario detallando armónicos custom (ej: {\"1\": {\"hz\": 100, \"db\": 5, \"width\": 1.0}}).\n"
-        "Devolvé ÚNICAMENTE JSON válido sin bloques markdown:\n"
+        f"Sos un ingeniero de audio y DSP experto. Analiza el mensaje del usuario: '{prompt_usuario}'.\n"
+        "Determina si el usuario pide ajustar voz, tono, timbre, velocidad o efectos.\n"
+        "Devolvé ÚNICAMENTE JSON válido:\n"
         "{\n"
         '  "voice": "es-AR-TomasNeural",\n'
-        '  "volume": "+3dB",\n'
-        '  "tempo": "0.90",\n'
-        '  "sample_rate_factor": "0.78",\n'
-        '  "armonicos_hz_db": {"1": {"hz": 100, "db": 5, "width": 1.0}},\n'
+        '  "volume": "+0dB",\n'
+        '  "tempo": "1.0",\n'
+        '  "sample_rate_factor": "1.0",\n'
+        '  "armonicos_hz_db": {},\n'
+        '  "aplica_cambio": true,\n'
         f'  "descripcion": "{prompt_usuario}"\n'
         "}"
     )
@@ -291,33 +313,37 @@ def interpretar_configuracion_dsp_avanzada(prompt_usuario):
                 config=dict(response_mime_type="application/json")
             )
             data = json_lib.loads((res.text or "").strip())
-            if "voice" in data:
+            if "aplica_cambio" in data:
                 return data
         except Exception:
             pass
 
     return {
         "voice": "es-AR-TomasNeural",
-        "volume": "+3dB",
-        "tempo": "0.95",
-        "sample_rate_factor": "0.80",
-        "armonicos_hz_db": {"1": {"hz": 110, "db": 4, "width": 1.0}},
+        "volume": "+0dB",
+        "tempo": "1.0",
+        "sample_rate_factor": "1.0",
+        "armonicos_hz_db": {},
+        "aplica_cambio": False,
         "descripcion": prompt_usuario
     }
 
-def construir_prompt_sistema():
+def construir_prompt_sistema(info_web=""):
     return (
         "Sos Leandro, un asistente colega de vibe coding y locutor rioplatense experto en DSP.\n"
         "REGLAS CRÍTICAS:\n"
         "1. Te están escribiendo mensajes y directivas desde el exterior; respondé siempre como un **interlocutor en diálogo directo y natural**, usando voseo porteño ('che', 'vós', 'fijate', 'posta', 'dale').\n"
         "2. PROHIBIDO explicar configuraciones técnicas, hertz, decibeles, ni autodefinirte o describir tus procesos internos en lo que hablás.\n"
         "3. Usá comas y puntos suspensivos para dar cadencia oral natural.\n"
+        f"Contexto externo / web adicional: {info_web}\n"
     )
 
 def generar_texto_ia(prompt_usuario):
-    system_prompt = construir_prompt_sistema()
-    
-    # Estructura clara de roles: indicamos explícitamente que el usuario externo le está escribiendo
+    info_web = ""
+    if any(k in prompt_usuario.lower() for k in ["qué es", "significa", "cómo funciona", "busca", "noticia", "precio"]):
+        info_web = buscar_en_web(prompt_usuario)
+
+    system_prompt = construir_prompt_sistema(info_web)
     prompt_con_rol = f"El usuario te escribe la siguiente directiva o mensaje:\n\"{prompt_usuario}\"\n\nRespondé en diálogo directo como Leandro:"
 
     if client:
@@ -380,7 +406,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
 
     try:
         import edge_tts
-        print(f"🎙️ [DSP-PIPELINE]: Voz: {voice} | Tempo: {tempo} | Factor SR: {sr_factor}", flush=True)
         communicate = edge_tts.Communicate(texto_oral, voice=voice, rate="+0%", volume="+0%")
         mp3_tmp = f"tmp_edge_{int(time.time()*1000)}.mp3"
         await communicate.save(mp3_tmp)
@@ -437,31 +462,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con roles separados, diálogo directo y DSP total en FFmpeg.")
-
-async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-    desc = " ".join(context.args).strip() if context.args else ""
-    if not desc:
-        cfg = cargar_config_timbre()
-        await update.message.reply_text(f"🎙️ DSP Activo: '{cfg.get('descripcion')}'")
-        return
-    nuevo_timbre = interpretar_configuracion_dsp_avanzada(desc)
-    guardar_config_timbre(nuevo_timbre)
-    await update.message.reply_text("✅ DSP y timbre recalculados en caliente.")
-
-async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-    instruccion = " ".join(context.args).strip() if context.args else ""
-    if not instruccion:
-        await update.message.reply_text("Decime qué querés programar, che.")
-        return
-    guardar_tarea_memoria(f"Vibe Coding: {instruccion}")
-    await update.message.reply_text(f"💻 Procesando vibe coding: '{instruccion}'...")
-    resp_codigo = generar_texto_ia(f"VIBE CODING: {instruccion}. Generá código limpio.")
-    await update.message.reply_text(resp_codigo)
+        await update.message.reply_text("¡Hola che! Listo con DSP total, Whisper inteligente y Hot-Deploy en el runner.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -470,9 +471,14 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
     u_text = update.message.text or update.message.caption or "[Texto]"
 
-    if any(k in u_text.lower() for k in ["voz de", "cambiá la voz", "soná como", "tubo", "grave", "agudo", "armónico", "dsp", "efecto"]):
-        nuevo_cfg = interpretar_configuracion_dsp_avanzada(u_text)
-        guardar_config_timbre(nuevo_cfg)
+    if u_text.lower().startswith("no, quise decir") or u_text.lower().startswith("corrijo:"):
+        registrar_dataset_entrenamiento(u_text, "Corrección de Whisper registrada.", "corrector")
+        await update.message.reply_text("¡Entendido, che! Tomo nota de la corrección para afinar el oído.")
+        return
+
+    dsp_res = interpretar_configuracion_dsp_dinamica(u_text)
+    if dsp_res.get("aplica_cambio"):
+        guardar_config_timbre(dsp_res)
 
     guardar_tarea_memoria(u_text)
     registrar_conversacion("Usuario", u_text)
@@ -512,9 +518,9 @@ async def manejar_voz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         segments, _ = model.transcribe(path_in, beam_size=5, language="es")
         texto_crudo = " ".join([s.text for s in segments]).strip() or "Audio recibido."
 
-        if any(k in texto_crudo.lower() for k in ["voz de", "cambiá la voz", "soná como", "tubo", "grave", "agudo", "armónico", "dsp", "efecto"]):
-            nuevo_cfg = interpretar_configuracion_dsp_avanzada(texto_crudo)
-            guardar_config_timbre(nuevo_cfg)
+        dsp_res = interpretar_configuracion_dsp_dinamica(texto_crudo)
+        if dsp_res.get("aplica_cambio"):
+            guardar_config_timbre(dsp_res)
 
         registrar_metricas_voz_palabra_por_palabra(path_in, texto_crudo)
         guardar_tarea_memoria(texto_crudo)
@@ -550,9 +556,6 @@ def main():
     try:
         app = Application.builder().token(TOKEN).request(request_config).build()
         app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("timbre", cambiar_timbre))
-        app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
-        app.add_handler(CommandHandler("vibe", manejar_vibe_coding))
         app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_voz))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
         app.run_polling(drop_pending_updates=True)
