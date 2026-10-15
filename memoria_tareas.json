@@ -173,5 +173,10 @@
         "timestamp": "2026-10-15 04:06:58",
         "tarea": "Quiero que suenes como una cantante de pop, modificar el timbre en ese sentido.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 04:08:06",
+        "tarea": "A ver, continúa ajustando lo, por favor.",
+        "estado": "pendiente"
     }
 ]
