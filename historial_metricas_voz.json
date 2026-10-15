@@ -1,66 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:03:01",
-        "texto": "Bueno, haceme un timbre que no sea masculino, por favor, gracias.",
-        "metricas_palabras": [
-            {
-                "palabra": "Bueno,",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "haceme",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "timbre",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "sea",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "masculino,",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "favor,",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            },
-            {
-                "palabra": "gracias.",
-                "duracion_ms": 579,
-                "intensidad_db": -23.93
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:03:21",
         "texto": "Che..., no hay problema! Vós vas a tener un timbre que es más genérico, ¿che...? Dale, no va a ser masculino ni femenino, solo un sonido que te va a hacer sonar bien, ¿vale?",
         "metricas_palabras": [
@@ -4186,6 +4125,47 @@
                 "palabra": "¿vale?",
                 "duracion_ms": 252,
                 "intensidad_db": -17.53
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:18:44",
+        "texto": "vale, vés che..., ¿de qué querés hablar?",
+        "metricas_palabras": [
+            {
+                "palabra": "vale,",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
+            },
+            {
+                "palabra": "vés",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
+            },
+            {
+                "palabra": "che...,",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
+            },
+            {
+                "palabra": "¿de",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
+            },
+            {
+                "palabra": "qué",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
+            },
+            {
+                "palabra": "querés",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
+            },
+            {
+                "palabra": "hablar?",
+                "duracion_ms": 325,
+                "intensidad_db": -19.33
             }
         ]
     }
