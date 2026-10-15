@@ -1,22 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 06:16:26",
-        "archivo": "muestras_voz/audio_usuario_1327.ogg",
-        "texto": "por favor",
-        "partitura_metrica": [
-            {
-                "palabra": "por",
-                "duracion_ms": 2936,
-                "intensidad_db": -33.76
-            },
-            {
-                "palabra": "favor",
-                "duracion_ms": 2936,
-                "intensidad_db": -33.76
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-13 06:18:37",
         "archivo": "muestras_voz/audio_usuario_1332.ogg",
         "texto": "A ver, dame por favor esos mismos links que me habías mostrado.",
@@ -4706,6 +4689,82 @@
                 "palabra": "-10dB.",
                 "duracion_ms": 544,
                 "intensidad_db": -22.0
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:01:18",
+        "texto": "Más grave que se note significativamente así, por favor, a ver como es eso.",
+        "metricas_palabras": [
+            {
+                "palabra": "Más",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "grave",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "note",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "significativamente",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "así,",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "favor,",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "ver",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "como",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "es",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
+            },
+            {
+                "palabra": "eso.",
+                "duracion_ms": 718,
+                "intensidad_db": -24.73
             }
         ]
     }
