@@ -1,176 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:56:44",
-        "texto": "\"Che..., fijate..., no me hagas así, vos no entenés nada. Si no te importa, me vas a tener que recordar que soy vos de hombre de nuevo... Dale, che..., ya no me puedo.",
-        "metricas_palabras": [
-            {
-                "palabra": "\"Che...,",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "fijate...,",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "hagas",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "así,",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "vos",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "entenés",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "nada.",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "Si",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "importa,",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "vas",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "tener",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "recordar",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "soy",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "vos",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "hombre",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "nuevo...",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "Dale,",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "che...,",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "ya",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            },
-            {
-                "palabra": "puedo.",
-                "duracion_ms": 271,
-                "intensidad_db": -17.43
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:03:01",
         "texto": "Bueno, haceme un timbre que no sea masculino, por favor, gracias.",
         "metricas_palabras": [
@@ -4206,6 +4035,157 @@
                 "palabra": "esa?",
                 "duracion_ms": 324,
                 "intensidad_db": -18.22
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:13:03",
+        "texto": "Che..., fijate..., vós estás poniendo la voz de Elena, eh... soy yo, la misma persona, pero con el tono y la forma de hablar de mi personaje favorita, ¿vale?",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "fijate...,",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "vós",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "estás",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "poniendo",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "Elena,",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "eh...",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "soy",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "yo,",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "misma",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "persona,",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "tono",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "forma",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "hablar",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "mi",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "personaje",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "favorita,",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
+            },
+            {
+                "palabra": "¿vale?",
+                "duracion_ms": 252,
+                "intensidad_db": -17.53
             }
         ]
     }
