@@ -1,126 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 04:04:35",
-        "texto": "Che..., fijate..., si vas a que la zona suene como una cantante de pop, te voy a hacer un ajuste rápido y claro.",
-        "metricas_palabras": [
-            {
-                "palabra": "Che...,",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "fijate...,",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "vas",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "zona",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "cantante",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "pop,",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "hacer",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "ajuste",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "rápido",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            },
-            {
-                "palabra": "claro.",
-                "duracion_ms": 222,
-                "intensidad_db": -16.93
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 04:06:57",
         "texto": "Quiero que suenes como una cantante de pop, modificar el timbre en ese sentido.",
         "metricas_palabras": [
@@ -4106,6 +3985,92 @@
                 "palabra": "escuchar?",
                 "duracion_ms": 274,
                 "intensidad_db": -17.43
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 05:20:35",
+        "texto": "Che..., ¿qué pasó con tu voz? Fijate..., no la cambiaba en un momento. ¿Qué te pasó?",
+        "metricas_palabras": [
+            {
+                "palabra": "Che...,",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "¿qué",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "pasó",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "con",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "tu",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "voz?",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "Fijate...,",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "la",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "cambiaba",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "momento.",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "¿Qué",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
+            },
+            {
+                "palabra": "pasó?",
+                "duracion_ms": 324,
+                "intensidad_db": -18.23
             }
         ]
     }
