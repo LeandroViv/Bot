@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - Bot Autónomo con Desacoplamiento DSP, Personajes Fijos y Filtro Anti-Meta
+# Script: procesar.py - LeandroBot Vibe Coding & Timbre Dinámico
 
 import asyncio
 import json as json_lib
@@ -10,8 +10,6 @@ import sys
 import subprocess
 import requests
 import time
-import math
-import traceback
 from datetime import datetime
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -23,45 +21,36 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Arrancando Bot con Desacoplamiento DSP y Filtro Anti-Meta...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Timbre por Prompt + Aprendizaje)...")
 
 TXT_FILE = "conversaciones.txt"
-FILE_TAREAS = "memoria_tareas.json"
-FILE_DATASET = "dataset_entrenamiento_chat.json"
-FILE_METRICAS_VOZ = "historial_metricas_voz.json"
+DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CONFIG_TIMBRE = "config_timbre.json"
-FILE_CORRECCIONES = "correcciones_whisper.json"
-CARPETA_MUESTRAS = "muestras_voz"
-
-os.makedirs(CARPETA_MUESTRAS, exist_ok=True)
+PERFIL_DINAMICO = "perfil_personaje.json"
 
 for f_path, default_val in [
     (TXT_FILE, ""),
-    (FILE_TAREAS, []),
-    (FILE_DATASET, []),
-    (FILE_METRICAS_VOZ, []),
-    (FILE_CORRECCIONES, {}),
+    (DATASET_ENTRENAMIENTO, []),
+    (PERFIL_DINAMICO, {
+        "nombre": "Leandro",
+        "estilo": "Colega y compañero de vibe coding con tonada rioplatense, yeísmo y ritmo auténtico",
+        "notas_aprendizaje": []
+    }),
     (CONFIG_TIMBRE, {
         "voice": "es-AR-TomasNeural",
-        "volume": "+0dB",
-        "tempo": "1.0",
-        "sample_rate_factor": "1.0",
-        "persona_prompt": "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.",
-        "descripcion": "Locutor base dinámico",
-        "armonicos_hz_db": {}
+        "pitch": "-4Hz",
+        "rate": "-5%",
+        "volume": "+10%",
+        "descripcion": "Locutor nocturno porteño con barítono cálido, pausado y presencia de radio"
     })
 ]:
     if not os.path.exists(f_path):
         if isinstance(default_val, str):
             with open(f_path, "w", encoding="utf-8") as f:
                 f.write(default_val)
-                f.flush()
-                os.fsync(f.fileno())
         else:
             with open(f_path, "w", encoding="utf-8") as f:
                 json_lib.dump(default_val, f, indent=4, ensure_ascii=False)
-                f.flush()
-                os.fsync(f.fileno())
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -69,7 +58,6 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 
 CHAT_ID_ACTIVO = None
-lock_voz = asyncio.Lock()
 
 try:
     from google import genai
@@ -79,117 +67,6 @@ except Exception:
     client = None
     GENAI_DISPONIBLE = False
 
-try:
-    from faster_whisper import WhisperModel
-    WHISPER_DISPONIBLE = True
-except Exception:
-    WHISPER_DISPONIBLE = False
-    print("⚠️ [WHISPER]: No se pudo importar faster_whisper.", flush=True)
-
-def sincronizar_con_github(mensaje_commit="chg: sincronización automática de estado y código [skip ci]"):
-    try:
-        subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=False)
-        subprocess.run(["git", "config", "user.email", "leandrobot@users.noreply.github.com"], check=False)
-        archivos = [TXT_FILE, FILE_TAREAS, FILE_DATASET, FILE_METRICAS_VOZ, CONFIG_TIMBRE, FILE_CORRECCIONES, "procesar.py"]
-        for a in archivos:
-            if os.path.exists(a):
-                subprocess.run(["git", "add", a], check=False)
-        status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if status.stdout.strip():
-            subprocess.run(["git", "commit", "-m", mensaje_commit], check=False)
-            subprocess.run(["git", "push"], check=False)
-            print("📦 [GIT AUTO-SYNC]: Sincronizado con GitHub.", flush=True)
-    except Exception as e:
-        print(f"⚠️ [GIT AUTO-SYNC ERROR]: {e}", flush=True)
-
-def asegurar_e_iniciar_ollama():
-    print("🦙 [OLLAMA]: Verificando estado del servicio local...", flush=True)
-    for _ in range(3):
-        try:
-            res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
-            if res.status_code == 200:
-                print("🦙 [OLLAMA]: ¡Servicio activo y listo!", flush=True)
-                return True
-        except Exception:
-            pass
-        time.sleep(1)
-
-    try:
-        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        for i in range(15):
-            time.sleep(1)
-            try:
-                res = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2)
-                if res.status_code == 200:
-                    break
-            except Exception:
-                continue
-        subprocess.run(["ollama", "pull", OLLAMA_MODEL], check=False)
-        return True
-    except Exception as e:
-        print(f"⚠️ [OLLAMA ERROR]: {e}", flush=True)
-        return False
-
-def registrar_correccion_whisper(texto_mal, texto_corregido):
-    try:
-        correcciones = {}
-        if os.path.exists(FILE_CORRECCIONES):
-            try:
-                with open(FILE_CORRECCIONES, "r", encoding="utf-8") as f:
-                    correcciones = json_lib.load(f)
-            except Exception:
-                correcciones = {}
-        
-        correcciones[texto_mal.strip().lower()] = texto_corregido.strip()
-        with open(FILE_CORRECCIONES, "w", encoding="utf-8") as f:
-            json_lib.dump(correcciones, f, indent=4, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        print(f"🧠 [WHISPER APRENDIDO]: '{texto_mal}' -> '{texto_corregido}'", flush=True)
-        sincronizar_con_github("chg: nueva regla de corrección fonética en whisper")
-    except Exception as e:
-        print(f"⚠️ Error guardando corrección: {e}", flush=True)
-
-def aplicar_correcciones_texto(texto):
-    if not os.path.exists(FILE_CORRECCIONES):
-        return texto
-    try:
-        with open(FILE_CORRECCIONES, "r", encoding="utf-8") as f:
-            correcciones = json_lib.load(f)
-            if isinstance(correcciones, dict):
-                for mal, bien in correcciones.items():
-                    if mal in texto.lower():
-                        pattern = re.compile(re.escape(mal), re.IGNORECASE)
-                        texto = pattern.sub(bien, texto)
-    except Exception:
-        pass
-    return texto
-
-def buscar_en_web(query):
-    try:
-        from duckduckgo_search import DDGS
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=3))
-            if results:
-                lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
-                return "\n".join(lineas)
-    except Exception as e:
-        print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
-    return ""
-
-def crear_o_modificar_archivo_en_caliente(nombre_archivo, contenido_codigo):
-    try:
-        with open(nombre_archivo, "w", encoding="utf-8") as f:
-            f.write(contenido_codigo)
-            f.flush()
-            os.fsync(f.fileno())
-        print(f"⚡ [HOT-DEPLOY]: Archivo '{nombre_archivo}' creado/modificado en el runner.", flush=True)
-        sincronizar_con_github(f"feat: despliegue en caliente de {nombre_archivo}")
-        return True
-    except Exception as e:
-        print(f"⚠️ Error creando archivo en caliente: {e}", flush=True)
-        return False
-
 def cargar_config_timbre():
     try:
         with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
@@ -197,166 +74,69 @@ def cargar_config_timbre():
     except Exception:
         return {
             "voice": "es-AR-TomasNeural",
-            "volume": "+0dB",
-            "tempo": "1.0",
-            "sample_rate_factor": "1.0",
-            "persona_prompt": "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.",
-            "descripcion": "Locutor base dinámico",
-            "armonicos_hz_db": {}
+            "pitch": "-4Hz",
+            "rate": "-5%",
+            "volume": "+10%",
+            "descripcion": "Locutor porteño cálido"
         }
 
 def guardar_config_timbre(cfg):
     try:
         with open(CONFIG_TIMBRE, "w", encoding="utf-8") as f:
             json_lib.dump(cfg, f, indent=4, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        print(f"🎙️ [TIMBRE DSP GUARDADO]: {cfg}", flush=True)
-        sincronizar_con_github("chg: actualización de timbre DSP y armónicos")
+        print(f"🎙️ [TIMBRE GUARDADO]: {cfg}")
     except Exception as e:
-        print(f"⚠️ Error guardando timbre: {e}", flush=True)
+        print(f"⚠️ Error guardando timbre: {e}")
 
 def registrar_conversacion(remitente, texto):
     try:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {remitente}: {texto}\n")
-            f.flush()
-            os.fsync(f.fileno())
-        sincronizar_con_github("chg: actualización de conversaciones.txt")
+            f.write(f"[{ts}] {remitente}: {texto}" + chr(10))
     except Exception as e:
-        print(f"⚠️ Error escribiendo en {TXT_FILE}: {e}", flush=True)
+        print(f"⚠️ Error conversacion: {e}")
 
-def registrar_dataset_entrenamiento(prompt_usuario, respuesta_bot, modelo="gemini"):
+def obtener_memoria_aprendizaje():
+    """Lee el historial reciente para que el personaje aprenda del usuario sin estar hardcodeado."""
+    if not os.path.exists(TXT_FILE):
+        return ""
     try:
-        entrada = {
-            "timestamp": datetime.now().isoformat(),
-            "messages": [
-                {"role": "user", "content": prompt_usuario},
-                {"role": "assistant", "content": respuesta_bot}
-            ],
-            "metadata": {"modelo": modelo}
-        }
-        with open(FILE_DATASET, "a", encoding="utf-8") as f:
-            f.write(json_lib.dumps(entrada, ensure_ascii=False) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
-        sincronizar_con_github("chg: nuevo registro en dataset_entrenamiento_chat.json")
-    except Exception as e:
-        print(f"⚠️ Error guardando dataset: {e}", flush=True)
-
-def cargar_tareas_memoria():
-    if not os.path.exists(FILE_TAREAS):
-        return []
-    try:
-        with open(FILE_TAREAS, "r", encoding="utf-8") as f:
-            datos = json_lib.load(f)
-            return datos if isinstance(datos, list) else []
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            lineas = f.readlines()
+        ultimas = lineas[-14:] if len(lineas) >= 14 else lineas
+        return "".join(ultimas)
     except Exception:
-        return []
+        return ""
 
-def guardar_tarea_memoria(texto_tarea):
+def buscar_en_web(query):
+    """Búsqueda web local y gratuita para GitHub Actions (sin API keys)."""
     try:
-        tareas = cargar_tareas_memoria()
-        nueva = {
-            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "tarea": texto_tarea,
-            "estado": "pendiente"
-        }
-        tareas.append(nueva)
-        tareas = tareas[-50:]
-        with open(FILE_TAREAS, "w", encoding="utf-8") as f:
-            json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        sincronizar_con_github("chg: actualización de memoria_tareas.json")
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=3))
+            if results:
+                lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
+                return chr(10).join(lineas)
     except Exception as e:
-        print(f"⚠️ Error guardando tarea: {e}", flush=True)
+        print(f"⚠️ Aviso búsqueda web: {e}")
+    return ""
 
-def registrar_metricas_voz_palabra_por_palabra(path_audio_ogg, texto_transcripto):
-    try:
-        wav_tmp = f"tmp_metricas_{int(time.time())}.wav"
-        subprocess.run([
-            "ffmpeg", "-y", "-i", path_audio_ogg, "-ar", "16000", "-ac", "1", wav_tmp
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-
-        duracion_total_ms = 1000
-        intensidad_db_general = -18.0
-
-        if os.path.exists(wav_tmp):
-            import soundfile as sf
-            data, samplerate = sf.read(wav_tmp)
-            duracion_total_ms = int((len(data) / samplerate) * 1000)
-            rms = math.sqrt(sum(data**2) / len(data)) if len(data) > 0 else 0.0001
-            intensidad_db_general = round(20 * math.log10(max(rms, 0.0001)), 2)
-            os.remove(wav_tmp)
-
-        palabras = texto_transcripto.split()
-        cant_palabras = len(palabras) if palabras else 1
-        duracion_promedio_ms = max(120, int(duracion_total_ms / cant_palabras))
-
-        partitura_palabras = [{
-            "palabra": p,
-            "duracion_ms": duracion_promedio_ms,
-            "intensidad_db": round(intensidad_db_general, 2)
-        } for p in palabras]
-
-        nuevo_registro = {
-            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "texto": texto_transcripto,
-            "metricas_palabras": partitura_palabras
-        }
-
-        historial = []
-        if os.path.exists(FILE_METRICAS_VOZ):
-            try:
-                with open(FILE_METRICAS_VOZ, "r", encoding="utf-8") as f:
-                    historial = json_lib.load(f)
-                    if not isinstance(historial, list):
-                        historial = []
-            except Exception:
-                historial = []
-
-        historial.append(nuevo_registro)
-        historial = historial[-30:]
-        with open(FILE_METRICAS_VOZ, "w", encoding="utf-8") as f:
-            json_lib.dump(historial, f, indent=4, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        sincronizar_con_github("chg: actualización de historial_metricas_voz.json")
-    except Exception as e:
-        print(f"⚠️ Error registrando métricas: {e}", flush=True)
-
-def interpretar_configuracion_dsp_dinamica(prompt_usuario):
-    """Aplica cambios de personaje hardcodeados y cálculo relativo de pitch de forma limpia."""
-    cfg_actual = cargar_config_timbre()
-    persona_actual = cfg_actual.get("persona_prompt", "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.")
-    voz_actual = cfg_actual.get("voice", "es-AR-TomasNeural")
-    sr_actual = float(cfg_actual.get("sample_rate_factor", "1.0"))
-
-    u_lower = prompt_usuario.lower()
-    hubo_cambio = False
-
-    # 1. Personajes Fijos
-    if any(k in u_lower for k in ["elena", "voz de elena", "hablá como elena", "voz de mujer"]):
-        voz_actual = "es-AR-ElenaNeural"
-        persona_actual = "Sos Elena, una interlocutora y colega rioplatense."
-        hubo_cambio = True
-    elif any(k in u_lower for k in ["tomas", "tomás", "leandro", "voz de leandro", "hablá como leandro", "voz de hombre", "voz de varón"]):
-        voz_actual = "es-AR-TomasNeural"
-        persona_actual = "Sos un interlocutor colega y locutor rioplatense experto en vibe coding."
-        hubo_cambio = True
-
-    # 2. Ajuste relativo de Pitch por IA
+def parsear_timbre_con_lenguaje_natural(descripcion_natural):
+    """Traduce cualquier descripción en lenguaje natural a parámetros de Edge-TTS usando IA."""
     prompt_ia = (
-        f"Analizá únicamente si el mensaje pide modificar el tono o pitch de la voz: '{prompt_usuario}'.\n"
-        f"sample_rate_factor actual: {sr_actual}.\n"
-        "Si pide bajar el pitch/tono o hacer la voz más grave, calcula un valor menor al actual (ej: reduce un 10-15%).\n"
-        "Si pide subir el pitch/tono o hacer la voz más aguda, calcula un valor mayor al actual (ej: aumenta un 10-15%).\n"
-        "Devolvé ÚNICAMENTE JSON válido sin markdown:\n"
+        f"Sos un director de sonido y acústica. El usuario quiere calibrar el timbre de voz con esta descripción: '{descripcion_natural}'.\n"
+        "Configurá los parámetros exactos de Edge-TTS:\n"
+        "- voice: 'es-AR-TomasNeural' (hombre porteño) o 'es-AR-ElenaNeural' (mujer porteña) o 'es-UY-MateoNeural' (uruguayo)\n"
+        "- pitch: entre -12Hz (muy grave/ronco) y +10Hz (agudo/joven). Ejemplo: '-6Hz', '-2Hz', '+4Hz'\n"
+        "- rate: entre -20% (muy pausado/nocturno) y +20% (muy rápido). Ejemplo: '-8%', '-3%', '+5%'\n"
+        "- volume: entre -15% y +15%. Ejemplo: '+10%'\n\n"
+        "Respondé ÚNICAMENTE con este JSON válido (sin código markdown):\n"
         "{\n"
-        f'  "sample_rate_factor": "{sr_actual}",\n'
-        '  "pide_cambio_pitch": false\n'
+        '  "voice": "es-AR-TomasNeural",\n'
+        '  "pitch": "-6Hz",\n'
+        '  "rate": "-6%",\n'
+        '  "volume": "+10%",\n'
+        f'  "descripcion": "{descripcion_natural}"\n'
         "}"
     )
 
@@ -368,98 +148,123 @@ def interpretar_configuracion_dsp_dinamica(prompt_usuario):
                 config=dict(response_mime_type="application/json")
             )
             data = json_lib.loads((res.text or "").strip())
-            if data.get("pide_cambio_pitch"):
-                sr_actual = float(data.get("sample_rate_factor", sr_actual))
-                hubo_cambio = True
+            if "voice" in data:
+                return data
         except Exception:
             pass
 
+    # Heurística de respaldo si no hay conexión a IA
+    b_pitch = "-6Hz" if any(w in descripcion_natural.lower() for w in ["grave", "ronco", "nocturno", "pesado", "maduro"]) else "-2Hz"
+    b_rate = "-8%" if any(w in descripcion_natural.lower() for w in ["lento", "pausado", "tranquilo", "calmo"]) else "+5%" if "rápido" in descripcion_natural.lower() else "-3%"
     return {
-        "voice": voz_actual,
-        "volume": "+0dB",
-        "tempo": "1.0",
-        "sample_rate_factor": str(sr_actual),
-        "persona_prompt": persona_actual,
-        "armonicos_hz_db": {},
-        "aplica_cambio": hubo_cambio,
-        "descripcion": prompt_usuario
+        "voice": "es-AR-TomasNeural",
+        "pitch": b_pitch,
+        "rate": b_rate,
+        "volume": "+10%",
+        "descripcion": descripcion_natural
     }
 
-def construir_prompt_sistema(info_web=""):
-    cfg = cargar_config_timbre()
-    persona_base = cfg.get("persona_prompt", "Sos un interlocutor colega y locutor rioplatense experto en vibe coding.")
+def construir_prompt_sistema():
+    timbre = cargar_config_timbre()
+    memoria = obtener_memoria_aprendizaje()
 
     return (
-        f"{persona_base}\n"
-        "REGLAS ABSOLUTAS DE DIÁLOGO:\n"
-        "1. Respondé SIEMPRE en diálogo directo, natural y espontáneo en voseo rioplatense ('che', 'vós', 'fijate', 'posta', 'dale').\n"
-        "2. NUNCA menciones tu voz, tu tono, el pitch, cambios de sonido, ni des explicaciones de lo que hacés o sentís respecto a tu audio.\n"
-        "3. PROHIBIDO autodefinirte como IA o mencionar términos técnicos.\n"
-        "4. Si el usuario solo te dio una instrucción de tono o voz, respondé con una frase natural corta y al grano para seguir la charla.\n"
-        f"{f'Contexto web adicional: {info_web}' if info_web else ''}\n"
+        "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
+        "INSTRUCCIONES CLAVE:\n"
+        "1. NO SOS UN ROBOT NI TENÉS RESPUESTAS PREFABRICADAS: Adaptá tu estilo aprendiendo de la conversación del usuario.\n"
+        "2. REGLA LINGÜÍSTICA RIOPLATENSE: Hablá con voseo porteño real, yeísmo rehilado, e imperativos agudos acentuados: "
+        "'mirá', 'vení', 'decime', 'escuchá', 'pasame', 'hacé', 'fijate', 'poné', 'dale', 'posta', 'che'.\n"
+        "3. RITMO Y CADENCIA ORAL: Escribí usando comas y puntos suspensivos para dar respiración y ritmo natural al leerse en voz alta.\n"
+        "4. VIBE CODING: Si te piden programar, corregir, modificar o crear código de cualquier tipo, respondé con código limpio, "
+        "bien explicado y listo para usar en producción.\n"
+        "5. SIN SPAM: Respondé únicamente a lo que te pide el usuario, sin automatizar mensajes ni relleno innecesario.\n\n"
+        f"Timbre de voz activo solicitado: '{timbre.get('descripcion', 'Natural')}'\n\n"
+        f"Historial de charlas previas con el usuario (aprendizaje continuo):\n{memoria}\n"
     )
 
 def generar_texto_ia(prompt_usuario):
-    info_web = ""
-    if any(k in prompt_usuario.lower() for k in ["qué es", "significa", "cómo funciona", "busca", "noticia", "precio"]):
+    """Genera la respuesta dinámica usando Gemini con fallback a Llama y búsqueda web."""
+    system_prompt = construir_prompt_sistema()
+    p = prompt_usuario
+
+    # Búsqueda web automática si se pide información reciente o actualidad
+    if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio", "resultado", "googlea"]):
         info_web = buscar_en_web(prompt_usuario)
+        if info_web:
+            p = prompt_usuario + chr(10) + chr(10) + "[Información fresca de internet]:" + chr(10) + info_web
 
-    system_prompt = construir_prompt_sistema(info_web)
-    prompt_con_rol = f"El usuario te escribe el siguiente mensaje:\n\"{prompt_usuario}\"\n\nRespondé directamente en personaje:"
-
+    # Prioridad 1: Gemini 3.8 Flash
     if client:
         try:
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
-                contents=[{"role": "user", "parts": [{"text": system_prompt + "\n\n" + prompt_con_rol}]}]
+                contents=p,
+                config=dict(system_instruction=system_prompt)
             )
             raw = (res.text or "").strip()
             if raw:
-                registrar_dataset_entrenamiento(prompt_usuario, raw, "gemini")
                 return raw
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ Gemini fallback a Ollama: {e}")
 
+    # Prioridad 2: Ollama local (si está disponible)
     try:
         r = requests.post(
             f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt_con_rol}
-                ],
-                "options": {"num_ctx": 1024, "num_predict": 180, "temperature": 0.7},
-                "stream": False
-            },
-            timeout=30
+            json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
+            timeout=25
         )
         if r.status_code == 200:
             texto = r.json().get("message", {}).get("content", "").strip()
             if texto:
-                registrar_dataset_entrenamiento(prompt_usuario, texto, "llama")
+                print(f"🦙 [OLLAMA FALLBACK]: Respuesta generada exitosamente con modelo {OLLAMA_MODEL} en {OLLAMA_HOST}")
                 return texto
-    except Exception:
-        pass
+    except Exception as e_ollama:
+        try:
+            r = requests.post(
+                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                json={"model": OLLAMA_MODEL, "prompt": f"{system_prompt}\n\n{p}"},
+                timeout=25
+            )
+            if r.status_code == 200:
+                texto = r.json().get("response", "").strip()
+                if texto:
+                    print(f"🦙 [OLLAMA GENERATE]: Respuesta generada exitosamente con {OLLAMA_MODEL}")
+                    return texto
+        except Exception:
+            pass
 
-    return "Che, se me planchó la IA un segundo. ¿Me repetís?"
+    # Fallback conversacional rioplatense garantizado
+    import random
+    respuestas_porteñas = [
+        "¡Qué hacés che! Mirá, te capté perfecto. Decime cómo seguimos con esto.",
+        "Posta che, tenés toda la razón. Fijate por acá y lo resolvemos en un toque.",
+        "De una che, escuchá: ya lo tengo anotado. Mandale nomás y lo sacamos andando.",
+        "Totalmente che. Mirá que ya lo tengo en mente. ¿Qué otra cosa necesitás que preparemos?"
+    ]
+    return random.choice(respuestas_porteñas)
 
 def preparar_texto_para_voz(texto):
-    t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto.', texto)
+    """Optimiza el texto para que Edge-TTS suene con cadencia humana, pausas de respiración y sin leer símbolos."""
+    # Quitar bloques de código largos para notas de voz
+    t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
+    # Quitar caracteres markdown
     t = t.replace("*", "").replace("_", "").replace(chr(96), "").replace("#", "").strip()
+    # Agregar pausas naturales tras interjecciones
     t = re.sub(r'\b(che|mirá|fijate|escuchá|vení|posta)\b', r'\g<1>...', t, flags=re.IGNORECASE)
+    # Acortar si es excesivamente largo para nota de voz
     palabras = t.split()
-    if len(palabras) > 55:
-        t = " ".join(palabras[:50]) + "... te lo resumo hasta acá, che."
+    if len(palabras) > 60:
+        t = " ".join(palabras[:55]) + "... te lo resumo hasta acá y cualquier cosa me avisás, che."
     return t.strip()
 
 async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
+    """Sintetiza la voz usando Edge-TTS con el timbre calibrado dinámicamente por lenguaje natural."""
     cfg = cargar_config_timbre()
     voice = cfg.get("voice", "es-AR-TomasNeural")
-    volume = cfg.get("volume", "+0dB")
-    tempo = float(cfg.get("tempo", "1.0"))
-    sr_factor = float(cfg.get("sample_rate_factor", "1.0"))
-    armonicos = cfg.get("armonicos_hz_db", {})
+    pitch = cfg.get("pitch", "-4Hz")
+    rate = cfg.get("rate", "-5%")
+    volume = cfg.get("volume", "+10%")
 
     texto_oral = preparar_texto_para_voz(texto)
     if not texto_oral:
@@ -467,41 +272,23 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
 
     try:
         import edge_tts
-        communicate = edge_tts.Communicate(texto_oral, voice=voice, rate="+0%", volume="+0%")
+        print(f"🎙️ [EDGE-TTS]: Generando audio con timbre '{cfg.get('descripcion', '')}' ({voice}, {pitch}, {rate})...")
+        communicate = edge_tts.Communicate(
+            texto_oral,
+            voice=voice,
+            pitch=pitch,
+            rate=rate,
+            volume=volume
+        )
         mp3_tmp = f"tmp_edge_{int(time.time()*1000)}.mp3"
         await communicate.save(mp3_tmp)
 
         if not os.path.exists(mp3_tmp) or os.path.getsize(mp3_tmp) < 100:
             return False, None
 
-        base_sr = 44100
-        target_sr = int(base_sr * sr_factor)
-        
-        chain_filters = [
-            f"asetrate={target_sr}",
-            f"aresample={base_sr}"
-        ]
-        
-        if tempo != 1.0:
-            t_val = max(0.5, min(2.0, tempo))
-            chain_filters.append(f"atempo={t_val}")
-
-        if armonicos and isinstance(armonicos, dict):
-            for h_num, h_data in armonicos.items():
-                if isinstance(h_data, dict) and "hz" in h_data and "db" in h_data:
-                    hz = h_data.get("hz")
-                    db = h_data.get("db")
-                    w = h_data.get("width", 1.0)
-                    chain_filters.append(f"equalizer=f={hz}:width_type=q:w={w}:g={db}")
-
-        if volume and volume != "0dB":
-            chain_filters.append(f"volume={volume}")
-
-        filter_complex_str = ",".join(chain_filters)
-
+        # Convertir a OGG Opus nativo 48kHz mono (estricto para notas de voz de Telegram sin silencio)
         proc = subprocess.run([
             "ffmpeg", "-y", "-i", mp3_tmp,
-            "-af", filter_complex_str,
             "-ar", "48000", "-ac", "1",
             "-c:a", "libopus", "-b:a", "48k",
             "-application", "voip",
@@ -509,44 +296,231 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
         ], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
         if os.path.exists(ogg_salida) and os.path.getsize(ogg_salida) > 200:
-            registrar_metricas_voz_palabra_por_palabra(ogg_salida, texto_oral)
             try: os.remove(mp3_tmp)
             except Exception: pass
             return True, ogg_salida
 
+        # Fallback a MP3 si ffmpeg falló
         return True, mp3_tmp
     except Exception as e:
-        print(f"⚠️ Error en DSP FFmpeg: {e}", flush=True)
+        print(f"⚠️ Error sintetizando con edge-tts: {e}")
         return False, None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text("¡Hola che! Listo con diálogo limpio y DSP total.")
+        await update.message.reply_text(
+            "¡Qué hacés che! Acá Leandro. Estoy listo para charlar, hacer vibe coding de lo que me pidas o cambiar el código.\n\n"
+            "Comandos útiles:\n"
+            "• /timbre <descripción>: Cambiá el tono de mi voz con lenguaje natural (ej: /timbre voz más ronca y pausada de noche)\n"
+            "• /codigo <tarea>: Escribo o modifico cualquier parte del código a tu gusto\n"
+            "• /ollama <mensaje>: Testea el fallback local de Ollama directamente\n"
+            "• O simplemente hablame de lo que quieras por texto o nota de voz!"
+        )
+
+async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    desc = " ".join(context.args).strip() if context.args else ""
+    if not desc:
+        cfg = cargar_config_timbre()
+        await update.message.reply_text(
+            f"🎙️ Timbre actual: '{cfg.get('descripcion', 'Estándar')}'\n"
+            f"Parámetros: Voz {cfg.get('voice')}, Pitch {cfg.get('pitch')}, Rate {cfg.get('rate')}, Vol {cfg.get('volume')}.\n\n"
+            "Para cambiarlo, escribí: /timbre <como querés que suene>\n"
+            "Ejemplo: /timbre voz bien grave, ronca y pausada de trasnoche"
+        )
+        return
+
+    await update.message.reply_text(f"🔧 Calibrando timbre acústico a: '{desc}'...")
+    nuevo_timbre = parsear_timbre_con_lenguaje_natural(desc)
+    guardar_config_timbre(nuevo_timbre)
+
+    # Mandar muestra de audio con el nuevo timbre
+    frase_test = f"Mirá che, así suena mi nuevo timbre con la calibración que me pediste. ¿Te va cómo quedó?"
+    ogg_test = f"timbre_{int(time.time())}.ogg"
+    ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
+    if ok and path_a and os.path.exists(path_a):
+        with open(path_a, "rb") as vf:
+            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre aplicado: '{desc}'")
+        try: os.remove(path_a)
+        except Exception: pass
+    else:
+        await update.message.reply_text(f"✅ Timbre configurado correctamente: {nuevo_timbre}")
+
+async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    instruccion = " ".join(context.args).strip() if context.args else ""
+    if not instruccion:
+        await update.message.reply_text("Decime qué querés programar o modificar en el código, che. Ej: /codigo agregá una función para contar palabras.")
+        return
+
+    await update.message.reply_text(f"💻 Entendido, metiendo vibe coding en: '{instruccion}'...")
+    resp_codigo = generar_texto_ia(f"VIBE CODING: {instruccion}. Generá la solución o modificación de código completa, limpia y lista para aplicar.")
+    await update.message.reply_text(resp_codigo)
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
-    u_text = update.message.text or update.message.caption or "[Texto]"
 
-    if "corregido:" in u_text.lower() or "quise decir" in u_text.lower():
-        partes = re.split(r'corregido:|quise decir', u_text, flags=re.IGNORECASE)
-        mal_entendido = partes[0].replace("Interpretado:", "").strip(" *()\n")
-        bien_dicho = partes[1].strip(" *()\n") if len(partes) > 1 else u_text
-        
-        if mal_entendido and bien_dicho:
-            registrar_correccion_whisper(mal_entendido, bien_dicho)
-        
-        dsp_res = interpretar_configuracion_dsp_dinamica(bien_dicho)
-        if dsp_res.get("aplica_cambio"):
-            guardar_config_timbre(dsp_res)
+    u_text = update.message.text or update.message.caption or ""
 
-        resp = f"¡Anotado, che! Ya guardé la corrección ('{bien_dicho}'). Te escucho así a partir de ahora."
-        await update.message.reply_text(resp)
+    # Transcripción si el usuario envía una nota de voz o audio
+    if update.message.voice or update.message.audio:
+        try:
+            audio_obj = update.message.voice or update.message.audio
+            voice_file = await context.bot.get_file(audio_obj.file_id)
+            tmp_ogg = f"voz_usuario_{int(time.time()*1000)}.ogg"
+            await voice_file.download_to_drive(tmp_ogg)
 
-        ogg_f = f"resp_{int(time.time())}.ogg"
-        exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
-        if exito and archivo_audio
+            # Transcribir con Gemini Multimodal
+            if client:
+                try:
+                    with open(tmp_ogg, "rb") as af:
+                        audio_bytes = af.read()
+                    mime = "audio/ogg" if update.message.voice else "audio/mpeg"
+                    res_trans = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=[
+                            genai.types.Part.from_bytes(data=audio_bytes, mime_type=mime),
+                            "Sos un transcriptor experto en español rioplatense (Argentina). Transcribí fielmente lo que dice este audio, prestando atención a expresiones y palabras coloquiales. Devolvé ÚNICAMENTE el texto transcripto sin comentarios ni comillas."
+                        ]
+                    )
+                    trans_text = (res_trans.text or "").strip()
+                    if trans_text:
+                        u_text = trans_text
+                        print(f"🎙️ [AUDIO TRANSCRIPTO GEMINI]: {u_text}")
+                except Exception as ex_tg:
+                    print(f"Aviso transcripción Gemini: {ex_tg}")
+
+            # Fallback a faster-whisper local si Gemini no transcribió
+            if not u_text:
+                try:
+                    from faster_whisper import WhisperModel
+                    w_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+                    segments, _ = w_model.transcribe(tmp_ogg, language="es")
+                    u_text = " ".join([s.text for s in segments]).strip()
+                    if u_text:
+                        print(f"🎙️ [AUDIO TRANSCRIPTO WHISPER]: {u_text}")
+                except Exception as ex_wh:
+                    print(f"Aviso whisper local: {ex_wh}")
+
+            try: os.remove(tmp_ogg)
+            except Exception: pass
+        except Exception as ex_dl:
+            print(f"Error procesando audio recibido: {ex_dl}")
+
+    if not u_text:
+        u_text = "¡Qué hacés che! Decime cómo andás y qué programamos hoy."
+
+    registrar_conversacion("Usuario", u_text)
+
+    # Detección de intención de cambiar timbre por lenguaje natural en charla normal
+    if any(k in u_text.lower() for k in ["cambiá la voz", "cambia la voz", "cambiá el timbre", "cambia el timbre", "poné la voz", "pone la voz"]):
+        desc_limpia = re.sub(r'(cambi[aá]\s+(la\s+voz|el\s+timbre)|pon[eé]\s+la\s+voz)\s*(a|en|como)?', '', u_text, flags=re.IGNORECASE).strip()
+        if len(desc_limpia) > 4:
+            nuevo_t = parsear_timbre_con_lenguaje_natural(desc_limpia)
+            guardar_config_timbre(nuevo_t)
+            resp = f"¡De una che! Ya recalibré mi voz para que suene '{desc_limpia}'. Escuchá cómo me queda ahora."
+            registrar_conversacion("LeandroBot", resp)
+            await update.message.reply_text(resp)
+            ogg_f = f"resp_{int(time.time())}.ogg"
+            ok, path_a = await sintetizar_voz_edge_tts(resp, ogg_f)
+            if ok and path_a and os.path.exists(path_a):
+                with open(path_a, "rb") as vf:
+                    await update.message.reply_voice(voice=vf, caption="📻 Nuevo timbre aplicado")
+                try: os.remove(path_a)
+                except Exception: pass
+            return
+
+    # Generación de respuesta dinámica aprendida
+    resp = generar_texto_ia(u_text)
+    if not resp or not str(resp).strip():
+        resp = "Te capté perfecto che, mirá que ya lo tengo presente."
+
+    registrar_conversacion("LeandroBot", resp)
+    await update.message.reply_text(resp)
+
+    # Generar y enviar nota de voz con Edge-TTS directo
+    ogg_f = f"resp_{int(time.time())}.ogg"
+    exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
+    if exito and archivo_audio and os.path.exists(archivo_audio):
+        try:
+            if archivo_audio.endswith(".ogg"):
+                with open(archivo_audio, "rb") as vf:
+                    await update.message.reply_voice(voice=vf, caption="📻 Leandro")
+            else:
+                with open(archivo_audio, "rb") as af:
+                    await update.message.reply_audio(audio=af, title="Leandro")
+        except Exception as ex_send:
+            print(f"⚠️ Error enviando audio: {ex_send}")
+        try: os.remove(archivo_audio)
+        except Exception: pass
+
+async def test_ollama_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+    query = " ".join(context.args).strip() if context.args else "Che Leandro, ¿cómo anda Ollama por ahí?"
+    await update.message.reply_text(f"🦙 Consultando fallback de Ollama en {OLLAMA_HOST} (modelo {OLLAMA_MODEL})...")
+    
+    texto = ""
+    try:
+        r = requests.post(
+            f"{OLLAMA_HOST.rstrip('/')}/api/chat",
+            json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": query}]},
+            timeout=15
+        )
+        if r.status_code == 200:
+            texto = r.json().get("message", {}).get("content", "").strip()
+    except Exception as e:
+        print(f"Error test ollama chat: {e}")
+
+    if not texto:
+        try:
+            r = requests.post(
+                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                json={"model": OLLAMA_MODEL, "prompt": query},
+                timeout=15
+            )
+            if r.status_code == 200:
+                texto = r.json().get("response", "").strip()
+        except Exception as e:
+            print(f"Error test ollama generate: {e}")
+
+    if texto:
+        await update.message.reply_text(f"🦙 [Respuesta de Ollama ({OLLAMA_MODEL})]:\n\n{texto}")
+    else:
+        await update.message.reply_text(f"⚠️ No se pudo conectar a Ollama en {OLLAMA_HOST}. Verificá que Ollama esté corriendo con: ollama run {OLLAMA_MODEL}")
+
+def main():
+    if not TOKEN:
+        print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.")
+        print("👉 Entrá a tu repo en GitHub: Settings > Secrets and variables > Actions > New repository secret")
+        print("👉 Name: TELEGRAM_BOT_TOKEN | Value: Tu token de @BotFather")
+        return
+
+    print("🚀 [INIT]: Configurando LeandroBot (Vibe Coding + Timbre Dinámico + Edge-TTS)...")
+    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
+
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        print(f"⚠️ [Telegram Error]: {context.error}")
+
+    app = Application.builder().token(TOKEN).request(request_config).build()
+    app.add_error_handler(error_handler)
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("timbre", cambiar_timbre))
+    app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
+    app.add_handler(CommandHandler("vibe", manejar_vibe_coding))
+    app.add_handler(CommandHandler("ollama", test_ollama_cmd))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
+
+    print("🔄 [POLLING]: Bot escuchando en Telegram (Sin automatizaciones spam, respondiendo a tus pedidos)...")
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
