@@ -1109,3 +1109,6 @@ En el contexto de la modulación de frecuencia, esto se conoce como una modulaci
 
 ¿Qué onda, che? ¿Quieres que te hable sobre algo en particular o solo querés disfrutar de mi voz, eh?
 [2026-10-15 03:04:39] Usuario: [AUDIO] Quiero que suene de esa manera.
+[2026-10-15 03:04:45] LeandroBot: Che, fijate. Vos querés que cuente algo, ¿che? Dale, voy a empezar.
+
+¿Qué te interesa, che? ¿Vamos a hablar de algo en particular o vos querés que te hable de cualquier cosa? Vose es el dueño del tiempo, che.
