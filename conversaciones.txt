@@ -1192,3 +1192,6 @@ Aplica eso
 [2026-10-15 04:44:26] LeandroBot: Che, fijate, no te preocupás. Me basé en la información que me dieron y estoy dispuesto a arreglarlo. Dale, ¿qué tipo deDSP te parece que usaría para ajustar la agudeza de tu voz?
 [2026-10-15 04:45:11] Usuario: [AUDIO] me refiero a que eso es lo que dije en el audio anterior una palabra que  interpretaste mal, eso era lo que te quería corregir
 [2026-10-15 04:45:19] LeandroBot: Che, fijate que me pasó con esa palabra... no la entendí bien en el audio anterior, y ya te dije que me arrepiento de eso, pero me gustaría saber qué palabra era exactamente que querías que corrigiera, che?
+[2026-10-15 04:47:18] Usuario: *(Interpretado: Bueno, por eso utiliza el DSP, que suene más segura tu voz.)*
+*(Corregido: Bueno, por eso, utilizá el DSP, que suene más aguda tu voz.)*
+Esa es la corrección para que la guardes y me vayas comprendiendo mejor las palabras che
