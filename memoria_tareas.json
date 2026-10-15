@@ -23,5 +23,10 @@
         "timestamp": "2026-10-15 01:09:05",
         "tarea": "A ver, ponerme voz de rockero, lo que se te ocurre que sería voz de rockero, por favor.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 01:10:54",
+        "tarea": "A ver, cambiame un poco el timbre de tu voz, manteniendo lo que es voz de hombre, pero cambia el timbre.  A ver, ahora mismo es eso.",
+        "estado": "pendiente"
     }
 ]
