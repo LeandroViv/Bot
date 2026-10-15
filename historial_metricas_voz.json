@@ -1,261 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 03:00:16",
-        "texto": "Vos estás hablando de mi timbre, che.... Dale, voy a intentar sonar un poco más grave, si no es demasiado para vos. canta \"Riiiii-ooo-ooo...\" En serio, te voy a cambiar el pitch, ¿vale? voz más baja \n\nPitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -10dB.",
-        "metricas_palabras": [
-            {
-                "palabra": "Vos",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "estás",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "hablando",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "de",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "mi",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "timbre,",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "che....",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "Dale,",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "intentar",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "sonar",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "un",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "poco",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "grave,",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "no",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "es",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "demasiado",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "para",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "vos.",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "canta",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "\"Riiiii-ooo-ooo...\"",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "En",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "serio,",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "voy",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "cambiar",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "pitch,",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "¿vale?",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "más",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "baja",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "Pitch:",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "-10Hz.",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "Serie",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "armónica:",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "Armónico",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "1:",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "110Hz",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "0dB,",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "Armónico",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "2:",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "220Hz",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "a",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            },
-            {
-                "palabra": "-10dB.",
-                "duracion_ms": 544,
-                "intensidad_db": -22.0
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 03:01:18",
         "texto": "Más grave que se note significativamente así, por favor, a ver como es eso.",
         "metricas_palabras": [
@@ -3926,6 +3670,147 @@
                 "palabra": "pido.",
                 "duracion_ms": 520,
                 "intensidad_db": -25.6
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:50:51",
+        "texto": "Dale, fijate..., voy a ajustar eso para que suene más relajado. Posta..., el ritmo de las palabras ya está ajustado, no tengo que hacer nada más, eh.",
+        "metricas_palabras": [
+            {
+                "palabra": "Dale,",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "fijate...,",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "ajustar",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "eso",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "para",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "suene",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "relajado.",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "Posta...,",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "ritmo",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "palabras",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "ya",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "ajustado,",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "tengo",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "hacer",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "nada",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "más,",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
+            },
+            {
+                "palabra": "eh.",
+                "duracion_ms": 158,
+                "intensidad_db": -17.9
             }
         ]
     }
