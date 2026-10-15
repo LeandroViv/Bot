@@ -1,92 +1,5 @@
 [
     {
-        "timestamp": "2026-10-13 14:18:46",
-        "archivo": "muestras_voz/audio_usuario_1338.ogg",
-        "texto": "A ver, pasas los links esos que me habías mostrado por favor, eso te quería pedir.",
-        "partitura_metrica": [
-            {
-                "palabra": "A",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "pasas",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "los",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "links",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "esos",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "habías",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "mostrado",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "favor,",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "eso",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "quería",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            },
-            {
-                "palabra": "pedir.",
-                "duracion_ms": 390,
-                "intensidad_db": -18.99
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-13 14:19:36",
         "archivo": "muestras_voz/audio_usuario_1341.ogg",
         "texto": "Bueno ponerme acá por escrito esos mismos links",
@@ -4984,6 +4897,77 @@
                 "palabra": "che.",
                 "duracion_ms": 377,
                 "intensidad_db": -22.46
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:03:59",
+        "texto": "A ver, poné mi voz de una cantante, de una cantante, por favor.",
+        "metricas_palabras": [
+            {
+                "palabra": "A",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "ver,",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "poné",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "mi",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "voz",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "cantante,",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "de",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "cantante,",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
+            },
+            {
+                "palabra": "favor.",
+                "duracion_ms": 496,
+                "intensidad_db": -21.52
             }
         ]
     }
