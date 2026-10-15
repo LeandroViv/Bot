@@ -48,5 +48,10 @@
         "timestamp": "2026-10-15 02:59:28",
         "tarea": "A ver cómo suena eso",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:00:02",
+        "tarea": "A ver que suene más grave tubo.",
+        "estado": "pendiente"
     }
 ]
