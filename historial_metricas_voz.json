@@ -1,116 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 02:56:42",
-        "texto": "A ver, ponen mi voz ronca, por favor, como si estuvieras, como con la voz tomada o algo así, por favor.",
-        "metricas_palabras": [
-            {
-                "palabra": "A",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "ver,",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "ponen",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "mi",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "ronca,",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "favor,",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "si",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "estuvieras,",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "con",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "voz",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "tomada",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "o",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "algo",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "así,",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            },
-            {
-                "palabra": "favor.",
-                "duracion_ms": 533,
-                "intensidad_db": -24.71
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 02:57:01",
         "texto": "Che..., fijate..., voy a cambiar un poco la voz de tu voz, dale. Ahora te voy a dar un toque ronco, como si estuvieras... bueno, como si estuvieras cantando en un barri. Voz ronca (Imagina un timbre más profundo y una ligera vibración en la voz) Habla, habla, che.... ¿Qué... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -4101,6 +3990,97 @@
                 "palabra": "eso?",
                 "duracion_ms": 175,
                 "intensidad_db": -18.18
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:47:30",
+        "texto": "Sí, pero más despacio que suene. Así no se entiende nada a lo que me está diciendo.",
+        "metricas_palabras": [
+            {
+                "palabra": "Sí,",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "pero",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "despacio",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "suene.",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "Así",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "no",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "entiende",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "nada",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
+            },
+            {
+                "palabra": "diciendo.",
+                "duracion_ms": 379,
+                "intensidad_db": -26.73
             }
         ]
     }
