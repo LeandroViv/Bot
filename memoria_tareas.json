@@ -128,5 +128,10 @@
         "timestamp": "2026-10-15 03:49:42",
         "tarea": "me parece que te sorpaste con el pitch y la delocity, amigo, algo más despacio,  más lento que se entiendan las palabras de haber recientadibles.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:50:39",
+        "tarea": "Podéis bajar por favor el parámetro del ritmo de las palabras para que suene más lento por favor, eso te pido.",
+        "estado": "pendiente"
     }
 ]
