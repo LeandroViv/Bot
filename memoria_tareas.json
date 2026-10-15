@@ -63,5 +63,10 @@
         "timestamp": "2026-10-15 03:04:01",
         "tarea": "A ver, poné mi voz de una cantante, de una cantante, por favor.",
         "estado": "pendiente"
+    },
+    {
+        "timestamp": "2026-10-15 03:04:38",
+        "tarea": "Quiero que suene de esa manera.",
+        "estado": "pendiente"
     }
 ]
