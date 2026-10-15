@@ -1,121 +1,5 @@
 [
     {
-        "timestamp": "2026-10-15 02:58:26",
-        "texto": "¿Qué pero está sonando igual? Modifica por favor el código en este momento para que los parámetros  cambien y suene con borrón.",
-        "metricas_palabras": [
-            {
-                "palabra": "¿Qué",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "pero",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "está",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "sonando",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "igual?",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "Modifica",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "por",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "favor",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "el",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "código",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "este",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "momento",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "para",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "los",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "parámetros",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "cambien",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "suene",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "con",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            },
-            {
-                "palabra": "borrón.",
-                "duracion_ms": 520,
-                "intensidad_db": -23.7
-            }
-        ]
-    },
-    {
         "timestamp": "2026-10-15 02:58:44",
         "texto": "Che..., fijate..., voy a cambiar el timbre de la voz para que suene un poco más cansado, como si estuviera hablando de una cosa que ya le ha pasado. Voz: es-AR-TomasNeural | Pitch: -5Hz | Serie armónica: Armonía desafinada Y ahora, voy a agregar un poco de borroso a la... te lo resumo hasta acá, che.",
         "metricas_palabras": [
@@ -3881,6 +3765,87 @@
                 "palabra": "lento.",
                 "duracion_ms": 169,
                 "intensidad_db": -18.5
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 03:48:22",
+        "texto": "muy rápido me decís las cosas más despacio por favor que se comprenda lo que",
+        "metricas_palabras": [
+            {
+                "palabra": "muy",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "rápido",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "me",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "decís",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "las",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "cosas",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "más",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "despacio",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "por",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "favor",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "comprenda",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 483,
+                "intensidad_db": -23.96
             }
         ]
     }
