@@ -1,139 +1,5 @@
 [
     {
-        "timestamp": "2026-10-12 01:25:35",
-        "tipo": "voz_usuario",
-        "archivo": "muestras_voz/audio_usuario_1109.wav",
-        "texto": "Ah, y una cosa te quería dedicar, nosotros los porteños, la higrieda, la pronunciamos como  yo me llamo, entonces quería que en corpores ese sonido.",
-        "partitura_metrica": [
-            {
-                "palabra": "Ah,",
-                "duracion_ms": 1040,
-                "intensidad_db": -4.52
-            },
-            {
-                "palabra": "y",
-                "duracion_ms": 120,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "una",
-                "duracion_ms": 160,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "cosa",
-                "duracion_ms": 320,
-                "intensidad_db": 1.62
-            },
-            {
-                "palabra": "te",
-                "duracion_ms": 200,
-                "intensidad_db": 1.75
-            },
-            {
-                "palabra": "quería",
-                "duracion_ms": 260,
-                "intensidad_db": 2.65
-            },
-            {
-                "palabra": "dedicar,",
-                "duracion_ms": 520,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "nosotros",
-                "duracion_ms": 419,
-                "intensidad_db": 0.71
-            },
-            {
-                "palabra": "los",
-                "duracion_ms": 181,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "porteños,",
-                "duracion_ms": 820,
-                "intensidad_db": 2.53
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 340,
-                "intensidad_db": 0.06
-            },
-            {
-                "palabra": "higrieda,",
-                "duracion_ms": 660,
-                "intensidad_db": 3.0
-            },
-            {
-                "palabra": "la",
-                "duracion_ms": 80,
-                "intensidad_db": 0.61
-            },
-            {
-                "palabra": "pronunciamos",
-                "duracion_ms": 700,
-                "intensidad_db": 0.6
-            },
-            {
-                "palabra": "como",
-                "duracion_ms": 340,
-                "intensidad_db": -1.38
-            },
-            {
-                "palabra": "yo",
-                "duracion_ms": 660,
-                "intensidad_db": -1.62
-            },
-            {
-                "palabra": "me",
-                "duracion_ms": 1760,
-                "intensidad_db": -0.44
-            },
-            {
-                "palabra": "llamo,",
-                "duracion_ms": 600,
-                "intensidad_db": 1.53
-            },
-            {
-                "palabra": "entonces",
-                "duracion_ms": 460,
-                "intensidad_db": -2.96
-            },
-            {
-                "palabra": "quería",
-                "duracion_ms": 400,
-                "intensidad_db": -1.74
-            },
-            {
-                "palabra": "que",
-                "duracion_ms": 220,
-                "intensidad_db": 2.37
-            },
-            {
-                "palabra": "en",
-                "duracion_ms": 160,
-                "intensidad_db": 1.19
-            },
-            {
-                "palabra": "corpores",
-                "duracion_ms": 580,
-                "intensidad_db": 0.59
-            },
-            {
-                "palabra": "ese",
-                "duracion_ms": 640,
-                "intensidad_db": -5.97
-            },
-            {
-                "palabra": "sonido.",
-                "duracion_ms": 560,
-                "intensidad_db": -0.9
-            }
-        ],
-        "total_entrenamientos": 16
-    },
-    {
         "timestamp": "2026-10-12 01:30:08",
         "tipo": "voz_usuario",
         "archivo": "muestras_voz/audio_usuario_1111.wav",
@@ -2685,6 +2551,292 @@
                 "palabra": "hombre",
                 "duracion_ms": 457,
                 "intensidad_db": -23.98
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-10-15 01:06:13",
+        "texto": "Fijate..., che..., te voy a dar una noticia buena: ya que lo que te pido ya está guardado en un archivo, cuando se reinicia el bot, todo listo, sin problemas, ¿dale? La memoria en caliente se mantiene intacta, sin resetearte nada, ¿entiendes? Entonces, si te pido algo y ya tienes... te lo resumo hasta acá, che.",
+        "metricas_palabras": [
+            {
+                "palabra": "Fijate...,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "che...,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "voy",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "a",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "dar",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "una",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "noticia",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "buena:",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "ya",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "que",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "pido",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "ya",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "está",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "guardado",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "un",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "archivo,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "cuando",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "reinicia",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "el",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "bot,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "todo",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "listo,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "sin",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "problemas,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "¿dale?",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "La",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "memoria",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "en",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "caliente",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "se",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "mantiene",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "intacta,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "sin",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "resetearte",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "nada,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "¿entiendes?",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "Entonces,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "si",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "pido",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "algo",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "y",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "ya",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "tienes...",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "te",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "lo",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "resumo",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "hasta",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "acá,",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
+            },
+            {
+                "palabra": "che.",
+                "duracion_ms": 383,
+                "intensidad_db": -21.05
             }
         ]
     }
