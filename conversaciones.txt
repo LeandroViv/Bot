@@ -1098,3 +1098,4 @@ Dale, che, ahora suena un poco más como si estuviera hablando de una cosa lejan
 [2026-10-15 03:00:13] LeandroBot: Vos estás hablando de mi timbre, che. Dale, voy a intentar sonar un poco más grave, si no es demasiado para vos. *canta* "Riiiii-ooo-ooo..." En serio, te voy a cambiar el pitch, ¿vale? *voz más baja* 
 
 Pitch: -10Hz. Serie armónica: Armónico 1: 110Hz a 0dB, Armónico 2: 220Hz a -10dB.
+[2026-10-15 03:01:20] Usuario: [AUDIO] Más grave que se note significativamente así, por favor, a ver como es eso.
