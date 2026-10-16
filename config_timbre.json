@@ -3,126 +3,126 @@
     "pitch": "-6Hz",
     "rate": "-10%",
     "volume": "+10%",
-    "f0Hz": 280,
+    "f0Hz": 1000,
     "harmonics_gain": {
         "1": 2.0,
         "2": -1.0,
         "3": 3.0
     },
-    "descripcion": "Adjusted to deeper and smoother tone",
+    "descripcion": "Frecuencia fundamental f0 ajustada directamente a 1000Hz",
     "harmonics": [
         {
             "order": 1,
-            "hz": 280,
-            "gainDb": 2.0,
+            "hz": 800,
+            "gainDb": 0.0,
             "q": 1.5,
             "enabled": true
         },
         {
             "order": 2,
-            "hz": 560,
-            "gainDb": -1.0,
+            "hz": 1600,
+            "gainDb": 0.0,
             "q": 2.0,
             "enabled": true
         },
         {
             "order": 3,
-            "hz": 840,
-            "gainDb": 3.0,
+            "hz": 2400,
+            "gainDb": 0.0,
             "q": 2.0,
             "enabled": true
         },
         {
             "order": 4,
-            "hz": 1120,
+            "hz": 3200,
             "gainDb": 0.0,
             "q": 2.0,
             "enabled": true
         },
         {
             "order": 5,
-            "hz": 1400,
+            "hz": 4000,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 6,
-            "hz": 1680,
+            "hz": 4800,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 7,
-            "hz": 1960,
+            "hz": 5600,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 8,
-            "hz": 2240,
+            "hz": 6400,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 9,
-            "hz": 2520,
+            "hz": 7200,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 10,
-            "hz": 2800,
+            "hz": 8000,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 11,
-            "hz": 3080,
+            "hz": 8800,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 12,
-            "hz": 3360,
+            "hz": 9600,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 13,
-            "hz": 3640,
+            "hz": 10400,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 14,
-            "hz": 3920,
+            "hz": 11200,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 15,
-            "hz": 4200,
+            "hz": 12000,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         },
         {
             "order": 16,
-            "hz": 4480,
+            "hz": 12800,
             "gainDb": 0.0,
             "q": 3.0,
             "enabled": true
         }
     ],
-    "ffmpeg_filter": "equalizer=f=280:width_type=q:w=1.5:g=2.0,equalizer=f=560:width_type=q:w=2.0:g=-1.0,equalizer=f=840:width_type=q:w=2.0:g=3.0,volume=1.58,atempo=0.9"
+    "ffmpeg_filter": "volume=1.58,atempo=0.9"
 }
