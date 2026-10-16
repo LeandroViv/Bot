@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding & Serie Armónica Dinámica (Gemini + Ollama Runner Actualizado + DSP FFmpeg)
+# Script: procesar.py - LeandroBot / Vibe Coding & Serie Armónica Dinámica + Whisper + Gemini/Ollama
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Serie Armónica Hz + Ollama Actualizado)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Whisper Audio + Serie Armónica Hz)...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -70,7 +70,6 @@ except Exception:
     GENAI_DISPONIBLE = False
 
 def asegurar_ollama_en_runner():
-    """Verifica si Ollama responde en el runner/host configurado; si no, intenta arrancarlo."""
     try:
         r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2.0)
         if r.status_code == 200:
@@ -413,7 +412,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         print(f"🚀 [START COMANDO]: Chat ID {CHAT_ID_ACTIVO} activado.", flush=True)
         await update.message.reply_text(
-            "¡Qué hacés che! Acá Leandro. Motor de Vibe Coding y Serie Armónica en Hz activo.\n\n"
+            "¡Qué hacés che! Acá Leandro. Motor de Vibe Coding y Serie Armónica en Hz activo con Whisper.\n\n"
             "• /timbre <descripción>: Modificá en tiempo real el pitch, ritmo, volumen y la serie armónica en Hz por lenguaje natural.\n"
             "• /codigo <tarea>: Escribo o modifico código de forma autónoma."
         )
@@ -466,10 +465,40 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
-    u_text = update.message.text or update.message.caption or "[Audio/Nota de voz]"
-    registrar_conversacion("Usuario", u_text)
 
-    if any(k in u_text.lower() for k in ["cambiá la voz", "cambia la voz", "cambiá el timbre", "cambia el timbre", "poné la voz", "pone la voz"]):
+    u_text = update.message.text or update.message.caption or ""
+
+    # Integración completa de Whisper para procesar notas de voz y audios
+    if update.message.voice or update.message.audio:
+        print("📥 [AUDIO RECIBIDO]: Nota de voz detectada. Procesando con Whisper...", flush=True)
+        try:
+            audio_obj = update.message.voice or update.message.audio
+            voice_file = await context.bot.get_file(audio_obj.file_id)
+            tmp_ogg = f"voz_usuario_{int(time.time()*1000)}.ogg"
+            await voice_file.download_to_drive(tmp_ogg)
+
+            try:
+                from faster_whisper import WhisperModel
+                w_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+                segments, _ = w_model.transcribe(tmp_ogg, language="es")
+                u_text = " ".join([s.text for s in segments]).strip()
+                print(f"🎙️ [WHISPER TRANSCRIPCIÓN ÉXITO]: {u_text}", flush=True)
+            except Exception as ex_wh:
+                print(f"⚠️ Aviso Whisper local: {ex_wh}", flush=True)
+                u_text = "Che, no pude procesar bien el audio pero te escucho firme."
+
+            try: os.remove(tmp_ogg)
+            except Exception: pass
+        except Exception as ex_dl:
+            print(f"⚠️ Error descargando audio: {ex_dl}", flush=True)
+
+    if not u_text:
+        u_text = "¡Qué hacés che! Decime cómo andás y qué programamos hoy."
+
+    registrar_conversacion("Usuario", u_text)
+    u_lower = u_text.lower().strip()
+
+    if any(k in u_lower for k in ["cambiá la voz", "cambia la voz", "cambiá el timbre", "cambia el timbre", "poné la voz", "pone la voz"]):
         desc_limpia = re.sub(r'(cambi[aá]s+(las+voz|els+timbre)|pon[eé]s+las+voz)s*(a|en|como)?', '', u_text, flags=re.IGNORECASE).strip()
         if len(desc_limpia) > 4:
             nuevo_t = parsear_timbre_dinamico_ia(desc_limpia)
@@ -511,7 +540,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con motor acústico dinámico...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con motor acústico dinámico y Whisper...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
