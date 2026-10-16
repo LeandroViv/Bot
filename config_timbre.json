@@ -1,7 +1,7 @@
 {
-    "voice": "es-AR-ElenaNeural",
-    "pitch": "+10Hz",
-    "rate": "+5%",
+    "voice": "es-AR-TomasNeural",
+    "pitch": "-6Hz",
+    "rate": "-10%",
     "volume": "+10%",
     "f0Hz": 280,
     "harmonics_gain": {
@@ -9,7 +9,7 @@
         "2": -1.0,
         "3": 3.0
     },
-    "descripcion": "High-pitched voice",
+    "descripcion": "Adjusted to deeper and smoother tone",
     "harmonics": [
         {
             "order": 1,
@@ -124,5 +124,5 @@
             "enabled": true
         }
     ],
-    "ffmpeg_filter": "equalizer=f=280:width_type=q:w=1.5:g=2.0,equalizer=f=560:width_type=q:w=2.0:g=-1.0,equalizer=f=840:width_type=q:w=2.0:g=3.0,volume=1.58,atempo=1.05"
+    "ffmpeg_filter": "equalizer=f=280:width_type=q:w=1.5:g=2.0,equalizer=f=560:width_type=q:w=2.0:g=-1.0,equalizer=f=840:width_type=q:w=2.0:g=3.0,volume=1.58,atempo=0.9"
 }
