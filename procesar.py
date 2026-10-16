@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding & Serie Armónica Dinámica en Hz (FFmpeg DSP + Edge-TTS)
+# Script: procesar.py - LeandroBot / Vibe Coding & Serie Armónica Dinámica (Gemini + Ollama Runner Actualizado + DSP FFmpeg)
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot con Motor de Vibe Coding y Serie Armónica Dinámica...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Serie Armónica Hz + Ollama Actualizado)...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -70,6 +70,7 @@ except Exception:
     GENAI_DISPONIBLE = False
 
 def asegurar_ollama_en_runner():
+    """Verifica si Ollama responde en el runner/host configurado; si no, intenta arrancarlo."""
     try:
         r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2.0)
         if r.status_code == 200:
@@ -88,6 +89,7 @@ def asegurar_ollama_en_runner():
         time.sleep(3)
         r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
         if r.status_code == 200:
+            print("🦙 [OLLAMA RUNNER]: ¡Servicio conectado con éxito en el runner!", flush=True)
             return True
     except Exception as ex:
         print(f"⚠️ Aviso conexión Ollama en runner: {ex}", flush=True)
@@ -153,13 +155,13 @@ def buscar_en_web(query):
             results = list(ddgs.text(query, max_results=3))
             if results:
                 lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
+                print(f"🌐 [WEB SEARCH]: {query}", flush=True)
                 return chr(10).join(lineas)
     except Exception as e:
         print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
     return ""
 
 def generar_serie_armonica_dinamica(f0_hz, ganancias=None):
-    """Calcula algorítmicamente la serie armónica completa en Hz a partir de la fundamental f0."""
     f0 = max(60, min(450, int(f0_hz)))
     bandas = []
     ganancias = ganancias or {}
@@ -179,7 +181,6 @@ def generar_serie_armonica_dinamica(f0_hz, ganancias=None):
     return bandas
 
 def construir_filtro_ffmpeg_desde_armonicos(cfg):
-    """Construye los filtros DSP de FFmpeg en base a la serie armónica y ecualización paramétrica calculada."""
     partes = []
     harmonics = cfg.get("harmonics", [])
     for h in harmonics:
@@ -214,7 +215,6 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
     return ",".join(partes)
 
 def parsear_timbre_dinamico_ia(descripcion_natural):
-    """Usa vibe coding por IA para interpretar la descripción y calcular f0, ritmo, volumen y armónicos exactos en Hz."""
     prompt_ia = (
         f"Sos un ingeniero de sonido experto en DSP y síntesis de voz. El usuario solicita este perfil acústico: '{descripcion_natural}'.\n"
         "Calculá de forma dinámica y devolvé UNICAMENTE un objeto JSON válido (sin markdown) con esta estructura exacta:\n"
@@ -246,7 +246,6 @@ def parsear_timbre_dinamico_ia(descripcion_natural):
         except Exception as e:
             print(f"⚠️ Aviso parser IA timbre: {e}", flush=True)
 
-    # Generación algorítmica de respaldo si no responde la API
     f0_def = 115 if any(w in descripcion_natural.lower() for w in ["grave", "ronco", "nocturno"]) else 125
     harmonics_def = generar_serie_armonica_dinamica(f0_def, {1: 3.0, 2: 1.5})
     fallback_cfg = {
@@ -288,6 +287,7 @@ def generar_texto_ia(prompt_usuario):
         if info_web:
             p = prompt_usuario + chr(10) + chr(10) + "[Información fresca de internet]:" + chr(10) + info_web
 
+    # Prioridad 1: Gemini 3.8 Flash
     if client:
         try:
             print(f"✨ [GEMINI]: Intentando con modelo gemini-3.8-flash...", flush=True)
@@ -298,25 +298,38 @@ def generar_texto_ia(prompt_usuario):
             )
             raw = (res.text or "").strip()
             if raw:
+                print(f"✨ [GEMINI gemini-3.8-flash]: ¡Éxito!", flush=True)
                 return raw
         except Exception as e:
             print(f"⚠️ Gemini fallback a Ollama en runner: {e}", flush=True)
 
+    # Prioridad 2: Ollama actualizado (Endpoint /api/generate optimizado y robusto)
     if asegurar_ollama_en_runner():
         try:
-            print(f"🦙 [OLLAMA RUNNER]: Consultando en {OLLAMA_HOST} con modelo {OLLAMA_MODEL}...", flush=True)
+            print(f"🦙 [OLLAMA RUNNER ACTUALIZADO]: Consultando en {OLLAMA_HOST} con modelo {OLLAMA_MODEL}...", flush=True)
+            prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
             r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/chat",
-                json={"model": OLLAMA_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]},
-                timeout=30
+                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "prompt": prompt_completo,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "num_predict": 300
+                    }
+                },
+                timeout=45
             )
             if r.status_code == 200:
-                texto = r.json().get("message", {}).get("content", "").strip()
+                texto = r.json().get("response", "").strip()
                 if texto:
+                    print(f"🦙 [OLLAMA RUNNER]: ¡Éxito con versión actualizada!", flush=True)
                     return texto
         except Exception as e_ollama:
-            print(f"⚠️ Aviso Ollama runner chat: {e_ollama}", flush=True)
+            print(f"⚠️ Aviso Ollama runner actual: {e_ollama}", flush=True)
 
+    # Fallback rioplatense definitivo
     import random
     respuestas_porteñas = [
         "¡Qué hacés che! Mirá, te capté perfecto. Decime cómo seguimos con esto.",
@@ -324,7 +337,9 @@ def generar_texto_ia(prompt_usuario):
         "De una che, escuchá: ya lo tengo anotado. Mandale nomás y lo sacamos andando.",
         "Totalmente che. Mirá que ya lo tengo en mente. ¿Qué otra cosa necesitás que preparemos?"
     ]
-    return random.choice(respuestas_porteñas)
+    resp_fallback = random.choice(respuestas_porteñas)
+    print(f"🤖 [FALLBACK LOCAL]: {resp_fallback}", flush=True)
+    return resp_fallback
 
 def preparar_texto_para_voz(texto):
     t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
@@ -368,7 +383,6 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
         if not os.path.exists(mp3_tmp) or os.path.getsize(mp3_tmp) < 100:
             return False, None
 
-        # Aplicar el filtro dinámico de serie armónica en Hz y ecualización con FFmpeg
         filtro_af = cfg.get("ffmpeg_filter") or construir_filtro_ffmpeg_desde_armonicos(cfg)
         cmd_ffmpeg = ["ffmpeg", "-y", "-i", mp3_tmp]
         if filtro_af:
@@ -397,6 +411,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
+        print(f"🚀 [START COMANDO]: Chat ID {CHAT_ID_ACTIVO} activado.", flush=True)
         await update.message.reply_text(
             "¡Qué hacés che! Acá Leandro. Motor de Vibe Coding y Serie Armónica en Hz activo.\n\n"
             "• /timbre <descripción>: Modificá en tiempo real el pitch, ritmo, volumen y la serie armónica en Hz por lenguaje natural.\n"
