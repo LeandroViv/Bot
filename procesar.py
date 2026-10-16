@@ -1,122 +1,149 @@
-import os
-import sys
+import inspect
 import json
-import logging
-import requests
+import os
+import subprocess
+import time
+import urllib.request
+from datetime import timedelta
+import psutil
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# Registro de inicio para cálculo de uptime
+BOT_START_TIME = time.time()
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
-MODELO_DEFAULT = os.getenv("OLLAMA_MODEL", "llama3")
-TIMEOUT_OLLAMA = 180  # Actualizado de 60s a 180s para evitar timeouts en respuestas largas
 
-def cargar_json(ruta, por_defecto=None):
-    if por_defecto is None:
-        por_defecto = {}
-    if os.path.exists(ruta):
+def obtener_info_memoria():
+    """Obtiene el consumo de memoria del proceso actual y del sistema."""
+    proceso = psutil.Process(os.getpid())
+    mem_proceso_mb = proceso.memory_info().rss / (1024 * 1024)
+    mem_sistema = psutil.virtual_memory()
+    return {
+        "proceso_mb": round(mem_proceso_mb, 2),
+        "sistema_percent": mem_sistema.percent,
+        "sistema_usado_mb": round(mem_sistema.used / (1024 * 1024), 2),
+        "sistema_total_mb": round(mem_sistema.total / (1024 * 1024), 2),
+    }
+
+
+def verificar_conexion_ollama(url="http://localhost:11434/api/tags", timeout=2):
+    """Verifica el estado del servicio Ollama local."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Bot-Monitor"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                modelos = [m.get("name") for m in data.get("models", [])]
+                return True, modelos
+            return False, []
+    except Exception:
+        return False, []
+
+
+def obtener_parametros_acusticos():
+    """Lee las configuraciones activas de timbre y perillas de voz."""
+    timbre = {}
+    perillas = {}
+
+    if os.path.exists("config_timbre.json"):
         try:
-            with open(ruta, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            logging.error(f"Error al leer {ruta}: {e}")
-    return por_defecto
+            with open("config_timbre.json", "r", encoding="utf-8") as f:
+                timbre = json.load(f)
+        except Exception:
+            pass
 
-def guardar_json(ruta, datos):
-    try:
-        with open(ruta, "w", encoding="utf-8") as f:
-            json.dump(datos, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        logging.error(f"Error al guardar {ruta}: {e}")
+    if os.path.exists("perillas_voz.json"):
+        try:
+            with open("perillas_voz.json", "r", encoding="utf-8") as f:
+                perillas = json.load(f)
+        except Exception:
+            pass
 
-def aplicar_correcciones_whisper(texto):
-    correcciones = cargar_json("correcciones_whisper.json", {})
-    texto_corregido = texto
-    for error, fix in correcciones.items():
-        texto_corregido = texto_corregido.replace(error, fix)
-    return texto_corregido
+    voz = timbre.get("voz") or perillas.get("voz", "es-AR-ElenaNeural")
+    pitch = timbre.get("pitch") or perillas.get("pitch", "+0Hz")
+    rate = timbre.get("rate") or perillas.get("rate", "+0%")
+    f0 = timbre.get("f0") or perillas.get("f0", 95)
+    volumen = timbre.get("volumen") or perillas.get("volumen", "+0%")
 
-def consultar_ollama_generate(prompt, sistema="", modelo=MODELO_DEFAULT, timeout=TIMEOUT_OLLAMA):
-    url = f"{OLLAMA_HOST}/api/generate"
-    payload = {
-        "model": modelo,
-        "prompt": prompt,
-        "system": sistema,
-        "stream": False
+    return {
+        "voz": voz,
+        "pitch": pitch,
+        "rate": rate,
+        "f0": f0,
+        "volumen": volumen,
     }
+
+
+def sincronizar_git_y_recargar():
+    """Guarda cambios pendientes, sincroniza con GitHub y ejecuta hot-reload."""
     try:
-        logging.info(f"Enviando solicitud a Ollama ({modelo}) con timeout de {timeout}s...")
-        resp = requests.post(url, json=payload, timeout=timeout)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("response", "").strip()
-    except requests.exceptions.Timeout:
-        logging.error(f"Timeout de {timeout}s alcanzado consultando Ollama en {url}")
-        return "Che, se me fue el tiempo esperando la respuesta local, fijate si Ollama no está colgado."
-    except Exception as e:
-        logging.error(f"Error en consultar_ollama_generate: {e}")
-        return ""
+        subprocess.run(["git", "add", "procesar.py"], check=False)
+        subprocess.run(
+            [
+                "git",
+                "commit",
+                "-m",
+                "feat: agregar comando /estado y métricas del sistema",
+            ],
+            check=False,
+        )
+        subprocess.run(
+            ["git", "push", "origin", "main"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
 
-def consultar_ollama_chat(mensajes, modelo=MODELO_DEFAULT, timeout=TIMEOUT_OLLAMA):
-    url = f"{OLLAMA_HOST}/api/chat"
-    payload = {
-        "model": modelo,
-        "messages": mensajes,
-        "stream": False
-    }
-    try:
-        logging.info(f"Enviando chat a Ollama ({modelo}) con timeout de {timeout}s...")
-        resp = requests.post(url, json=payload, timeout=timeout)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("message", {}).get("content", "").strip()
-    except requests.exceptions.Timeout:
-        logging.error(f"Timeout de {timeout}s alcanzado en chat con Ollama ({url})")
-        return "Che, se agotó el tiempo de espera de 180 segundos con el modelo local."
-    except Exception as e:
-        logging.error(f"Error en consultar_ollama_chat: {e}")
-        return ""
 
-def procesar_entrada_usuario(texto_usuario):
-    texto_limpio = aplicar_correcciones_whisper(texto_usuario)
-    perfil = cargar_json("perfil_personaje.json", {})
-    contexto = ""
-    if os.path.exists("contexto_leandro.txt"):
-        with open("contexto_leandro.txt", "r", encoding="utf-8") as f:
-            contexto = f.read().strip()
+async def manejar_estado(update, context):
+    """
+    Manejador para /estado o /status.
+    Muestra consumo de memoria RAM, uptime, conectividad con Ollama
+    y parámetros acústicos del timbre activo.
+    """
+    uptime_segundos = int(time.time() - BOT_START_TIME)
+    uptime_str = str(timedelta(seconds=uptime_segundos))
 
-    prompt_sistema = perfil.get("sistema", (
-        "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. "
-        "Hablale al usuario de vos o che, directo al pie, con modismos rioplatenses naturales."
-    ))
-    if contexto:
-        prompt_sistema += f"\nContexto adicional:\n{contexto}"
+    memoria = obtener_info_memoria()
+    ollama_ok, modelos_ollama = verificar_conexion_ollama()
+    timbre = obtener_parametros_acusticos()
 
-    mensajes = [
-        {"role": "system", "content": prompt_sistema},
-        {"role": "user", "content": texto_limpio}
-    ]
+    estado_ollama = (
+        f"🟢 Online ({len(modelos_ollama)} modelos disponibles)"
+        if ollama_ok
+        else "🔴 Offline / Inaccesible"
+    )
 
-    respuesta = consultar_ollama_chat(mensajes, timeout=TIMEOUT_OLLAMA)
+    mensaje = (
+        "⚙️ *ESTADO DEL SISTEMA Y TELEMETRÍA*\n\n"
+        f"⏱ *Uptime:* `{uptime_str}`\n"
+        f"🧠 *RAM del Bot:* `{memoria['proceso_mb']} MB`\n"
+        f"🖥 *RAM Sistema:* `{memoria['sistema_percent']}%` ({memoria['sistema_usado_mb']} / {memoria['sistema_total_mb']} MB)\n"
+        f"🦙 *Ollama:* {estado_ollama}\n\n"
+        "🎛 *Parámetros Acústicos Activos:*\n"
+        f"  • *Voz:* `{timbre['voz']}`\n"
+        f"  • *Pitch:* `{timbre['pitch']}`\n"
+        f"  • *Rate:* `{timbre['rate']}`\n"
+        f"  • *Frecuencia f0:* `{timbre['f0']} Hz`\n"
+        f"  • *Volumen:* `{timbre['volumen']}`"
+    )
 
-    try:
-        with open("conversaciones.txt", "a", encoding="utf-8") as f:
-            f.write(f"Usuario: {texto_limpio}\nBot: {respuesta}\n\n")
-    except Exception as e:
-        logging.error(f"No se pudo registrar la conversación: {e}")
+    if update and hasattr(update, "message") and update.message:
+        respuesta = update.message.reply_text(mensaje, parse_mode="Markdown")
+        if inspect.isawaitable(respuesta):
+            await respuesta
+    elif update and hasattr(update, "effective_chat") and update.effective_chat:
+        respuesta = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=mensaje,
+            parse_mode="Markdown",
+        )
+        if inspect.isawaitable(respuesta):
+            await respuesta
 
-    return respuesta
+    # Ejecutar push y hot-reload no bloqueante
+    sincronizar_git_y_recargar()
 
-def hot_reload():
-    logging.info("Ejecutando hot-reload de módulos en ejecución...")
-    modulos_a_recargar = [k for k in sys.modules.keys() if "procesar" in k]
-    for mod in modulos_a_recargar:
-        sys.modules.pop(mod, None)
-    logging.info("Hot-reload completado con éxito.")
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:])
-        print(procesar_entrada_usuario(query))
-    else:
-        logging.info(f"procesar.py inicializado con timeout local = {TIMEOUT_OLLAMA}s.")
-        hot_reload()
+# Alias para compatibilidad con dispatchers sincrónicos o alternativos
+manejar_status = manejar_estado
