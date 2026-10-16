@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Absoluto en Caliente + Git Push (LeandroBot[bot]) + DSP Libre + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Absoluto + Mapa de Repo + Git Push Autónomo (LeandroBot[bot]) + DSP Libre + Whisper
 
 import asyncio
 import json as json_lib
@@ -21,8 +21,9 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Total + Git Push Autónomo + DSP Libre)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Absoluto + Link a Repo + Git Push Autónomo + DSP Libre)...", flush=True)
 
+URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CONFIG_TIMBRE = "config_timbre.json"
@@ -94,10 +95,31 @@ def asegurar_ollama_en_runner():
         print(f"⚠️ Aviso conexión Ollama en runner: {ex}", flush=True)
     return False
 
+def obtener_mapa_repositorio(root_dir="."):
+    """
+    Escanea recursivamente el directorio local del Runner y genera un mapa de archivos
+    para que la IA sepa qué existe y dónde crear nuevos módulos o configuraciones.
+    """
+    mapa = []
+    ignorar = {".git", "__pycache__", ".github", "venv", "downloads"}
+    
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        dirnames[:] = [d for d in dirnames if d not in ignorar]
+        rel_path = os.path.relpath(dirpath, root_dir)
+        if rel_path == ".":
+            rel_path = ""
+            
+        for f in filenames:
+            if f.endswith((".py", ".json", ".txt", ".md", ".sh", ".yml")):
+                path_completo = os.path.join(rel_path, f) if rel_path else f
+                mapa.append(f"  📄 {path_completo}")
+                
+    return "\n".join(mapa) if mapa else "  📄 procesar.py\n  📄 config_timbre.json"
+
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
     """
     Hace git commit y push automático con la identidad de LeandroBot[bot]
-    para persistir los cambios directo en GitHub en caliente.
+    para persistir cualquier modificación o nuevo archivo directo en GitHub.
     """
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
     try:
@@ -122,6 +144,29 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return True
     except Exception as e:
         print(f"⚠️ Aviso git push automático: {e}", flush=True)
+        return False
+
+def crear_o_modificar_archivo_repo(path_relativo, contenido, mensaje_commit):
+    """
+    Crea un archivo nuevo o modifica uno existente en el repo,
+    y pushea los cambios en caliente a GitHub firmado por LeandroBot[bot].
+    """
+    try:
+        dir_padre = os.path.dirname(path_relativo)
+        if dir_padre and not os.path.exists(dir_padre):
+            os.makedirs(dir_padre, exist_ok=True)
+
+        if isinstance(contenido, (dict, list)):
+            with open(path_relativo, "w", encoding="utf-8") as f:
+                json_lib.dump(contenido, f, indent=4, ensure_ascii=False)
+        else:
+            with open(path_relativo, "w", encoding="utf-8") as f:
+                f.write(str(contenido))
+
+        print(f"📄 [VIBE CODING REPO]: Archivo '{path_relativo}' creado/modificado.", flush=True)
+        return guardar_y_pushear_como_leandrobot(path_relativo, mensaje_commit)
+    except Exception as e:
+        print(f"⚠️ Error en modificación de archivo en el repo: {e}", flush=True)
         return False
 
 def cargar_config_timbre():
@@ -180,14 +225,21 @@ def obtener_memoria_aprendizaje():
         return ""
 
 def buscar_en_web(query):
+    """
+    Búsqueda web limpia usando ddgs (o duckduckgo_search como fallback) sin arrojar warnings.
+    """
     try:
-        from duckduckgo_search import DDGS
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=3))
+        try:
+            from ddgs import DDGS
+        except ImportError:
+            from duckduckgo_search import DDGS
+            
+        with DDGS() as ddgs_instance:
+            results = list(ddgs_instance.text(query, max_results=3))
             if results:
                 lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
-                print(f"🌐 [WEB SEARCH]: {query}", flush=True)
-                return chr(10).join(lineas)
+                print(f"🌐 [WEB SEARCH]: {query[:40]}...", flush=True)
+                return "\n".join(lineas)
     except Exception as e:
         print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
     return ""
@@ -260,7 +312,6 @@ def parsear_timbre_dinamico_ia(instruccion_usuario):
         f0_directo = int(match_hz.group(1))
         cfg_actual["f0Hz"] = f0_directo
         
-        # Relación lineal proporcional continua respecto al neutro de 125 Hz
         delta_hz = f0_directo - 125
         signo = "+" if delta_hz >= 0 else ""
         cfg_actual["pitch"] = f"{signo}{delta_hz}Hz"
@@ -343,16 +394,18 @@ def parsear_timbre_dinamico_ia(instruccion_usuario):
 def construir_prompt_sistema():
     timbre = cargar_config_timbre()
     memoria = obtener_memoria_aprendizaje()
+    mapa_repo = obtener_mapa_repositorio()
 
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
+        f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
         "REGLAS CRÍTICAS DE INTERACCIÓN:\n"
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
-        "2. NUNCA imprimas bloques de código Python ni ejemplos textuales cuando el usuario pida modificar la voz o el tono. "
-        "Solamente respondé conversando y confirmando que la voz fue recalibrada.\n"
+        f"2. Tenés acceso total a la estructura completa de tu repositorio '{URL_REPOSITORIO}'. Podés modificar archivos existentes o crear archivos nuevos si el vibe coding lo requiere.\n"
         "3. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
         "4. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS.\n\n"
-        f"Parámetros acústicos activos (f0={timbre.get('f0Hz', 125)}Hz, voz: {timbre.get('voice')}, timbre: '{timbre.get('descripcion', 'Dinámico')}'):\n"
+        f"MAPA ESTRUCTURAL DE ARCHIVOS ACTIVO EN EL REPO:\n{mapa_repo}\n\n"
+        f"Parámetros acústicos activos (f0={timbre.get('f0Hz', 125)}Hz, voz: {timbre.get('voice')}):\n"
         f"Historial reciente de la charla:\n{memoria}\n"
     )
 
@@ -491,9 +544,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
-            "¡Qué hacés che! Acá Leandro. Vibe coding total y Git Push en caliente con LeandroBot[bot] activos.\n\n"
-            "• /timbre tomas / elena / <Hz / descripción>: Modificá la acústica de forma directa.\n"
-            "• /codigo <tarea>: Ejecuto vibe coding absoluto sobre cualquier archivo o lógica del bot."
+            f"¡Qué hacés che! Acá Leandro.\n"
+            f"Repositorio activo: {URL_REPOSITORIO}\n\n"
+            "• /timbre tomas / elena / <Hz o descripción libre>: Modificá la acústica de forma directa.\n"
+            "• /codigo <tarea>: Ejecuto vibe coding absoluto sobre cualquier archivo o lógica del repo."
         )
 
 async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -542,32 +596,22 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     instruccion = " ".join(context.args).strip() if context.args else ""
     if not instruccion:
-        await update.message.reply_text("Decime qué querés programar o modificar en el código, che.")
+        await update.message.reply_text("Decime qué querés programar o modificar en el repositorio, che.")
         return
 
-    await update.message.reply_text(f"💻 Ejecutando vibe coding absoluto para: '{instruccion}'...")
+    await update.message.reply_text(f"💻 Ejecutando vibe coding para: '{instruccion}'...")
     
-    # La IA analiza la tarea de código y devuelve la implementación
+    mapa_actual = obtener_mapa_repositorio()
     prompt_codigo = (
-        f"Act as an expert Python developer and maintainer of this bot repository ('procesar.py').\n"
-        f"User instruction for code modification: '{instruccion}'.\n"
-        "Analyze what needs to be changed in 'procesar.py' or project files. "
-        "Provide the complete Python code implementation or snippet that fulfills the user request cleanly, "
-        "ensuring it integrates seamlessly without breaking existing functionality."
+        f"Act as an expert Python developer with full write access to repo '{URL_REPOSITORIO}'.\n"
+        f"Current file map:\n{mapa_actual}\n\n"
+        f"User instruction: '{instruccion}'.\n"
+        "Generate the complete Python code implementation or file changes needed to fulfill this request. "
+        "Keep responses direct and clean."
     )
     resp_codigo = generar_texto_ia(prompt_codigo)
     
-    # Guardar cambios y autopushear a GitHub como LeandroBot[bot]
-    try:
-        with open("procesar.py", "r", encoding="utf-8") as f:
-            contenido_actual = f.read()
-        
-        # Aquí permitimos que la IA modifique o añada lógica al script principal
-        # Si la respuesta contiene código ejecutable limpio, se puede respaldar o aplicar.
-        print(f"💻 [VIBE CODING CÓDIGO]: Instrucción procesada para '{instruccion}'", flush=True)
-    except Exception as e:
-        print(f"⚠️ Error en vibe coding de código: {e}", flush=True)
-
+    print(f"💻 [VIBE CODING REPO]: Instrucción ejecutada: '{instruccion[:50]}'", flush=True)
     await update.message.reply_text(resp_codigo)
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
