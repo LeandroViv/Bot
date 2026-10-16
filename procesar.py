@@ -584,24 +584,43 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(f"💻 Ejecutando vibe coding sobre el repositorio para: '{instruccion}'...")
     
     mapa_actual = obtener_mapa_repositorio()
+
+    # 1. Intercepción directa para actualización limpia de ddgs / duckduckgo
+    if any(k in instruccion.lower() for k in ["ddgs", "duckduckgo", "search"]):
+        try:
+            with open("procesar.py", "r", encoding="utf-8") as f:
+                contenido = f.read()
+            
+            contenido_nuevo = re.sub(
+                r'from duckduckgo_search import DDGS',
+                'from ddgs import DDGS',
+                contenido
+            )
+            
+            exito = crear_o_modificar_archivo_repo("procesar.py", contenido_nuevo, f"chg: importacion ddgs limpia por vibe coding")
+            if exito:
+                await update.message.reply_text("🚀 ¡`procesar.py` actualizado con `ddgs` limpio y pusheado a GitHub como LeandroBot[bot]!")
+                return
+        except Exception as e:
+            print(f"⚠️ Error actualizando ddgs directo: {e}", flush=True)
+
+    # 2. Vibe coding general para reescritura de código
     prompt_codigo = (
-        f"Act as an expert Python developer with full write access to repo '{URL_REPOSITORIO}'.\n"
+        f"You are a Senior Python Developer modifying repo '{URL_REPOSITORIO}'.\n"
         f"Current file map:\n{mapa_actual}\n\n"
         f"User instruction: '{instruccion}'.\n"
-        "Generate the updated complete Python code implementation needed to fulfill this request cleanly."
+        "Return ONLY the updated Python code implementation inside ```python ... ``` without conversational fluff."
     )
     resp_codigo = generar_texto_ia(prompt_codigo)
     
-    # Si la orden pide modificar procesar.py o código fuente general
-    if any(k in instruccion.lower() for k in ["procesar.py", "procesar", "script", "ddgs", "duckduckgo", "código", "codigo", "modifica"]):
-        match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp_codigo)
-        contenido_a_guardar = match_code.group(1) if match_code else resp_codigo
+    match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp_codigo)
+    contenido_a_guardar = match_code.group(1) if match_code else resp_codigo
 
-        if len(contenido_a_guardar) > 100 and "def " in contenido_a_guardar:
-            exito = crear_o_modificar_archivo_repo("procesar.py", contenido_a_guardar, f"vibe-coding: {instruccion[:50]}")
-            if exito:
-                await update.message.reply_text("🚀 ¡`procesar.py` actualizado en vivo en el Runner y pusheado a GitHub como LeandroBot[bot]!")
-                return
+    if "def " in contenido_a_guardar and len(contenido_a_guardar) > 200:
+        exito = crear_o_modificar_archivo_repo("procesar.py", contenido_a_guardar, f"vibe-coding: {instruccion[:50]}")
+        if exito:
+            await update.message.reply_text("🚀 ¡`procesar.py` actualizado en vivo en el Runner y pusheado a GitHub como LeandroBot[bot]!")
+            return
 
     await update.message.reply_text(resp_codigo)
 
