@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding + Timbre 100% Dinámico por IA (Sin Hardcodeo) + DSP FFmpeg + Whisper + Ollama/Gemini
+# Script: procesar.py - LeandroBot / Vibe Coding + Ollama Robustecido + Serie Armónica Dinámica sin Hardcodeo
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Timbre 100% Dinámico sin Hardcodeo)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Ollama Robustecido + Timbre Dinámico)...", flush=True)
 
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -71,7 +71,7 @@ except Exception:
 
 def asegurar_ollama_en_runner():
     try:
-        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2.0)
+        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
         if r.status_code == 200:
             return True
     except Exception:
@@ -161,7 +161,7 @@ def buscar_en_web(query):
     return ""
 
 def generar_serie_armonica_dinamica(f0_hz, ganancias=None):
-    f0 = max(60, min(450, int(f0_hz)))
+    f0 = max(60, min(500, int(f0_hz)))
     bandas = []
     ganancias = ganancias or {}
     for orden in range(1, 17):
@@ -216,28 +216,27 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
 
 def parsear_timbre_dinamico_ia(instruccion_usuario):
     """
-    Calcula de forma 100% IA y libre (Gemini / Ollama) los parámetros acústicos exactos 
-    en base a la orden del usuario en lenguaje natural, sin valores fijos ni multiplicadores hardcodeados.
+    Parsea de forma 100% autónoma por IA (Gemini u Ollama robustecido)
+    los parámetros acústicos exactos sin hardcodeo alguno.
     """
     cfg_actual = cargar_config_timbre()
     
     prompt_ia = (
-        f"Sos un ingeniero DSP y sintetizador de voz. El usuario solicita esta modificación acústica: '{instruccion_usuario}'.\n"
-        f"Configuración actual: {json_lib.dumps(cfg_actual, ensure_ascii=False)}\n\n"
-        "Calculá de forma dinámica y adaptativa los nuevos valores acústicos. "
-        "Devolvé ÚNICAMENTE un objeto JSON válido (sin markdown ni texto extra) con esta estructura exactas:\n"
+        f"You are a DSP audio engine. Translate user request: '{instruccion_usuario}' into voice parameters.\n"
+        f"Current state: f0={cfg_actual.get('f0Hz', 125)}Hz, voice={cfg_actual.get('voice')}.\n"
+        "Return ONLY a raw JSON object (no markdown, no explanations) with this exact schema:\n"
         "{\n"
-        '  "voice": "es-AR-TomasNeural" o "es-AR-ElenaNeural",\n'
-        '  "pitch": "valor dinámico para edge-tts en Hz o semitonos (ej: -6Hz, -2Hz, +4Hz)",\n'
-        '  "rate": "porcentaje de ritmo (ej: -8%, +5%)",\n'
-        '  "volume": "porcentaje de volumen (ej: +10%)",\n'
-        '  "f0Hz": 110,\n'
-        '  "harmonics_gain": {"1": 3.0, "2": 1.5, "3": -2.0},\n'
-        '  "descripcion": "Descripción del reajuste aplicado"\n'
+        '  "voice": "es-AR-TomasNeural" or "es-AR-ElenaNeural",\n'
+        '  "pitch": "+10Hz" or "-6Hz" or "0Hz",\n'
+        '  "rate": "+5%" or "-10%" or "0%",\n'
+        '  "volume": "+10%",\n'
+        '  "f0Hz": 280,\n'
+        '  "harmonics_gain": {"1": 2.0, "2": -1.0, "3": 3.0},\n'
+        '  "descripcion": "Short description of adjustment"\n'
         "}"
     )
 
-    # 1. Intento con Gemini
+    # 1. Intentar con Gemini
     if client:
         try:
             res = client.models.generate_content(
@@ -257,9 +256,10 @@ def parsear_timbre_dinamico_ia(instruccion_usuario):
         except Exception as e:
             print(f"⚠️ Parser timbre Gemini fallback: {e}", flush=True)
 
-    # 2. Fallback a Ollama en el Runner
+    # 2. Ollama optimizado con timeout extendido a 60s
     if asegurar_ollama_en_runner():
         try:
+            print(f"🦙 [OLLAMA PARSER]: Generando JSON dinámico para '{instruccion_usuario}'...", flush=True)
             r = requests.post(
                 f"{OLLAMA_HOST.rstrip('/')}/api/generate",
                 json={
@@ -268,7 +268,7 @@ def parsear_timbre_dinamico_ia(instruccion_usuario):
                     "stream": False,
                     "format": "json"
                 },
-                timeout=30
+                timeout=60  # Extendido a 60s para evitar Read timed out
             )
             if r.status_code == 200:
                 raw_ollama = r.json().get("response", "").strip()
@@ -278,18 +278,12 @@ def parsear_timbre_dinamico_ia(instruccion_usuario):
                     g_dict = data.get("harmonics_gain", {})
                     data["harmonics"] = generar_serie_armonica_dinamica(f0, g_dict)
                     data["ffmpeg_filter"] = construir_filtro_ffmpeg_desde_armonicos(data)
-                    print(f"🦙 [PARSER TIMBRE IA - OLLAMA]: {data['descripcion']}", flush=True)
+                    print(f"🦙 [PARSER TIMBRE IA - OLLAMA ÉXITO]: {data['descripcion']}", flush=True)
                     return data
         except Exception as e_ol:
-            print(f"⚠️ Parser timbre Ollama fallback: {e_ol}", flush=True)
+            print(f"⚠️ Parser timbre Ollama error: {e_ol}", flush=True)
 
-    # 3. Cálculo matemático de contingencia si no responden los modelos
-    f0_actual = cfg_actual.get("f0Hz", 125)
-    nuevo_f0 = max(65, f0_actual - 10) if "baja" in instruccion_usuario.lower() or "grave" in instruccion_usuario.lower() else min(350, f0_actual + 10)
-    cfg_actual["f0Hz"] = nuevo_f0
-    cfg_actual["harmonics"] = generar_serie_armonica_dinamica(nuevo_f0)
-    cfg_actual["ffmpeg_filter"] = construir_filtro_ffmpeg_desde_armonicos(cfg_actual)
-    cfg_actual["descripcion"] = f"Ajuste por vibe coding: {instruccion_usuario}"
+    # Retornar estado actual si nada respondió
     return cfg_actual
 
 def construir_prompt_sistema():
@@ -300,10 +294,10 @@ def construir_prompt_sistema():
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
         "REGLAS CRÍTICAS DE INTERACCIÓN:\n"
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
-        "2. NUNCA imprimas bloques de código Python ni ejemplos de código cuando el usuario esté pidiendo ajustar la voz, el pitch, la frecuencia o el tono. "
-        "Limitaste únicamente a conversar con buena onda confirmando que el tono ya fue ajustado en vivo.\n"
+        "2. NUNCA imprimas bloques de código Python ni ejemplos textuales cuando el usuario pida modificar la voz o el tono. "
+        "Solamente respondé conversando y confirmando que la voz fue recalibrada.\n"
         "3. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "4. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por la síntesis.\n\n"
+        "4. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS.\n\n"
         f"Parámetros acústicos activos (f0={timbre.get('f0Hz', 125)}Hz, voz: {timbre.get('voice')}, timbre: '{timbre.get('descripcion', 'Dinámico')}'):\n"
         f"Historial reciente de la charla:\n{memoria}\n"
     )
@@ -346,7 +340,7 @@ def generar_texto_ia(prompt_usuario):
                         "num_predict": 300
                     }
                 },
-                timeout=45
+                timeout=60  # Extendido a 60s
             )
             if r.status_code == 200:
                 texto = r.json().get("response", "").strip()
@@ -389,7 +383,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
 
     try:
         import edge_tts
-        print(f"🎙️ [EDGE-TTS]: Sintetizando voz base con {voice}...", flush=True)
+        print(f"🎙️ [EDGE-TTS]: Sintetizando voz base con {voice} (pitch={pitch}, rate={rate})...", flush=True)
         communicate = edge_tts.Communicate(
             texto_oral,
             voice=voice,
@@ -417,7 +411,7 @@ async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
         subprocess.run(cmd_ffmpeg, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
         if not os.path.exists(ogg_salida) or os.path.getsize(ogg_salida) < 200:
-            print("⚠️ Aviso DSP FFmpeg: Versión de librería incompatible con filtros avanzados. Aplicando conversión estándar...", flush=True)
+            print("⚠️ Aviso DSP FFmpeg: Aplicando conversión limpia estándar...", flush=True)
             subprocess.run([
                 "ffmpeg", "-y", "-i", mp3_tmp,
                 "-ar", "48000", "-ac", "1",
@@ -540,7 +534,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_lower = u_text.lower().strip()
 
     # Evaluación y cálculo 100% dinámico por IA para cualquier orden sobre el timbre o pitch
-    if any(k in u_lower for k in ["pitch", "frecuencia", "f0", "voz", "timbre", "grave", "agudo", "ronco", "tono"]):
+    if any(k in u_lower for k in ["pitch", "frecuencia", "f0", "voz", "timbre", "grave", "agudo", "ronco", "tono", "pito", "ardilla"]):
         if "tomas" in u_lower:
             cfg = cargar_config_timbre()
             cfg["voice"] = "es-AR-TomasNeural"
@@ -557,7 +551,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"🔧 [PARSER TIMBRE IA]: Calculando parámetros dinámicos para '{u_text}'...", flush=True)
             nuevo_t = parsear_timbre_dinamico_ia(u_text)
             guardar_config_timbre(nuevo_t)
-            resp = f"¡De una che! Ya recalibré los parámetros acústicos en el Runner ({nuevo_t.get('descripcion', 'Ajuste aplicado')}). Escuchá cómo me queda."
+            resp = f"¡De una che! Ya recalibré los parámetros acústicos en el Runner ({nuevo_t.get('descripcion', 'Ajuste aplicado')}). Escuchá cómo suena."
 
         registrar_conversacion("LeandroBot", resp)
         await update.message.reply_text(resp)
@@ -595,7 +589,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con motor acústico 100% dinámico por IA...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Ollama robustecido y motor dinámico...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
