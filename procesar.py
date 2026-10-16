@@ -594,8 +594,8 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not update.message:
         return
 
-    texto_raw = update.message.text or ""
-    instruccion = re.sub(r'^/(codigo|código|vibe)\s*', '', texto_raw, flags=re.IGNORECASE).strip()
+    texto_raw = (update.message.text or "").strip('\u200b\ufeff\t\r\n ')
+    instruccion = re.sub(r'^[/\\]*(codigo|código|vibe)\s*', '', texto_raw, flags=re.IGNORECASE).strip()
 
     if not instruccion and context.args:
         instruccion = " ".join(context.args).strip()
@@ -609,7 +609,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     # 1. Ejecución directa de comandos de terminal Linux (pip, git, bash, etc.)
     u_low = instruccion.lower()
     if u_low.startswith(("pip ", "python ", "git ", "ls", "pwd", "apt", "curl", "npm")) or "instalar" in u_low or "install" in u_low:
-        if "instalar" in u_low and "ddgs" in u_low:
+        if "ddgs" in u_low:
             cmd = f"{sys.executable} -m pip install --upgrade ddgs"
         elif u_low.startswith("instalar "):
             paquete = instruccion.split("instalar ", 1)[1].strip()
@@ -649,10 +649,10 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.message.chat_id
 
-    u_text = update.message.text or update.message.caption or ""
+    u_text = (update.message.text or update.message.caption or "").strip('\u200b\ufeff\t\r\n ')
 
-    # Interceptar /código con tilde para que funcione igual que /codigo
-    if u_text.lower().startswith(("/código", "/codigo", "/vibe")):
+    # Interceptar /codigo, /código o /vibe incluso con caracteres invisibles al inicio
+    if re.search(r'^[/\\]*(codigo|código|vibe)', u_text, re.IGNORECASE):
         await manejar_vibe_coding(update, context)
         return
 
