@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           persist-credentials: true
 
       - name: Configurar Python
@@ -53,7 +53,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          GH_BOT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_BOT_TOKEN: ${{ secrets.GH_PAT }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
           OLLAMA_MODEL: "llama3.2"
         run: |
