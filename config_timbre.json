@@ -1,10 +1,128 @@
 {
     "voice": "es-AR-ElenaNeural",
-    "volume": "+0dB",
-    "tempo": "1.0",
-    "sample_rate_factor": "0.8",
-    "persona_prompt": "Sos Elena, una interlocutora y colega rioplatense.",
-    "armonicos_hz_db": {},
-    "aplica_cambio": true,
-    "descripcion": "activa es-AR-ElenaNeural"
+    "pitch": "+10Hz",
+    "rate": "+5%",
+    "volume": "+10%",
+    "f0Hz": 280,
+    "harmonics_gain": {
+        "1": 2.0,
+        "2": -1.0,
+        "3": 3.0
+    },
+    "descripcion": "High-pitched voice",
+    "harmonics": [
+        {
+            "order": 1,
+            "hz": 280,
+            "gainDb": 2.0,
+            "q": 1.5,
+            "enabled": true
+        },
+        {
+            "order": 2,
+            "hz": 560,
+            "gainDb": -1.0,
+            "q": 2.0,
+            "enabled": true
+        },
+        {
+            "order": 3,
+            "hz": 840,
+            "gainDb": 3.0,
+            "q": 2.0,
+            "enabled": true
+        },
+        {
+            "order": 4,
+            "hz": 1120,
+            "gainDb": 0.0,
+            "q": 2.0,
+            "enabled": true
+        },
+        {
+            "order": 5,
+            "hz": 1400,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 6,
+            "hz": 1680,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 7,
+            "hz": 1960,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 8,
+            "hz": 2240,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 9,
+            "hz": 2520,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 10,
+            "hz": 2800,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 11,
+            "hz": 3080,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 12,
+            "hz": 3360,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 13,
+            "hz": 3640,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 14,
+            "hz": 3920,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 15,
+            "hz": 4200,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        },
+        {
+            "order": 16,
+            "hz": 4480,
+            "gainDb": 0.0,
+            "q": 3.0,
+            "enabled": true
+        }
+    ],
+    "ffmpeg_filter": "equalizer=f=280:width_type=q:w=1.5:g=2.0,equalizer=f=560:width_type=q:w=2.0:g=-1.0,equalizer=f=840:width_type=q:w=2.0:g=3.0,volume=1.58,atempo=1.05"
 }
