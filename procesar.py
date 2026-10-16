@@ -584,7 +584,7 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
     if ok and path_a and os.path.exists(path_a):
         with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre applied and pushed to GitHub")
+            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre aplicado y pusheado a GitHub")
         try: os.remove(path_a)
         except Exception: pass
     else:
@@ -650,6 +650,11 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID_ACTIVO = update.message.chat_id
 
     u_text = update.message.text or update.message.caption or ""
+
+    # Interceptar /código con tilde para que funcione igual que /codigo
+    if u_text.lower().startswith(("/código", "/codigo", "/vibe")):
+        await manejar_vibe_coding(update, context)
+        return
 
     if update.message.voice or update.message.audio:
         print("📥 [AUDIO RECIBIDO]: Procesando con Whisper...", flush=True)
@@ -742,7 +747,6 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("timbre", cambiar_timbre))
     app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
-    app.add_handler(CommandHandler("código", manejar_vibe_coding))
     app.add_handler(CommandHandler("vibe", manejar_vibe_coding))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
 
