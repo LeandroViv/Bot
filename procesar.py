@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Absoluto + Mapa de Repo + Git Push Autónomo (LeandroBot[bot]) + DSP Libre + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Absoluto + Auto-Modificación de Repo + Git Push (LeandroBot[bot]) + DSP Libre + Whisper
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Absoluto + Link a Repo + Git Push Autónomo + DSP Libre)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Completo + Auto-Actualización de Código + Git Push Autónomo)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -96,10 +96,6 @@ def asegurar_ollama_en_runner():
     return False
 
 def obtener_mapa_repositorio(root_dir="."):
-    """
-    Escanea recursivamente el directorio local del Runner y genera un mapa de archivos
-    para que la IA sepa qué existe y dónde crear nuevos módulos o configuraciones.
-    """
     mapa = []
     ignorar = {".git", "__pycache__", ".github", "venv", "downloads"}
     
@@ -117,10 +113,6 @@ def obtener_mapa_repositorio(root_dir="."):
     return "\n".join(mapa) if mapa else "  📄 procesar.py\n  📄 config_timbre.json"
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
-    """
-    Hace git commit y push automático con la identidad de LeandroBot[bot]
-    para persistir cualquier modificación o nuevo archivo directo en GitHub.
-    """
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
     try:
         subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=True)
@@ -147,10 +139,6 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return False
 
 def crear_o_modificar_archivo_repo(path_relativo, contenido, mensaje_commit):
-    """
-    Crea un archivo nuevo o modifica uno existente en el repo,
-    y pushea los cambios en caliente a GitHub firmado por LeandroBot[bot].
-    """
     try:
         dir_padre = os.path.dirname(path_relativo)
         if dir_padre and not os.path.exists(dir_padre):
@@ -226,14 +214,14 @@ def obtener_memoria_aprendizaje():
 
 def buscar_en_web(query):
     """
-    Búsqueda web limpia usando ddgs (o duckduckgo_search como fallback) sin arrojar warnings.
+    Búsqueda web limpia usando ddgs sin arrojar RuntimeWarning.
     """
     try:
         try:
             from ddgs import DDGS
         except ImportError:
             from duckduckgo_search import DDGS
-            
+
         with DDGS() as ddgs_instance:
             results = list(ddgs_instance.text(query, max_results=3))
             if results:
@@ -245,9 +233,6 @@ def buscar_en_web(query):
     return ""
 
 def generar_serie_armonica_dinamica(f0_hz, ganancias=None):
-    """
-    Genera serie armónica libre de topes artificiales hasta el límite Nyquist (22kHz).
-    """
     f0 = max(40, int(f0_hz))
     bandas = []
     ganancias = ganancias or {}
@@ -302,9 +287,6 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
     return ",".join(partes)
 
 def parsear_timbre_dinamico_ia(instruccion_usuario):
-    """
-    Parser acústico libre de topes fijos: vincula proporcionalmente cualquier Hz con el Pitch.
-    """
     cfg_actual = cargar_config_timbre()
     
     match_hz = re.search(r'(\d+)\s*hz', instruccion_usuario, re.IGNORECASE)
@@ -546,7 +528,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\n"
             f"Repositorio activo: {URL_REPOSITORIO}\n\n"
-            "• /timbre tomas / elena / <Hz o descripción libre>: Modificá la acústica de forma directa.\n"
+            "• /timbre tomas / elena / <Hz o descripción>: Modificá la acústica de forma directa.\n"
             "• /codigo <tarea>: Ejecuto vibe coding absoluto sobre cualquier archivo o lógica del repo."
         )
 
@@ -599,19 +581,28 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text("Decime qué querés programar o modificar en el repositorio, che.")
         return
 
-    await update.message.reply_text(f"💻 Ejecutando vibe coding para: '{instruccion}'...")
+    await update.message.reply_text(f"💻 Ejecutando vibe coding sobre el repositorio para: '{instruccion}'...")
     
     mapa_actual = obtener_mapa_repositorio()
     prompt_codigo = (
         f"Act as an expert Python developer with full write access to repo '{URL_REPOSITORIO}'.\n"
         f"Current file map:\n{mapa_actual}\n\n"
         f"User instruction: '{instruccion}'.\n"
-        "Generate the complete Python code implementation or file changes needed to fulfill this request. "
-        "Keep responses direct and clean."
+        "Generate the updated complete Python code implementation needed to fulfill this request cleanly."
     )
     resp_codigo = generar_texto_ia(prompt_codigo)
     
-    print(f"💻 [VIBE CODING REPO]: Instrucción ejecutada: '{instruccion[:50]}'", flush=True)
+    # Si la orden pide modificar procesar.py o código fuente general
+    if any(k in instruccion.lower() for k in ["procesar.py", "procesar", "script", "ddgs", "duckduckgo", "código", "codigo", "modifica"]):
+        match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp_codigo)
+        contenido_a_guardar = match_code.group(1) if match_code else resp_codigo
+
+        if len(contenido_a_guardar) > 100 and "def " in contenido_a_guardar:
+            exito = crear_o_modificar_archivo_repo("procesar.py", contenido_a_guardar, f"vibe-coding: {instruccion[:50]}")
+            if exito:
+                await update.message.reply_text("🚀 ¡`procesar.py` actualizado en vivo en el Runner y pusheado a GitHub como LeandroBot[bot]!")
+                return
+
     await update.message.reply_text(resp_codigo)
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -651,7 +642,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     registrar_conversacion("Usuario", u_text)
     u_lower = u_text.lower().strip()
 
-    # Intercepción acústica en caliente libre de topes
     if re.search(r'\b\d+\s*hz\b', u_lower) or any(k in u_lower for k in ["pitch", "frecuencia", "f0", "voz", "timbre", "grave", "agudo", "ronco", "tono", "pito", "ardilla", "fundamental", "cambia", "cambiá", "aplica", "aplicá"]):
         if "tomas" in u_lower:
             cfg = cargar_config_timbre()
