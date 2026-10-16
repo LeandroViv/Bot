@@ -220,7 +220,7 @@ def buscar_en_web(query):
         try:
             from ddgs import DDGS
         except ImportError:
-            from duckduckgo_search import DDGS
+            from ddgs import DDGS
 
         with DDGS() as ddgs_instance:
             results = list(ddgs_instance.text(query, max_results=3))
@@ -592,7 +592,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
                 contenido = f.read()
             
             contenido_nuevo = re.sub(
-                r'from duckduckgo_search import DDGS',
+                r'from ddgs import DDGS',
                 'from ddgs import DDGS',
                 contenido
             )
