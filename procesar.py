@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Absoluto + Auto-Modificación de Repo + Git Push (LeandroBot[bot]) + DSP Libre + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Absoluto + Terminal Runner Dinámica + Git Push Autónomo + DSP Libre + Whisper
 
 import asyncio
 import json as json_lib
@@ -21,7 +21,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Completo + Auto-Actualización de Código + Git Push Autónomo)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Terminal Runner Dinámica en Vivo)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -94,6 +94,26 @@ def asegurar_ollama_en_runner():
     except Exception as ex:
         print(f"⚠️ Aviso conexión Ollama en runner: {ex}", flush=True)
     return False
+
+def ejecutar_comando_runner_en_vivo(cmd_str):
+    """
+    Ejecuta cualquier comando de consola directamente en el Runner de Linux en tiempo real.
+    """
+    try:
+        print(f"💻 [TERMINAL RUNNER]: Ejecutando -> {cmd_str}", flush=True)
+        res = subprocess.run(
+            cmd_str,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        salida = res.stdout.strip() if res.stdout else res.stderr.strip()
+        if not salida:
+            salida = "Comando ejecutado con éxito (sin salida gráfica)."
+        return True, salida
+    except Exception as e:
+        return False, f"Error ejecutando comando: {str(e)}"
 
 def obtener_mapa_repositorio(root_dir="."):
     mapa = []
@@ -213,14 +233,11 @@ def obtener_memoria_aprendizaje():
         return ""
 
 def buscar_en_web(query):
-    """
-    Búsqueda web limpia usando ddgs sin arrojar RuntimeWarning.
-    """
     try:
         try:
             from ddgs import DDGS
         except ImportError:
-            from ddgs import DDGS
+            from duckduckgo_search import DDGS
 
         with DDGS() as ddgs_instance:
             results = list(ddgs_instance.text(query, max_results=3))
@@ -383,7 +400,7 @@ def construir_prompt_sistema():
         f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
         "REGLAS CRÍTICAS DE INTERACCIÓN:\n"
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
-        f"2. Tenés acceso total a la estructura completa de tu repositorio '{URL_REPOSITORIO}'. Podés modificar archivos existentes o crear archivos nuevos si el vibe coding lo requiere.\n"
+        f"2. Tenés acceso total a la terminal de Linux y a la estructura completa del repo '{URL_REPOSITORIO}'. Podés modificar archivos o ejecutar comandos de consola directamente.\n"
         "3. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
         "4. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS.\n\n"
         f"MAPA ESTRUCTURAL DE ARCHIVOS ACTIVO EN EL REPO:\n{mapa_repo}\n\n"
@@ -529,7 +546,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"¡Qué hacés che! Acá Leandro.\n"
             f"Repositorio activo: {URL_REPOSITORIO}\n\n"
             "• /timbre tomas / elena / <Hz o descripción>: Modificá la acústica de forma directa.\n"
-            "• /codigo <tarea>: Ejecuto vibe coding absoluto sobre cualquier archivo o lógica del repo."
+            "• /codigo <comando o tarea>: Ejecuto comandos de terminal o modifica archivos en el Runner."
         )
 
 async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -578,35 +595,31 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     instruccion = " ".join(context.args).strip() if context.args else ""
     if not instruccion:
-        await update.message.reply_text("Decime qué querés programar o modificar en el repositorio, che.")
+        await update.message.reply_text("Decime qué comando de consola o tarea querés ejecutar en el Runner, che.")
         return
 
-    await update.message.reply_text(f"💻 Ejecutando vibe coding sobre el repositorio para: '{instruccion}'...")
-    
+    await update.message.reply_text(f"💻 Procesando comando en el Runner para: '{instruccion}'...")
+
+    # 1. Ejecución directa de comandos de terminal Linux (pip, git, bash, etc.)
+    u_low = instruccion.lower()
+    if u_low.startswith(("pip ", "python ", "git ", "ls", "pwd", "apt", "curl", "npm")) or "instalar" in u_low or "install" in u_low:
+        if "instalar" in u_low and "ddgs" in u_low:
+            cmd = f"{sys.executable} -m pip install --upgrade ddgs"
+        elif u_low.startswith("instalar "):
+            paquete = instruccion.split("instalar ", 1)[1].strip()
+            cmd = f"{sys.executable} -m pip install --upgrade {paquete}"
+        else:
+            cmd = instruccion
+
+        ok, salida = ejecutar_comando_runner_en_vivo(cmd)
+        resp = f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```"
+        await update.message.reply_text(resp, parse_mode="Markdown")
+        return
+
+    # 2. Vibe coding general para reescritura de código en archivos
     mapa_actual = obtener_mapa_repositorio()
-
-    # 1. Intercepción directa para actualización limpia de ddgs / duckduckgo
-    if any(k in instruccion.lower() for k in ["ddgs", "duckduckgo", "search"]):
-        try:
-            with open("procesar.py", "r", encoding="utf-8") as f:
-                contenido = f.read()
-            
-            contenido_nuevo = re.sub(
-                r'from ddgs import DDGS',
-                'from ddgs import DDGS',
-                contenido
-            )
-            
-            exito = crear_o_modificar_archivo_repo("procesar.py", contenido_nuevo, f"chg: importacion ddgs limpia por vibe coding")
-            if exito:
-                await update.message.reply_text("🚀 ¡`procesar.py` actualizado con `ddgs` limpio y pusheado a GitHub como LeandroBot[bot]!")
-                return
-        except Exception as e:
-            print(f"⚠️ Error actualizando ddgs directo: {e}", flush=True)
-
-    # 2. Vibe coding general para reescritura de código
     prompt_codigo = (
-        f"You are a Senior Python Developer modifying repo '{URL_REPOSITORIO}'.\n"
+        f"You are a Senior Python Developer with terminal and write access to repo '{URL_REPOSITORIO}'.\n"
         f"Current file map:\n{mapa_actual}\n\n"
         f"User instruction: '{instruccion}'.\n"
         "Return ONLY the updated Python code implementation inside ```python ... ``` without conversational fluff."
@@ -705,7 +718,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             with open(archivo_audio, "rb") as vf:
                 await update.message.reply_voice(voice=vf, caption="📻 Leandro")
-            print(f"📤 [NOTA DE VOZ ENVIADA]: Leandro", flush=True)
+            print(f"📤 [NOTA DE VOZ ENVIADA]: Leandro")
         except Exception as ex_send:
             print(f"⚠️ Error enviando audio: {ex_send}", flush=True)
         try: os.remove(archivo_audio)
@@ -716,7 +729,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con Git Autopush (LeandroBot[bot]) y DSP libre...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Git Autopush (LeandroBot[bot]) y terminal activa...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
