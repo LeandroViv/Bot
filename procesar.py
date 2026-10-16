@@ -584,7 +584,7 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ok, path_a = await sintetizar_voz_edge_tts(frase_test, ogg_test)
     if ok and path_a and os.path.exists(path_a):
         with open(path_a, "rb") as vf:
-            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre aplicado y pusheado a GitHub")
+            await update.message.reply_voice(voice=vf, caption=f"✅ Timbre applied and pushed to GitHub")
         try: os.remove(path_a)
         except Exception: pass
     else:
@@ -593,7 +593,13 @@ async def cambiar_timbre(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
-    instruccion = " ".join(context.args).strip() if context.args else ""
+
+    texto_raw = update.message.text or ""
+    instruccion = re.sub(r'^/(codigo|código|vibe)\s*', '', texto_raw, flags=re.IGNORECASE).strip()
+
+    if not instruccion and context.args:
+        instruccion = " ".join(context.args).strip()
+
     if not instruccion:
         await update.message.reply_text("Decime qué comando de consola o tarea querés ejecutar en el Runner, che.")
         return
@@ -718,7 +724,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             with open(archivo_audio, "rb") as vf:
                 await update.message.reply_voice(voice=vf, caption="📻 Leandro")
-            print(f"📤 [NOTA DE VOZ ENVIADA]: Leandro")
+            print(f"📤 [NOTA DE VOZ ENVIADA]: Leandro", flush=True)
         except Exception as ex_send:
             print(f"⚠️ Error enviando audio: {ex_send}", flush=True)
         try: os.remove(archivo_audio)
@@ -736,6 +742,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("timbre", cambiar_timbre))
     app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
+    app.add_handler(CommandHandler("código", manejar_vibe_coding))
     app.add_handler(CommandHandler("vibe", manejar_vibe_coding))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
 
