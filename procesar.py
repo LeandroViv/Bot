@@ -606,7 +606,6 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await update.message.reply_text(f"💻 Procesando comando en el Runner para: '{instruccion}'...")
 
-    # 1. Ejecución directa de comandos de terminal Linux (pip, git, bash, etc.)
     u_low = instruccion.lower()
     if u_low.startswith(("pip ", "python ", "git ", "ls", "pwd", "apt", "curl", "npm")) or "instalar" in u_low or "install" in u_low:
         if "ddgs" in u_low:
@@ -622,7 +621,6 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(resp, parse_mode="Markdown")
         return
 
-    # 2. Vibe coding general para reescritura de código en archivos
     mapa_actual = obtener_mapa_repositorio()
     prompt_codigo = (
         f"You are a Senior Python Developer with terminal and write access to repo '{URL_REPOSITORIO}'.\n"
@@ -634,6 +632,9 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp_codigo)
     contenido_a_guardar = match_code.group(1) if match_code else resp_codigo
+    
+    # 🔒 BLINDAJE ANTI-MARKDOWN HARDCODEADO:
+    contenido_a_guardar = contenido_a_guardar.replace("```python", "").replace("```", "").strip()
 
     if "def " in contenido_a_guardar and len(contenido_a_guardar) > 200:
         exito = crear_o_modificar_archivo_repo("procesar.py", contenido_a_guardar, f"vibe-coding: {instruccion[:50]}")
@@ -651,7 +652,6 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     u_text = (update.message.text or update.message.caption or "").strip('\u200b\ufeff\t\r\n ')
 
-    # Interceptar /codigo, /código o /vibe incluso con caracteres invisibles al inicio
     if re.search(r'^[/\\]*(codigo|código|vibe)', u_text, re.IGNORECASE):
         await manejar_vibe_coding(update, context)
         return
