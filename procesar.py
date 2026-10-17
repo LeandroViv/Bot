@@ -590,9 +590,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-``` <FollowUp>
-¿Querés que te arme la función `aplicar_cambio_por_lotes()` para el reemplazo AST de funciones específicas o probamos primero este script completo con sobreescritura forzada, che?
-</FollowUp>
 
-<ElicitationsGroup>
-</ElicitationsGroup>
