@@ -492,6 +492,13 @@ def main():
         print('❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.', flush=True)
         return
     print('🚀 [INIT]: Arrancando polling con Vibe Coding Quirúrgico por AST...', flush=True)
+    try:
+        tareas = [{'tarea': 'Escribirle a Leandro en el día', 'pendiente': True, 'estado': 'pendiente'}]
+        with open('memoria_tareas.json', 'w', encoding='utf-8') as f:
+            json_lib.dump(tareas, f, indent=4, ensure_ascii=False)
+        guardar_y_pushear_como_leandrobot('memoria_tareas.json', 'tarea: escribirle a Leandro en el día')
+    except Exception as e:
+        print(f'⚠️ Error actualizando memoria_tareas.json: {e}', flush=True)
     if os.path.exists('memoria_tareas.json'):
         try:
             with open('memoria_tareas.json', 'r', encoding='utf-8') as f:
