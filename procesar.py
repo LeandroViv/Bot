@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Single Instance PID + DSP + Whisper
 
 import asyncio
 import json as json_lib
@@ -12,6 +12,8 @@ import requests
 import time
 import ast
 import shutil
+import signal
+import platform
 from datetime import datetime
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -23,6 +25,32 @@ from telegram.ext import (
     filters,
 )
 
+PID_FILE = ".bot.pid"
+TIEMPO_INICIO = time.time()
+
+def matar_instancia_anterior():
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r", encoding="utf-8") as f:
+                pid_viejo = int(f.read().strip())
+            
+            if pid_viejo != os.getpid():
+                print(f"🔄 [SINGLE INSTANCE]: Cerrando instancia anterior (PID {pid_viejo})...", flush=True)
+                os.kill(pid_viejo, signal.SIGTERM)
+                time.sleep(1)
+        except (ValueError, ProcessLookupError, PermissionError) as e:
+            print(f"ℹ️ Limpiando registro PID previo: {e}", flush=True)
+        except Exception as e:
+            print(f"⚠️ Aviso al cerrar instancia anterior: {e}", flush=True)
+
+    try:
+        with open(PID_FILE, "w", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+    except Exception as e:
+        print(f"⚠️ No se pudo guardar PID file: {e}", flush=True)
+
+matar_instancia_anterior()
+
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
@@ -32,8 +60,6 @@ CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
 CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 CORRECCIONES_WHISPER = "correcciones_whisper.json"
-
-TIEMPO_INICIO = time.time()
 
 for f_path, default_val in [
     (TXT_FILE, ""),
@@ -118,6 +144,16 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
         return True, salida
     except Exception as e:
         return False, f"Error ejecutando comando: {str(e)}"
+
+def obtener_codigo_actual():
+    """Lee procesar.py completo para entregarlo como contexto base al modelo"""
+    if os.path.exists("procesar.py"):
+        try:
+            with open("procesar.py", "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            print(f"⚠️ Error leyendo procesar.py: {e}", flush=True)
+    return ""
 
 def obtener_mapa_repositorio(root_dir="."):
     mapa = []
@@ -286,16 +322,19 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
 def construir_prompt_sistema():
     memoria = obtener_memoria_aprendizaje()
     mapa_repo = obtener_mapa_repositorio()
+    codigo_vivo = obtener_codigo_actual()
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
         f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
         "REGLAS CRÍTICAS DE CÓDIGO Y VIBE CODING ATÓMICO:\n"
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
         "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches de fragmentos de código. Eso infla y rompe el script.\n"
-        "4. VOLCADO ATÓMICO POR TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO y limpio, guardarlo en 'cambio_propuesto.txt', y avisarle a Leandro para que lo aplique de golpe de punta a punta.\n"
-        "5. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
+        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches parciales.\n"
+        "4. PUENTE ATÓMICO Y CÓDIGO COMPLETO: Cuando debas proponer cambios en 'procesar.py', debés usar el código actual provisto a continuación como base, aplicar las mejoras y escribir la TOTALIDAD DEL ARCHIVO de punta a punta dentro de 'cambio_propuesto.txt'. PROHIBIDO omitir o resumir funciones existentes.\n"
+        "5. COMANDO /ESTADO COMPLETO: Mantené siempre el handler /estado reportando Uptime, RAM, CPU, OS, Motor IA y Audio.\n"
+        "6. CERO RELLENO: Respondé directo, natural para Edge-TTS, sin asteriscos ni markdown roto.\n\n"
         f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
+        f"CÓDIGO FUENTE ACTUAL (procesar.py):\n```python\n{codigo_vivo}\n```\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
 
@@ -382,7 +421,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
             "• /codigo <comando o tarea>: Ejecuta comandos de consola o aplica cambios desde un .txt puente.\n"
-            "• /estado: Muestra Uptime y consumo de RAM en tiempo real."
+            "• /estado: Muestra métricas detalladas en tiempo real (Uptime, RAM, CPU, OS, Motor IA y Audio)."
         )
 
 async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -433,16 +472,29 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
         process = psutil.Process(os.getpid())
         ram_mb = process.memory_info().rss / (1024 * 1024)
         ram_str = f"{ram_mb:.2f} MB"
+        cpu_pct = f"{psutil.cpu_percent(interval=None)}%"
     except Exception:
         ram_str = "psutil no disponible"
+        cpu_pct = "N/A"
 
-    print(f"📊 [ESTADO CONSULTADO]: Uptime={uptime_str} | RAM={ram_str}", flush=True)
+    motor_ia = "Gemini 3.8 Flash" if GENAI_DISPONIBLE else f"Ollama ({OLLAMA_MODEL})"
+    cfg_audio = cargar_config_timbre()
+    v_pitch = cfg_audio.get("pitch", "-4Hz")
+    v_vol = cfg_audio.get("volume", "+10%")
+    v_voice = cfg_audio.get("voice", "es-AR-TomasNeural")
+
+    sis_info = f"{platform.system()} {platform.release()}"
 
     await update.message.reply_text(
-        f"📊 **Estado del Bot (Vibe Coding Atómico):**\n"
+        f"📊 **Estado del Sistema (Vibe Coding Atómico):**\n"
         f"• Uptime: {uptime_str}\n"
-        f"• Memoria RAM en uso: {ram_str}\n"
-        f"• Sistema: Activo e impecable, posta."
+        f"• RAM en uso: {ram_str}\n"
+        f"• CPU: {cpu_pct}\n"
+        f"• Entorno / OS: {sis_info}\n"
+        f"• Motor IA principal: {motor_ia}\n"
+        f"• Audio / Timbre: {v_voice} (Pitch: {v_pitch}, Vol: {v_vol})\n"
+        f"• PID Activo: {os.getpid()}\n"
+        f"• Estado: Operativo y respondiendo impecable, che."
     )
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
