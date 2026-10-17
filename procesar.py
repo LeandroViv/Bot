@@ -806,6 +806,17 @@ async def manejar_estado(update, context):
 
 app.add_handler(CommandHandler("estado", manejar_estado))
 
+def main():
+    app = Application.builder().token(TOKEN).build()
+
+    async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("Estado del sistema operativo.")
+
+    app.add_handler(CommandHandler("estado", manejar_estado))
+    
+    app.run_polling()
+
 if __name__ == "__main__":
+
 
     main()
