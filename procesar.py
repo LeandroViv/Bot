@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Auto-Writer + Single Instance PID + DSP
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico + Auto-Writer + Single Instance PID + Logs IA en Vivo
 
 import asyncio
 import json as json_lib
@@ -344,28 +344,37 @@ def generar_texto_ia(prompt_usuario):
 
     if client:
         try:
+            print("🤖 [IA ENGINE]: Consultando Gemini API...", flush=True)
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=p,
                 config=dict(system_instruction=system_prompt)
             )
             raw = (res.text or "").strip()
-            if raw: return raw
-        except Exception: pass
+            if raw: 
+                print(f"✅ [IA ENGINE]: Respuesta recibida de Gemini ({len(raw)} chars).", flush=True)
+                return raw
+        except Exception as e:
+            print(f"⚠️ [IA ENGINE ERROR - Gemini]: {e}", flush=True)
 
     if asegurar_ollama_en_runner():
         try:
+            print(f"🤖 [IA ENGINE]: Fallback a Ollama ({OLLAMA_MODEL})...", flush=True)
             prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
             r = requests.post(
                 f"{OLLAMA_HOST.rstrip('/')}/api/generate",
                 json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False},
-                timeout=60
+                timeout=90
             )
             if r.status_code == 200:
                 texto = r.json().get("response", "").strip()
-                if texto: return texto
-        except Exception: pass
+                if texto: 
+                    print(f"✅ [IA ENGINE]: Respuesta recibida de Ollama ({len(texto)} chars).", flush=True)
+                    return texto
+        except Exception as ex:
+            print(f"⚠️ [IA ENGINE ERROR - Ollama]: {ex}", flush=True)
 
+    print("❌ [IA ENGINE]: Todos los motores fallaron, devolviendo respuesta default.", flush=True)
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
 def preparar_texto_para_voz(texto):
@@ -454,27 +463,37 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```", parse_mode="Markdown")
         return
 
+    print(f"🤖 [VIBE CODING LOG]: Procesando instrucción de Leandro: '{instruccion[:60]}...'", flush=True)
     await update.message.reply_text("🧠 Leyendo `procesar.py` actual y procesando propuesta...")
-    resp = generar_texto_ia(instruccion)
 
-    # LÓGICA AUTO-WRITER: Intercepta bloques de código python y guarda automáticamente en cambio_propuesto.txt
+    t0 = time.time()
+    resp = generar_texto_ia(instruccion)
+    duracion = round(time.time() - t0, 2)
+
+    print(f"🤖 [VIBE CODING LOG]: IA respondió en {duracion}s (Longitud: {len(resp)} chars)", flush=True)
+
+    # Interceptamos bloques python para auto-guardar en cambio_propuesto.txt
     match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp)
     if match_code:
         codigo_generado = match_code.group(1).strip()
+        print(f"📄 [VIBE CODING LOG]: Extraído bloque Python ({len(codigo_generado)} chars). Validando con AST...", flush=True)
         try:
             ast.parse(codigo_generado)
             with open(CAMBIO_PROPUESTO_FILE, "w", encoding="utf-8") as f:
                 f.write(codigo_generado)
+            print(f"✅ [VIBE CODING LOG]: Escrito exitosamente en {CAMBIO_PROPUESTO_FILE}", flush=True)
             await update.message.reply_text(
-                "✅ **¡`cambio_propuesto.txt` armado y validado correctamente por la IA!**\n\n"
-                "Leí el `procesar.py` entero y apliqué las mejoras solicitadas. Mandá `/codigo aplicar` para hacer el swap atómico.",
+                f"✅ **¡`cambio_propuesto.txt` armado en {duracion}s y validado con AST!**\n\n"
+                "Leí el `procesar.py` entero y apliqué la mejora. Mandá `/codigo aplicar` para hacer el swap atómico.",
                 parse_mode="Markdown"
             )
             return
         except SyntaxError as e:
-            await update.message.reply_text(f"⚠️ La IA generó un cambio pero tuvo un error de sintaxis ({e}). No se guardó el `.txt`.")
+            print(f"❌ [VIBE CODING LOG]: Error de sintaxis en respuesta de IA: {e}", flush=True)
+            await update.message.reply_text(f"⚠️ La IA generó un código pero tuvo error de sintaxis (`{e}`). No se guardó el `.txt`.")
             return
 
+    print("⚠️ [VIBE CODING LOG]: La respuesta no incluyó un bloque ```python ... ``` válido.", flush=True)
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
