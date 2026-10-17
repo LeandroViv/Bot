@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Directo sobre Archivo Vivo (Sin Puente)
+# Script: procesar.py - LeandroBot / Vibe Coding Quirúrgico por AST (Contexto Total + Parches por Función)
 
 import asyncio
 import json as json_lib
@@ -70,7 +70,7 @@ def matar_instancia_anterior():
 
 matar_instancia_anterior()
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Directo)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Quirúrgico AST)...", flush=True)
 
 for f_path, default_val in [
     (TXT_FILE, ""),
@@ -202,24 +202,65 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         print(f"⚠️ Aviso git push automático: {e}", flush=True)
         return False
 
-def aplicar_cambio_directo(nuevo_contenido, ruta_destino=SCRIPT_PRINCIPAL):
-    """Valida por AST y pisa directamente el archivo vivo sin pasar por archivos puente"""
+def aplicar_cambio_quirurgico_ast(codigo_fragmento, ruta_destino=SCRIPT_PRINCIPAL):
+    """
+    Parsea el fragmento generado por la IA (ej. una función modificada) 
+    y reemplaza esa definición exacta en el AST del archivo vivo sin romper el resto.
+    """
     try:
-        ast.parse(nuevo_contenido)
+        arbol_fragmento = ast.parse(codigo_fragmento)
     except SyntaxError as e:
-        print(f"❌ [ERROR DE SINTAXIS]: El código generado tiene un error: {e}", flush=True)
-        return False, str(e)
+        print(f"❌ [ERROR DE SINTAXIS EN FRAGMENTO]: {e}", flush=True)
+        return False, f"SyntaxError en fragmento: {e}"
 
-    if os.path.exists(ruta_destino):
-        shutil.copy2(ruta_destino, f"{ruta_destino}.bak")
+    if not os.path.exists(ruta_destino):
+        return False, "No existe el archivo destino."
 
+    with open(ruta_destino, "r", encoding="utf-8") as f:
+        contenido_actual = f.read()
+
+    try:
+        arbol_actual = ast.parse(contenido_actual)
+    except SyntaxError as e:
+        return False, f"SyntaxError en archivo actual: {e}"
+
+    nodos_nuevos = {
+        node.name: node 
+        for node in arbol_fragmento.body 
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    }
+
+    if not nodos_nuevos:
+        return False, "La IA no devolvió ninguna función o clase válida para reemplazar."
+
+    reemplazados = 0
+    for i, node in enumerate(arbol_actual.body):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name in nodos_nuevos:
+            arbol_actual.body[i] = nodos_nuevos[node.name]
+            print(f"🔧 [AST PATCH]: Reemplazada función quirúrgica -> {node.name}", flush=True)
+            reemplazados += 1
+
+    if reemplazados == 0:
+        return False, "No se encontró coincidencia de nombres de funciones para aplicar el parche quirúrgico."
+
+    try:
+        nuevo_codigo_fuente = ast.unparse(arbol_actual)
+    except Exception as e:
+        return False, f"Error al regenerar código desde AST: {e}"
+
+    try:
+        ast.parse(nuevo_codigo_fuente)
+    except SyntaxError as e:
+        return False, f"El código resultante final dio error de sintaxis: {e}"
+
+    shutil.copy2(ruta_destino, f"{ruta_destino}.bak")
     ruta_tmp = f"{ruta_destino}.tmp"
     with open(ruta_tmp, "w", encoding="utf-8") as f:
-        f.write(nuevo_contenido)
+        f.write(nuevo_codigo_fuente)
     os.replace(ruta_tmp, ruta_destino)
 
-    print(f"✅ [VIBE CODING DIRECTO]: {ruta_destino} actualizado y sobrescrito en caliente.", flush=True)
-    exito_git = guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización directa sobre archivo vivo")
+    print(f"✅ [VIBE CODING QUIRÚRGICO]: {ruta_destino} actualizado por lotes AST con éxito.", flush=True)
+    guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: parche quirúrgico por AST")
     return True, ""
 
 def cargar_config_timbre():
@@ -315,22 +356,20 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
     return ",".join(partes)
 
 def construir_prompt_sistema(es_modo_codigo=False):
-    # EL CÓDIGO VIVO SE INYECTA AL INICIO DEL CONTEXTO SIEMPRE
     codigo_vivo = obtener_codigo_actual()
-    mapa_repo = obtener_mapa_repositorio()
 
     if es_modo_codigo:
         return (
-            "Sos LeandroBot, agente de Vibe Coding autónomo y directo.\n"
+            "Sos LeandroBot, agente de Vibe Coding autónomo y quirúrgico.\n"
             f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
-            f"CÓDIGO FUENTE ACTUAL COMPLETO ({SCRIPT_PRINCIPAL}) - LEÉ ESTO ANTES DE MODIFICAR:\n"
+            f"CÓDIGO FUENTE ACTUAL COMPLETO ({SCRIPT_PRINCIPAL}) - LEÉ ESTO PARA TENER CONTEXTO:\n"
             "```python\n"
             f"{codigo_vivo}\n"
             "```\n\n"
-            "REGLAS CRÍTICAS DE SALIDA DE CÓDIGO (MODO DIRECTO):\n"
-            "1. TU RESPUESTA DEBE SER ÚNICAMENTE EL CÓDIGO FUENTE COMPLETO DENTRO DE UN BLOQUE ```python ... ```.\n"
-            "2. PROHIBIDO CHATEAR, SALUDAR, EXPLICAR O AGREGAR TEXTO FUERA DEL BLOQUE PYTHON.\n"
-            "3. INTEGRIDAD ABSOLUTA (100% DE LÍNEAS): Mantené todas las funciones del código provisto arriba sin omitir ninguna.\n"
+            "REGLAS CRÍTICAS DE MODIFICACIÓN QUIRÚRGICA:\n"
+            "1. NO devuelvas el archivo entero. Devolvé ÚNICAMENTE la función o funciones modificadas que el usuario pidió actualizar, dentro de un bloque ```python ... ```.\n"
+            "2. Mantené exactamente el mismo nombre de la función original para que el sistema la reemplace por AST.\n"
+            "3. PROHIBIDO CHATEAR, SALUDAR O EXPLICAR. CERO TEXTO FUERA DEL BLOQUE PYTHON.\n"
         )
 
     memoria = obtener_memoria_aprendizaje()
@@ -353,7 +392,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
 
     if client:
         try:
-            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Código Directo: {es_modo_codigo})...", flush=True)
+            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Quirúrgico AST: {es_modo_codigo})...", flush=True)
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=p,
@@ -434,7 +473,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
-            f"• /codigo <instrucción>: Modifica y sobreescribe {SCRIPT_PRINCIPAL} en caliente de forma autónoma.\n"
+            f"• /codigo <instrucción>: Modifica funciones de {SCRIPT_PRINCIPAL} quirúrgicamente en caliente.\n"
             "• /estado: Muestra métricas detalladas en tiempo real."
         )
 
@@ -449,7 +488,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         instruccion = " ".join(context.args).strip()
 
     if not instruccion:
-        await update.message.reply_text(f"Decime qué comando querés correr o qué cambio le hacemos a `{SCRIPT_PRINCIPAL}`, che.")
+        await update.message.reply_text(f"Decime qué comando querés correr o qué función le modificamos a `{SCRIPT_PRINCIPAL}`, che.")
         return
 
     u_low = instruccion.lower()
@@ -462,33 +501,33 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```", parse_mode="Markdown")
         return
 
-    print(f"🤖 [VIBE CODING DIRECTO]: Procesando instrucción de Leandro: '{instruccion[:60]}...'", flush=True)
-    await update.message.reply_text(f"🧠 Leyendo `{SCRIPT_PRINCIPAL}` actual y aplicando cambios en caliente...")
+    print(f"🤖 [VIBE CODING QUIRÚRGICO]: Procesando instrucción de Leandro: '{instruccion[:60]}...'", flush=True)
+    await update.message.reply_text(f"🧠 Leyendo `{SCRIPT_PRINCIPAL}` actual y generando parche quirúrgico...")
 
     t0 = time.time()
     resp = generar_texto_ia(instruccion, es_modo_codigo=True)
     duracion = round(time.time() - t0, 2)
 
-    print(f"🤖 [VIBE CODING DIRECTO]: IA respondió en {duracion}s (Longitud: {len(resp)} chars)", flush=True)
+    print(f"🤖 [VIBE CODING QUIRÚRGICO]: IA respondió en {duracion}s (Longitud: {len(resp)} chars)", flush=True)
 
     match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp)
     if match_code:
-        codigo_generado = match_code.group(1).strip()
-        print(f"📄 [VIBE CODING DIRECTO]: Extraído bloque Python ({len(codigo_generado)} chars). Aplicando sobre archivo vivo...", flush=True)
+        fragmento_generado = match_code.group(1).strip()
+        print(f"📄 [VIBE CODING QUIRÚRGICO]: Extraído fragmento Python ({len(codigo_generado) if 'codigo_generado' in locals() else len(fragmento_generado)} chars). Aplicando parche AST...", flush=True)
         
-        exito, err = aplicar_cambio_directo(codigo_generado, SCRIPT_PRINCIPAL)
+        exito, err = aplicar_cambio_quirurgico_ast(fragmento_generado, SCRIPT_PRINCIPAL)
         if exito:
             await update.message.reply_text(
-                f"🚀 **¡`{SCRIPT_PRINCIPAL}` actualizado y sobrescrito en caliente en {duracion}s!**\n\n"
-                "Validado con AST y pusheado a GitHub como LeandroBot. El bot se reiniciará con los nuevos cambios.",
+                f"🚀 **¡Parche aplicado quirúrgicamente en {duracion}s!**\n\n"
+                "Validado con AST, integrado en el archivo vivo y pusheado a GitHub como LeandroBot. El bot se reiniciará con el cambio.",
                 parse_mode="Markdown"
             )
             return
         else:
-            await update.message.reply_text(f"⚠️ La IA generó código pero falló la validación o aplicación (`{err}`). No se modificó el archivo.")
+            await update.message.reply_text(f"⚠️ La IA generó código pero falló la aplicación quirúrgica (`{err}`). No se modificó el archivo.")
             return
 
-    print("⚠️ [VIBE CODING DIRECTO]: La respuesta no incluyó un bloque ```python ... ``` válido.", flush=True)
+    print("⚠️ [VIBE CODING QUIRÚRGICO]: La respuesta no incluyó un bloque ```python ... ``` válido.", flush=True)
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -517,7 +556,7 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sis_info = f"{platform.system()} {platform.release()}"
 
     await update.message.reply_text(
-        f"📊 **Estado del Sistema (Vibe Coding Directo):**\n"
+        f"📊 **Estado del Sistema (Vibe Coding Quirúrgico):**\n"
         f"• Uptime: {uptime_str}\n"
         f"• RAM en uso: {ram_str}\n"
         f"• CPU: {cpu_pct}\n"
@@ -562,7 +601,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con Vibe Coding Directo sobre Archivo Vivo...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Vibe Coding Quirúrgico por AST...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
