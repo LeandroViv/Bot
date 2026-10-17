@@ -335,10 +335,12 @@ def construir_prompt_sistema():
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
         f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
-        "REGLAS CRÍTICAS:\n"
-        "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA en tercera persona.\n"
-        "2. Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "3. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS.\n\n"
+        "REGLAS CRÍTICAS DE CÓDIGO Y VIBE CODING ATÓMICO:\n"
+        "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
+        "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
+        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches de fragmentos de código. Eso infla y rompe el script.\n"
+        "4. VOLCADO ATÓMICO POR TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO y limpio, guardarlo en 'cambio_propuesto.txt', y avisarle a Leandro para que lo aplique de golpe de punta a punta.\n"
+        "5. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
         f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
@@ -466,7 +468,6 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uptime_seg = int(time.time() - time.time()) # Simplificado para evitar psutil
     await update.message.reply_text("Che, el sistema está activo y funcionando impecable, posta.")
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
