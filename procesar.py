@@ -145,12 +145,14 @@ def obtener_mapa_repositorio(root_dir='.'):
     return '\n'.join(mapa) if mapa else f'  📄 {SCRIPT_PRINCIPAL}\n  📄 {CONFIG_TIMBRE}'
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
-    gh_token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_BOT_TOKEN')
+    gh_token = os.environ.get('GH_BOT_TOKEN') or os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_TOKEN') or os.environ.get('PAT_TOKEN')
+    repo = os.environ.get('GITHUB_REPOSITORY', 'LeandroViv/Bot')
     try:
+        subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', '*'], check=False)
         subprocess.run(['git', 'config', 'user.name', 'LeandroBot[bot]'], check=True)
         subprocess.run(['git', 'config', 'user.email', 'leandrobot@users.noreply.github.com'], check=True)
         if gh_token:
-            remote_url = f'https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git'
+            remote_url = f'https://x-access-token:{gh_token}@github.com/{repo}.git'
             subprocess.run(['git', 'remote', 'set-url', 'origin', remote_url], check=True)
         subprocess.run(['git', 'add', archivo_modificado], check=True)
         status = subprocess.run(['git', 'status', '--porcelain'], capture_output=True, text=True)
@@ -158,7 +160,11 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             print('ℹ️ No hay cambios pendientes para pushear a GitHub.', flush=True)
             return True
         subprocess.run(['git', 'commit', '-m', mensaje_commit], check=True)
-        subprocess.run(['git', 'push', 'origin', 'HEAD'], check=True)
+        res_push = subprocess.run(['git', 'push', 'origin', 'HEAD'], capture_output=True, text=True)
+        if res_push.returncode != 0:
+            print(f'⚠️ [GIT PUSH RETRY]: Intentando pull --rebase antes de reintentar push...', flush=True)
+            subprocess.run(['git', 'pull', '--rebase', 'origin', 'HEAD'], check=False)
+            subprocess.run(['git', 'push', 'origin', 'HEAD'], check=True)
         print(f"🚀 [GIT PUSH EN CALIENTE]: Cambios en '{archivo_modificado}' pusheados como LeandroBot[bot].", flush=True)
         return True
     except Exception as e:
