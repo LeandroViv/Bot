@@ -787,5 +787,25 @@ def main():
     print("🔄 [POLLING]: Bot escuchando en Telegram...", flush=True)
     app.run_polling(drop_pending_updates=True)
 
+import psutil
+import time
+
+async def manejar_estado(update, context):
+    proceso = psutil.Process()
+    memoria_mb = proceso.memory_info().rss / (1024 * 1024)
+    uptime_seg = int(time.time() - proceso.create_time())
+    horas, resto = divmod(uptime_seg, 3600)
+    minutos, segundos = divmod(resto, 60)
+    
+    mensaje = (
+        f"Che, acá tenés el estado del bot:\n"
+        f"⏱️ Uptime: {horas:02d}:{minutos:02d}:{segundos:02d}\n"
+        f"🧠 RAM en uso: {memoria_mb:.2f} MB"
+    )
+    await update.message.reply_text(mensaje)
+
+app.add_handler(CommandHandler("estado", manejar_estado))
+
 if __name__ == "__main__":
+
     main()
