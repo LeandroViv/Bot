@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Single Instance PID + DSP + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Auto-Writer + Single Instance PID + DSP
 
 import asyncio
 import json as json_lib
@@ -51,7 +51,7 @@ def matar_instancia_anterior():
 
 matar_instancia_anterior()
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico Autónomo)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -146,7 +146,7 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
         return False, f"Error ejecutando comando: {str(e)}"
 
 def obtener_codigo_actual():
-    """Lee procesar.py completo para entregarlo como contexto base al modelo"""
+    """Lee procesar.py entero para entregárselo como contexto base a la IA y evitar recortes o resúmenes"""
     if os.path.exists("procesar.py"):
         try:
             with open("procesar.py", "r", encoding="utf-8") as f:
@@ -199,10 +199,6 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return False
 
 def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_PROPUESTO_FILE):
-    """
-    Lee el archivo de texto puente completo, valida sintaxis con AST,
-    hace backup y sobreescribe de forma atómica sin parches parciales ni inflación.
-    """
     if not os.path.exists(ruta_txt):
         print(f"⚠️ No se encontró el archivo puente {ruta_txt}", flush=True)
         return False
@@ -329,10 +325,10 @@ def construir_prompt_sistema():
         "REGLAS CRÍTICAS DE CÓDIGO Y VIBE CODING ATÓMICO:\n"
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
         "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches parciales.\n"
-        "4. PUENTE ATÓMICO Y CÓDIGO COMPLETO: Cuando debas proponer cambios en 'procesar.py', debés usar el código actual provisto a continuación como base, aplicar las mejoras y escribir la TOTALIDAD DEL ARCHIVO de punta a punta dentro de 'cambio_propuesto.txt'. PROHIBIDO omitir o resumir funciones existentes.\n"
+        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar parches o resúmenes. Si vas a generar o modificar código en 'procesar.py', debés incluir la TOTALIDAD del script.\n"
+        "4. CÓDIGO EN BLOQUE PYTHON PURO: Cuando el usuario te pida modificar, armar o actualizar 'procesar.py', debés devolver la TOTALIDAD del código fuente Python dentro de un único bloque ```python ... ``` sin ningún texto previo o posterior fuera del bloque para que el sistema lo intercepte y guarde en 'cambio_propuesto.txt'.\n"
         "5. COMANDO /ESTADO COMPLETO: Mantené siempre el handler /estado reportando Uptime, RAM, CPU, OS, Motor IA y Audio.\n"
-        "6. CERO RELLENO: Respondé directo, natural para Edge-TTS, sin asteriscos ni markdown roto.\n\n"
+        "6. CERO RELLENO: Respondé directo y al pie.\n\n"
         f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
         f"CÓDIGO FUENTE ACTUAL (procesar.py):\n```python\n{codigo_vivo}\n```\n\n"
         f"Historial reciente:\n{memoria}\n"
@@ -420,8 +416,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
-            "• /codigo <comando o tarea>: Ejecuta comandos de consola o aplica cambios desde un .txt puente.\n"
-            "• /estado: Muestra métricas detalladas en tiempo real (Uptime, RAM, CPU, OS, Motor IA y Audio)."
+            "• /codigo <instrucción>: Modifica procesar.py de forma autónoma guardando en cambio_propuesto.txt.\n"
+            "• /codigo aplicar: Aplica la versión atómica validada con ast.\n"
+            "• /estado: Muestra métricas detalladas en tiempo real."
         )
 
 async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -444,7 +441,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     if not instruccion:
-        await update.message.reply_text("Decime qué comando querés correr o mandame el código en `cambio_propuesto.txt`, che.")
+        await update.message.reply_text("Decime qué comando querés correr o qué cambio le hacemos a `procesar.py`, che.")
         return
 
     u_low = instruccion.lower()
@@ -457,7 +454,27 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```", parse_mode="Markdown")
         return
 
+    await update.message.reply_text("🧠 Leyendo `procesar.py` actual y procesando propuesta...")
     resp = generar_texto_ia(instruccion)
+
+    # LÓGICA AUTO-WRITER: Intercepta bloques de código python y guarda automáticamente en cambio_propuesto.txt
+    match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp)
+    if match_code:
+        codigo_generado = match_code.group(1).strip()
+        try:
+            ast.parse(codigo_generado)
+            with open(CAMBIO_PROPUESTO_FILE, "w", encoding="utf-8") as f:
+                f.write(codigo_generado)
+            await update.message.reply_text(
+                "✅ **¡`cambio_propuesto.txt` armado y validado correctamente por la IA!**\n\n"
+                "Leí el `procesar.py` entero y apliqué las mejoras solicitadas. Mandá `/codigo aplicar` para hacer el swap atómico.",
+                parse_mode="Markdown"
+            )
+            return
+        except SyntaxError as e:
+            await update.message.reply_text(f"⚠️ La IA generó un cambio pero tuvo un error de sintaxis ({e}). No se guardó el `.txt`.")
+            return
+
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -531,7 +548,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con Vibe Coding Atómico...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Vibe Coding Atómico Autónomo...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
