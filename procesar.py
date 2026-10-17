@@ -421,7 +421,22 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 total_lineas = len(f.readlines())
         except Exception:
             pass
-    await update.message.reply_text(f'¡Qué hacés, Leandro! 🚀\n\n📊 **Estado del Sistema (Vibe Coding Quirúrgico):**\n• Uptime: {uptime_str}\n• RAM en uso: {ram_str}\n• CPU: {cpu_pct}\n• Entorno / OS: {sis_info}\n• Motor IA principal: {motor_ia}\n• Audio / Timbre: {v_voice} (Pitch: {v_pitch}, Vol: {v_vol})\n• PID Activo: {os.getpid()}\n• Estado: Operativo y respondiendo impecable, che.\n• Total de líneas en {SCRIPT_PRINCIPAL}: {total_lineas}')
+    tareas_pendientes = []
+    if os.path.exists('memoria_tareas.json'):
+        try:
+            with open('memoria_tareas.json', 'r', encoding='utf-8') as f:
+                datos = json_lib.load(f)
+                lista = datos if isinstance(datos, list) else datos.get('tareas', [])
+                for t in lista:
+                    if isinstance(t, dict):
+                        if t.get('pendiente', True) and t.get('estado') != 'completada':
+                            tareas_pendientes.append(t.get('tarea', str(t)))
+                    else:
+                        tareas_pendientes.append(str(t))
+        except Exception as e:
+            print(f'⚠️ Error leyendo memoria_tareas.json: {e}', flush=True)
+    bloque_tareas = '\n'.join([f'• {t}' for t in tareas_pendientes]) if tareas_pendientes else '• Ninguna tarea pendiente.'
+    await update.message.reply_text(f'¡Qué hacés, Leandro! 🚀\n\n📊 **Estado del Sistema (Vibe Coding Quirúrgico):**\n• Uptime: {uptime_str}\n• RAM en uso: {ram_str}\n• CPU: {cpu_pct}\n• Entorno / OS: {sis_info}\n• Motor IA principal: {motor_ia}\n• Audio / Timbre: {v_voice} (Pitch: {v_pitch}, Vol: {v_vol})\n• PID Activo: {os.getpid()}\n• Estado: Operativo y respondiendo impecable, che.\n• Total de líneas en {SCRIPT_PRINCIPAL}: {total_lineas}\n\n📋 **Tareas Pendientes:**\n{bloque_tareas}')
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
@@ -456,6 +471,22 @@ def main():
         print('❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.', flush=True)
         return
     print('🚀 [INIT]: Arrancando polling con Vibe Coding Quirúrgico por AST...', flush=True)
+    if os.path.exists('memoria_tareas.json'):
+        try:
+            with open('memoria_tareas.json', 'r', encoding='utf-8') as f:
+                datos = json_lib.load(f)
+                lista = datos if isinstance(datos, list) else datos.get('tareas', [])
+                pendientes = [t.get('tarea', str(t)) if isinstance(t, dict) else str(t) for t in lista if not isinstance(t, dict) or (t.get('pendiente', True) and t.get('estado') != 'completada')]
+                if pendientes:
+                    print(f'📋 [TAREAS EN ARRANQUE]: {len(pendientes)} tarea(s) pendiente(s):', flush=True)
+                    for t in pendientes:
+                        print(f'  ▫️ {t}', flush=True)
+                else:
+                    print('📋 [TAREAS EN ARRANQUE]: Sin tareas pendientes en memoria_tareas.json.', flush=True)
+        except Exception as e:
+            print(f'⚠️ Error leyendo memoria_tareas.json en arranque: {e}', flush=True)
+    else:
+        print('📋 [TAREAS EN ARRANQUE]: memoria_tareas.json no existe aún.', flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
     app = Application.builder().token(TOKEN).request(request_config).build()
     app.add_handler(CommandHandler('start', start))
