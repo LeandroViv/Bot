@@ -841,3 +841,63 @@ if __name__ == "__main__":
 
 
     main()
+
+
+import ast
+import os
+import shutil
+
+def aplicar_parche_seguro_en_archivo(ruta_archivo, nuevo_contenido, forzar_limpieza=False):
+    """
+    Aplica el parche validando la sintaxis con AST. Permite reducción de líneas
+    si se incluye una directiva explícita de limpieza/reemplazo o si forzar_limpieza=True.
+    """
+    try:
+        ast.parse(nuevo_contenido)
+    except SyntaxError as e:
+        print(f"[ERROR] Sintaxis inválida en el parche propuesto: {e}")
+        return False
+
+    if not os.path.exists(ruta_archivo):
+        with open(ruta_archivo, "w", encoding="utf-8") as f:
+            f.write(nuevo_contenido)
+        return True
+
+    with open(ruta_archivo, "r", encoding="utf-8") as f:
+        contenido_original = f.read()
+
+    lineas_orig = len(contenido_original.splitlines())
+    lineas_nuevas = len(nuevo_contenido.splitlines())
+
+    # Detección de marcadores explícitos para poda o reemplazo
+    directivas_validas = [
+        "# limpieza",
+        "# reemplazo_explicito",
+        "# refactor",
+        "# purga"
+    ]
+    contenido_lower = nuevo_contenido.lower()
+    es_limpieza_autorizada = forzar_limpieza or any(d in contenido_lower for d in directivas_validas)
+
+    # Bloqueo de reducción accidental de código
+    if lineas_nuevas < lineas_orig and not es_limpieza_autorizada:
+        print(f"[RECHAZADO] Reducción no autorizada ({lineas_orig} -> {lineas_nuevas} líneas). Falta directiva de limpieza.")
+        return False
+
+    # Backup de seguridad
+    shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
+
+    with open(ruta_archivo, "w", encoding="utf-8") as f:
+        f.write(nuevo_contenido)
+
+    print(f"[OK] Parche aplicado en {ruta_archivo} ({lineas_orig} -> {lineas_nuevas} líneas).")
+    return True
+
+
+if __name__ == "__main__":
+    parche_path = "parche_temp.txt"
+    destino_path = "procesar.py"
+    if os.path.exists(parche_path):
+        with open(parche_path, "r", encoding="utf-8") as fp:
+            contenido_parche = fp.read()
+        aplicar_parche_seguro_en_archivo(destino_path, contenido_parche)
