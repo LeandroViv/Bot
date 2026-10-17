@@ -816,7 +816,14 @@ def main():
     
     app.run_polling()
 
+async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Che, el sistema está activo y funcionando impecable, posta.")
+
+# Dentro de main(), antes de app.run_polling():
+app.add_handler(CommandHandler("estado", manejar_estado))
+
 if __name__ == "__main__":
+
 
 
     main()
