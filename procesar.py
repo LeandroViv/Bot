@@ -31,10 +31,14 @@ DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
 CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
+CORRECCIONES_WHISPER = "correcciones_whisper.json"
+
+TIEMPO_INICIO = time.time()
 
 for f_path, default_val in [
     (TXT_FILE, ""),
     (DATASET_ENTRENAMIENTO, []),
+    (CORRECCIONES_WHISPER, {}),
     (PERFIL_DINAMICO, {
         "nombre": "Leandro",
         "estilo": "Colega y compañero de vibe coding con tonada rioplatense, yeísmo y ritmo auténtico",
@@ -207,20 +211,6 @@ def cargar_config_timbre():
             "descripcion": "Motor acústico dinámico"
         }
 
-def guardar_config_timbre(cfg):
-    try:
-        vol_raw = str(cfg.get("volume", "+10%"))
-        if "db" in vol_raw.lower():
-            vol_num = re.sub(r'[^0-9+-]', '', vol_raw)
-            cfg["volume"] = f"{vol_num}%"
-
-        with open(CONFIG_TIMBRE, "w", encoding="utf-8") as f:
-            json_lib.dump(cfg, f, indent=4, ensure_ascii=False)
-        print(f"🎙️ [TIMBRE DINÁMICO GUARDADO]: {cfg}", flush=True)
-        guardar_y_pushear_como_leandrobot(CONFIG_TIMBRE, "chg: actualización de configuración de timbre dinámico")
-    except Exception as e:
-        print(f"⚠️ Error guardando timbre: {e}", flush=True)
-
 def registrar_conversacion(remitente, texto):
     try:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -258,25 +248,6 @@ def buscar_en_web(query):
         print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
     return ""
 
-def generar_serie_armonica_dinamica(f0_hz, ganancias=None):
-    f0 = max(40, int(f0_hz))
-    bandas = []
-    ganancias = ganancias or {}
-    for orden in range(1, 17):
-        hz = orden * f0
-        if hz > 22000:
-            break
-        g = float(ganancias.get(orden, ganancias.get(str(orden), 0.0)))
-        q = 1.5 if orden == 1 else (2.0 if orden <= 4 else 3.0)
-        bandas.append({
-            "order": orden,
-            "hz": hz,
-            "gainDb": g,
-            "q": q,
-            "enabled": True
-        })
-    return bandas
-
 def construir_filtro_ffmpeg_desde_armonicos(cfg):
     partes = []
     harmonics = cfg.get("harmonics", [])
@@ -312,24 +283,7 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
 
     return ",".join(partes)
 
-def parsear_timbre_dinamico_ia(instruccion_usuario):
-    cfg_actual = cargar_config_timbre()
-    match_hz = re.search(r'(\d+)\s*hz', instruccion_usuario, re.IGNORECASE)
-    if match_hz:
-        f0_directo = int(match_hz.group(1))
-        cfg_actual["f0Hz"] = f0_directo
-        delta_hz = f0_directo - 125
-        signo = "+" if delta_hz >= 0 else ""
-        cfg_actual["pitch"] = f"{signo}{delta_hz}Hz"
-        cfg_actual["rate"] = "+5%" if delta_hz > 200 else ("-5%" if delta_hz < -40 else "0%")
-        cfg_actual["harmonics"] = generar_serie_armonica_dinamica(f0_directo)
-        cfg_actual["ffmpeg_filter"] = construir_filtro_ffmpeg_desde_armonicos(cfg_actual)
-        cfg_actual["descripcion"] = f"Frecuencia fundamental f0 ajustada a {f0_directo}Hz"
-        return cfg_actual
-    return cfg_actual
-
 def construir_prompt_sistema():
-    timbre = cargar_config_timbre()
     memoria = obtener_memoria_aprendizaje()
     mapa_repo = obtener_mapa_repositorio()
     return (
@@ -427,7 +381,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
-            "• /codigo <comando o tarea>: Ejecuta comandos de consola o aplica cambios desde un .txt puente."
+            "• /codigo <comando o tarea>: Ejecuta comandos de consola o aplica cambios desde un .txt puente.\n"
+            "• /estado: Muestra Uptime y consumo de RAM en tiempo real."
         )
 
 async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -440,7 +395,6 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not instruccion and context.args:
         instruccion = " ".join(context.args).strip()
 
-    # Si hay un archivo cambio_propuesto.txt en el repo, aplicarlo de inmediato de forma atómica
     if os.path.exists(CAMBIO_PROPUESTO_FILE) and ("aplicar" in instruccion.lower() or "txt" in instruccion.lower() or not instruccion):
         await update.message.reply_text("🔄 Aplicando actualización atómica desde `cambio_propuesto.txt`...")
         exito = aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE)
@@ -468,7 +422,28 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Che, el sistema está activo y funcionando impecable, posta.")
+    segundos = int(time.time() - TIEMPO_INICIO)
+    horas = segundos // 3600
+    minutos = (segundos % 3600) // 60
+    secs = segundos % 60
+    uptime_str = f"{horas}h {minutos}m {secs}s"
+
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        ram_mb = process.memory_info().rss / (1024 * 1024)
+        ram_str = f"{ram_mb:.2f} MB"
+    except Exception:
+        ram_str = "psutil no disponible"
+
+    print(f"📊 [ESTADO CONSULTADO]: Uptime={uptime_str} | RAM={ram_str}", flush=True)
+
+    await update.message.reply_text(
+        f"📊 **Estado del Bot (Vibe Coding Atómico):**\n"
+        f"• Uptime: {uptime_str}\n"
+        f"• Memoria RAM en uso: {ram_str}\n"
+        f"• Sistema: Activo e impecable, posta."
+    )
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
