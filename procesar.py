@@ -42,6 +42,10 @@ def matar_instancia_anterior():
                 print(f'🔄 [SINGLE INSTANCE]: Cerrando instancia anterior (PID {pid_viejo})...', flush=True)
                 os.kill(pid_viejo, signal.SIGTERM)
                 time.sleep(1)
+                try:
+                    os.kill(pid_viejo, signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    pass
         except (ValueError, ProcessLookupError, PermissionError) as e:
             print(f'ℹ️ Limpiando registro PID previo: {e}', flush=True)
         except Exception as e:
@@ -51,6 +55,23 @@ def matar_instancia_anterior():
             f.write(str(os.getpid()))
     except Exception as e:
         print(f'⚠️ No se pudo guardar PID file: {e}', flush=True)
+    gh_token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_BOT_TOKEN')
+    current_run_id = os.environ.get('GITHUB_RUN_ID')
+    repo = os.environ.get('GITHUB_REPOSITORY', 'LeandroViv/Bot')
+    if gh_token and current_run_id:
+        try:
+            headers = {'Authorization': f'token {gh_token}', 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'LeandroBot'}
+            for estado in ['in_progress', 'queued']:
+                res = requests.get(f'https://api.github.com/repos/{repo}/actions/runs?status={estado}', headers=headers, timeout=10)
+                if res.status_code == 200:
+                    runs = res.json().get('workflow_runs', [])
+                    for r in runs:
+                        r_id = str(r.get('id'))
+                        if r_id != str(current_run_id):
+                            print(f'🛑 [RUNNER CI]: Cancelando runner {estado} anterior (Run ID: {r_id})...', flush=True)
+                            requests.post(f'https://api.github.com/repos/{repo}/actions/runs/{r_id}/cancel', headers=headers, timeout=10)
+        except Exception as e:
+            print(f'⚠️ Aviso al cancelar runner anterior en GitHub: {e}', flush=True)
 matar_instancia_anterior()
 print('🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Quirúrgico AST)...', flush=True)
 for (f_path, default_val) in [(TXT_FILE, ''), (DATASET_ENTRENAMIENTO, []), (CORRECCIONES_WHISPER, {}), (PERFIL_DINAMICO, {'nombre': 'Leandro', 'estilo': 'Colega y compañero de vibe coding con tonada rioplatense, yeísmo y ritmo auténtico', 'notas_aprendizaje': []}), (CONFIG_TIMBRE, {'voice': DEFAULT_VOICE, 'pitch': DEFAULT_PITCH, 'rate': DEFAULT_RATE, 'volume': DEFAULT_VOLUME, 'f0Hz': 125, 'harmonics': [], 'descripcion': 'Motor acústico dinámico por Vibe Coding'})]:
