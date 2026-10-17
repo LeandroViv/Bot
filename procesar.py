@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico Autónomo + Sobreescritura Forzada + Logs IA + Single Instance PID
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper
 
 import asyncio
 import json as json_lib
@@ -12,8 +12,6 @@ import requests
 import time
 import ast
 import shutil
-import signal
-import platform
 from datetime import datetime
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -25,33 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-PID_FILE = ".bot.pid"
-TIEMPO_INICIO = time.time()
-
-def matar_instancia_anterior():
-    if os.path.exists(PID_FILE):
-        try:
-            with open(PID_FILE, "r", encoding="utf-8") as f:
-                pid_viejo = int(f.read().strip())
-            
-            if pid_viejo != os.getpid():
-                print(f"🔄 [SINGLE INSTANCE]: Cerrando instancia anterior (PID {pid_viejo})...", flush=True)
-                os.kill(pid_viejo, signal.SIGTERM)
-                time.sleep(1)
-        except (ValueError, ProcessLookupError, PermissionError) as e:
-            print(f"ℹ️ Limpiando registro PID previo: {e}", flush=True)
-        except Exception as e:
-            print(f"⚠️ Aviso al cerrar instancia anterior: {e}", flush=True)
-
-    try:
-        with open(PID_FILE, "w", encoding="utf-8") as f:
-            f.write(str(os.getpid()))
-    except Exception as e:
-        print(f"⚠️ No se pudo guardar PID file: {e}", flush=True)
-
-matar_instancia_anterior()
-
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico Autónomo)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -60,6 +32,8 @@ CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
 CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 CORRECCIONES_WHISPER = "correcciones_whisper.json"
+
+TIEMPO_INICIO = time.time()
 
 for f_path, default_val in [
     (TXT_FILE, ""),
@@ -145,16 +119,6 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
     except Exception as e:
         return False, f"Error ejecutando comando: {str(e)}"
 
-def obtener_codigo_actual():
-    """Lee procesar.py entero para entregárselo como contexto base a la IA y evitar recortes o resúmenes"""
-    if os.path.exists("procesar.py"):
-        try:
-            with open("procesar.py", "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception as e:
-            print(f"⚠️ Error leyendo procesar.py: {e}", flush=True)
-    return ""
-
 def obtener_mapa_repositorio(root_dir="."):
     mapa = []
     ignorar = {".git", "__pycache__", ".github", "venv", "downloads"}
@@ -199,6 +163,10 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return False
 
 def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_PROPUESTO_FILE):
+    """
+    Lee el archivo de texto puente completo, valida sintaxis con AST,
+    hace backup y sobreescribe de forma atómica sin parches parciales ni inflación.
+    """
     if not os.path.exists(ruta_txt):
         print(f"⚠️ No se encontró el archivo puente {ruta_txt}", flush=True)
         return False
@@ -315,74 +283,54 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
 
     return ",".join(partes)
 
-def construir_prompt_sistema(es_modo_codigo=False):
+def construir_prompt_sistema():
+    memoria = obtener_memoria_aprendizaje()
     mapa_repo = obtener_mapa_repositorio()
-    codigo_vivo = obtener_codigo_actual()
-    memoria = "" if es_modo_codigo else obtener_memoria_aprendizaje()
-
-    if es_modo_codigo:
-        return (
-            "Sos LeandroBot, agente de Vibe Coding autónomo.\n"
-            f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
-            "REGLAS CRÍTICAS DE SALIDA DE CÓDIGO (PURE CODE):\n"
-            "1. TU RESPUESTA DEBE EMPEZAR CON ```python Y TERMINAR CON ```.\n"
-            "2. PROHIBIDO CHATEAR, SALUDAR O EXPLICAR. CERO TEXTO FUERA DEL BLOQUE PYTHON.\n"
-            "3. INTEGRIDAD DEL ARCHIVO (100% DE LÍNEAS): Mantené la totalidad del script sin resumir ni omitir funciones existentes.\n"
-            "4. APLICA LA MEJORA SOLICITADA ASEGURANDO SINTAXIS PYTHON 100% VÁLIDA.\n\n"
-            f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
-            f"CÓDIGO FUENTE ACTUAL COMPLETO (procesar.py):\n```python\n{codigo_vivo}\n```\n"
-        )
-
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
         f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
-        "REGLAS LINGÜÍSTICAS Y DE CHAT:\n"
-        "1. EL USUARIO ES LEANDRO. Hablale de 'vos' o 'che'. Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "2. CERO RELLENO: Respondé directo y al pie.\n\n"
+        "REGLAS CRÍTICAS DE CÓDIGO Y VIBE CODING ATÓMICO:\n"
+        "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
+        "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
+        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches de fragmentos de código. Eso infla y rompe el script.\n"
+        "4. VOLCADO ATÓMICO POR TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO y limpio, guardarlo en 'cambio_propuesto.txt', y avisarle a Leandro para que lo aplique de golpe de punta a punta.\n"
+        "5. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
+        f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
 
-def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
-    system_prompt = construir_prompt_sistema(es_modo_codigo=es_modo_codigo)
+def generar_texto_ia(prompt_usuario):
+    system_prompt = construir_prompt_sistema()
     p = prompt_usuario
-    if not es_modo_codigo and any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
+    if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
         info_web = buscar_en_web(prompt_usuario)
         if info_web:
             p = prompt_usuario + chr(10) + chr(10) + "[Información fresca]:" + chr(10) + info_web
 
     if client:
         try:
-            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Código: {es_modo_codigo})...", flush=True)
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=p,
                 config=dict(system_instruction=system_prompt)
             )
             raw = (res.text or "").strip()
-            if raw: 
-                print(f"✅ [IA ENGINE]: Respuesta recibida de Gemini ({len(raw)} chars).", flush=True)
-                return raw
-        except Exception as e:
-            print(f"⚠️ [IA ENGINE ERROR - Gemini]: {e}", flush=True)
+            if raw: return raw
+        except Exception: pass
 
     if asegurar_ollama_en_runner():
         try:
-            print(f"🤖 [IA ENGINE]: Fallback a Ollama ({OLLAMA_MODEL})...", flush=True)
             prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
             r = requests.post(
                 f"{OLLAMA_HOST.rstrip('/')}/api/generate",
                 json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False},
-                timeout=90
+                timeout=60
             )
             if r.status_code == 200:
                 texto = r.json().get("response", "").strip()
-                if texto: 
-                    print(f"✅ [IA ENGINE]: Respuesta recibida de Ollama ({len(texto)} chars).", flush=True)
-                    return texto
-        except Exception as ex:
-            print(f"⚠️ [IA ENGINE ERROR - Ollama]: {ex}", flush=True)
+                if texto: return texto
+        except Exception: pass
 
-    print("❌ [IA ENGINE]: Todos los motores fallaron, devolviendo respuesta default.", flush=True)
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
 def preparar_texto_para_voz(texto):
@@ -433,9 +381,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
-            "• /codigo <instrucción>: Modifica procesar.py de forma autónoma sobreescribiendo cambio_propuesto.txt.\n"
-            "• /codigo aplicar: Aplica la versión atómica validada con ast.\n"
-            "• /estado: Muestra métricas detalladas en tiempo real."
+            "• /codigo <comando o tarea>: Ejecuta comandos de consola o aplica cambios desde un .txt puente.\n"
+            "• /estado: Muestra Uptime y consumo de RAM en tiempo real."
         )
 
 async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -448,7 +395,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not instruccion and context.args:
         instruccion = " ".join(context.args).strip()
 
-    if ("aplicar" in instruccion.lower() or "txt" in instruccion.lower() or not instruccion) and os.path.exists(CAMBIO_PROPUESTO_FILE):
+    if os.path.exists(CAMBIO_PROPUESTO_FILE) and ("aplicar" in instruccion.lower() or "txt" in instruccion.lower() or not instruccion):
         await update.message.reply_text("🔄 Aplicando actualización atómica desde `cambio_propuesto.txt`...")
         exito = aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE)
         if exito:
@@ -458,7 +405,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     if not instruccion:
-        await update.message.reply_text("Decime qué comando querés correr o qué cambio le hacemos a `procesar.py`, che.")
+        await update.message.reply_text("Decime qué comando querés correr o mandame el código en `cambio_propuesto.txt`, che.")
         return
 
     u_low = instruccion.lower()
@@ -471,37 +418,7 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```", parse_mode="Markdown")
         return
 
-    print(f"🤖 [VIBE CODING LOG]: Procesando instrucción de Leandro: '{instruccion[:60]}...'", flush=True)
-    await update.message.reply_text("🧠 Leyendo `procesar.py` actual y procesando propuesta...")
-
-    t0 = time.time()
-    resp = generar_texto_ia(instruccion, es_modo_codigo=True)
-    duracion = round(time.time() - t0, 2)
-
-    print(f"🤖 [VIBE CODING LOG]: IA respondió en {duracion}s (Longitud: {len(resp)} chars)", flush=True)
-
-    # REGLA DE SOBREESCRITURA FORZADA: Intercepta el bloque Python y PISA cambio_propuesto.txt en modo "w"
-    match_code = re.search(r'```python\s*([\s\S]*?)\s*```', resp)
-    if match_code:
-        codigo_generado = match_code.group(1).strip()
-        print(f"📄 [VIBE CODING LOG]: Extraído bloque Python ({len(codigo_generado)} chars). Validando con AST...", flush=True)
-        try:
-            ast.parse(codigo_generado)
-            with open(CAMBIO_PROPUESTO_FILE, "w", encoding="utf-8") as f:
-                f.write(codigo_generado)
-            print(f"✅ [VIBE CODING LOG]: Sobreescrito exitosamente en {CAMBIO_PROPUESTO_FILE}", flush=True)
-            await update.message.reply_text(
-                f"✅ **¡`cambio_propuesto.txt` SOBREESCRITO en {duracion}s y validado con AST!**\n\n"
-                "Leí el `procesar.py` entero y apliqué la mejora. Mandá `/codigo aplicar` para hacer el swap atómico.",
-                parse_mode="Markdown"
-            )
-            return
-        except SyntaxError as e:
-            print(f"❌ [VIBE CODING LOG]: Error de sintaxis en respuesta de IA: {e}", flush=True)
-            await update.message.reply_text(f"⚠️ La IA generó un código pero tuvo error de sintaxis (`{e}`). No se guardó el `.txt`.")
-            return
-
-    print("⚠️ [VIBE CODING LOG]: La respuesta no incluyó un bloque ```python ... ``` válido.", flush=True)
+    resp = generar_texto_ia(instruccion)
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -516,29 +433,16 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
         process = psutil.Process(os.getpid())
         ram_mb = process.memory_info().rss / (1024 * 1024)
         ram_str = f"{ram_mb:.2f} MB"
-        cpu_pct = f"{psutil.cpu_percent(interval=None)}%"
     except Exception:
         ram_str = "psutil no disponible"
-        cpu_pct = "N/A"
 
-    motor_ia = "Gemini 3.8 Flash" if GENAI_DISPONIBLE else f"Ollama ({OLLAMA_MODEL})"
-    cfg_audio = cargar_config_timbre()
-    v_pitch = cfg_audio.get("pitch", "-4Hz")
-    v_vol = cfg_audio.get("volume", "+10%")
-    v_voice = cfg_audio.get("voice", "es-AR-TomasNeural")
-
-    sis_info = f"{platform.system()} {platform.release()}"
+    print(f"📊 [ESTADO CONSULTADO]: Uptime={uptime_str} | RAM={ram_str}", flush=True)
 
     await update.message.reply_text(
-        f"📊 **Estado del Sistema (Vibe Coding Atómico):**\n"
+        f"📊 **Estado del Bot (Vibe Coding Atómico):**\n"
         f"• Uptime: {uptime_str}\n"
-        f"• RAM en uso: {ram_str}\n"
-        f"• CPU: {cpu_pct}\n"
-        f"• Entorno / OS: {sis_info}\n"
-        f"• Motor IA principal: {motor_ia}\n"
-        f"• Audio / Timbre: {v_voice} (Pitch: {v_pitch}, Vol: {v_vol})\n"
-        f"• PID Activo: {os.getpid()}\n"
-        f"• Estado: Operativo y respondiendo impecable, che."
+        f"• Memoria RAM en uso: {ram_str}\n"
+        f"• Sistema: Activo e impecable, posta."
     )
 
 async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -556,7 +460,7 @@ async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
         u_text = "¡Qué hacés che! Decime cómo andás."
 
     registrar_conversacion("Usuario", u_text)
-    resp = generar_texto_ia(u_text, es_modo_codigo=False)
+    resp = generar_texto_ia(u_text)
     registrar_conversacion("LeandroBot", resp)
     await update.message.reply_text(resp)
 
@@ -575,7 +479,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con Vibe Coding Atómico Autónomo...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Vibe Coding Atómico...", flush=True)
     request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
 
     app = Application.builder().token(TOKEN).request(request_config).build()
@@ -590,4 +494,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
