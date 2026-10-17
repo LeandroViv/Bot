@@ -904,3 +904,61 @@ if __name__ == "__main__":
         with open(parche_path, "r", encoding="utf-8") as fp:
             contenido_parche = fp.read()
         aplicar_parche_seguro_en_archivo(destino_path, contenido_parche)
+
+def aplicar_parche_seguro_en_archivo(ruta_archivo, nuevo_bloque=None):
+    """
+    Lee el archivo completo, limpia imports redundantes de psutil,
+    evita duplicación de bloques y guarda una versión limpia sin inflar líneas.
+    """
+    import os
+    import re
+
+    if not os.path.exists(ruta_archivo):
+        return False
+
+    with open(ruta_archivo, "r", encoding="utf-8") as f:
+        contenido = f.read()
+
+    # Si se pasa un bloque específico y ya existe tal cual, evitamos reinsertarlo
+    if nuevo_bloque and nuevo_bloque.strip() not in contenido:
+        contenido = f"{contenido.rstrip()}\n\n{nuevo_bloque.strip()}\n"
+
+    lineas = contenido.splitlines()
+    lineas_filtradas = []
+    import_psutil_visto = False
+    lineas_vistas = set()
+
+    for linea in lineas:
+        linea_strip = linea.strip()
+
+        # Filtrar imports duplicados de psutil
+        if re.match(r"^(import\s+psutil|from\s+psutil\s+import)", linea_strip):
+            if import_psutil_visto:
+                continue
+            import_psutil_visto = True
+
+        # Evitar acumular líneas vacías consecutivas
+        if not linea_strip:
+            if lineas_filtradas and lineas_filtradas[-1].strip() == "":
+                continue
+            lineas_filtradas.append("")
+            continue
+
+        # Evitar definiciones de funciones o bloques idénticos consecutivos repetidos
+        if linea_strip.startswith("def ") or linea_strip.startswith("class "):
+            if linea_strip in lineas_vistas:
+                # Omitir duplicación directa de cabecera ya registrada
+                continue
+            lineas_vistas.add(linea_strip)
+
+        lineas_filtradas.append(linea)
+
+    contenido_final = "\n".join(lineas_filtradas).strip() + "\n"
+
+    # Guardado seguro atómico
+    ruta_tmp = f"{ruta_archivo}.tmp"
+    with open(ruta_tmp, "w", encoding="utf-8") as f:
+        f.write(contenido_final)
+    os.replace(ruta_tmp, ruta_archivo)
+
+    return True
