@@ -822,7 +822,21 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Dentro de main(), antes de app.run_polling():
 app.add_handler(CommandHandler("estado", manejar_estado))
 
+def main():
+    """Punto de entrada único y limpio para el pipeline, sin dependencias de psutil."""
+    try:
+        procesar()
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"Error en la ejecución: {e}")
+
+
 if __name__ == "__main__":
+    main()
+
+if __name__ == "__main__":
+
 
 
 
