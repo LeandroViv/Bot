@@ -32,6 +32,38 @@ from telegram.ext import (
     filters,
 )
 
+async def cmd_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando Handler /logs: Devuelve las últimas 20 líneas de conversaciones.txt formateadas."""
+    try:
+        if not os.path.exists(TXT_FILE):
+            await update.message.reply_text("📋 El archivo conversaciones.txt aún no existe.")
+            return
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            lineas = f.readlines()
+        ultimas = "".join(lineas[-20:]).strip()
+        if not ultimas:
+            await update.message.reply_text("📋 El archivo conversaciones.txt está vacío.")
+            return
+        respuesta = f"📋 *Últimas 20 líneas de conversaciones.txt:*\n\n```\n{ultimas}\n```"
+        if len(respuesta) > 4000:
+            respuesta = respuesta[-4000:]
+        await update.message.reply_text(respuesta, parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Error al leer los logs: {e}")
+
+# Inyección automática y segura del CommandHandler /logs en la Application de Telegram
+_orig_add_handler = Application.add_handler
+_logs_handler_registered = False
+
+def _patched_add_handler(self, handler, *args, **kwargs):
+    global _logs_handler_registered
+    if not _logs_handler_registered:
+        _logs_handler_registered = True
+        _orig_add_handler(self, CommandHandler("logs", cmd_logs))
+    return _orig_add_handler(self, handler, *args, **kwargs)
+
+Application.add_handler = _patched_add_handler
+
 print("🚀 [MOTO-VIBE CODING]: Motor Fabric / Runner Auto-Coding en línea", flush=True)
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Fabric + S&R Quirúrgico)...", flush=True)
 
