@@ -1,6 +1,7 @@
+[FORCE_OVERWRITE]
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Multi-Parte + Anti-Tale + Lectura Web Raw
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper
 
 import asyncio
 import json as json_lib
@@ -12,8 +13,6 @@ import requests
 import time
 import ast
 import shutil
-import signal
-import platform
 from datetime import datetime
 from telegram import Update
 from telegram.request import HTTPXRequest
@@ -25,90 +24,32 @@ from telegram.ext import (
     filters,
 )
 
-PID_FILE = os.environ.get("BOT_PID_FILE", ".bot.pid")
-SCRIPT_PRINCIPAL = os.environ.get("BOT_SCRIPT_NAME", "procesar.py")
-TXT_FILE = os.environ.get("BOT_CHAT_LOG", "conversaciones.txt")
-DATASET_ENTRENAMIENTO = os.environ.get("BOT_DATASET_FILE", "dataset_entrenamiento_chat.json")
-CONFIG_TIMBRE = os.environ.get("BOT_TIMBRE_FILE", "config_timbre.json")
-PERFIL_DINAMICO = os.environ.get("BOT_PROFILE_FILE", "perfil_personaje.json")
-CORRECCIONES_WHISPER = os.environ.get("BOT_WHISPER_CORRECTIONS", "correcciones_whisper.json")
-URL_REPOSITORIO = os.environ.get("BOT_URL_REPO", "https://github.com/LeandroViv/Bot")
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente)...", flush=True)
 
-DEFAULT_VOICE = os.environ.get("BOT_DEFAULT_VOICE", "es-AR-TomasNeural")
-DEFAULT_PITCH = os.environ.get("BOT_DEFAULT_PITCH", "-4Hz")
-DEFAULT_RATE = os.environ.get("BOT_DEFAULT_RATE", "-5%")
-DEFAULT_VOLUME = os.environ.get("BOT_DEFAULT_VOLUME", "+10%")
-
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
+TXT_FILE = "conversaciones.txt"
+DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
+CONFIG_TIMBRE = "config_timbre.json"
+PERFIL_DINAMICO = "perfil_personaje.json"
+CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
+CORRECCIONES_WHISPER = "correcciones_whisper.json"
 
 TIEMPO_INICIO = time.time()
-CHAT_ID_ACTIVO = None
-
-def matar_instancia_anterior():
-    if os.path.exists(PID_FILE):
-        try:
-            with open(PID_FILE, "r", encoding="utf-8") as f:
-                pid_viejo = int(f.read().strip())
-            
-            if pid_viejo != os.getpid():
-                print(f"🔄 [SINGLE INSTANCE]: Cerrando instancia anterior (PID {pid_viejo})...", flush=True)
-                os.kill(pid_viejo, signal.SIGTERM)
-                time.sleep(1)
-                try:
-                    os.kill(pid_viejo, signal.SIGKILL)
-                except (ProcessLookupError, PermissionError):
-                    pass
-        except (ValueError, ProcessLookupError, PermissionError) as e:
-            print(f"ℹ️ Limpiando registro PID previo: {e}", flush=True)
-        except Exception as e:
-            print(f"⚠️ Aviso al cerrar instancia anterior: {e}", flush=True)
-
-    try:
-        with open(PID_FILE, "w", encoding="utf-8") as f:
-            f.write(str(os.getpid()))
-    except Exception as e:
-        print(f"⚠️ No se pudo guardar PID file: {e}", flush=True)
-
-    gh_token = os.environ.get("GH_PAT") or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
-    current_run_id = os.environ.get("GITHUB_RUN_ID")
-    repo = os.environ.get("GITHUB_REPOSITORY", "LeandroViv/Bot")
-    if gh_token and current_run_id:
-        try:
-            headers = {"Authorization": f"token {gh_token}", "Accept": "application/vnd.github.v3+json", "User-Agent": "LeandroBot"}
-            for estado in ["in_progress", "queued"]:
-                res = requests.get(f"https://api.github.com/repos/{repo}/actions/runs?status={estado}", headers=headers, timeout=10)
-                if res.status_code == 200:
-                    runs = res.json().get("workflow_runs", [])
-                    for r in runs:
-                        r_id = str(r.get("id"))
-                        if r_id != str(current_run_id):
-                            print(f"🛑 [RUNNER CI]: Cancelando runner {estado} anterior (Run ID: {r_id})...", flush=True)
-                            requests.post(f"https://api.github.com/repos/{repo}/actions/runs/{r_id}/cancel", headers=headers, timeout=10)
-        except Exception as e:
-            print(f"⚠️ Aviso al cancelar runner anterior en GitHub: {e}", flush=True)
-
-matar_instancia_anterior()
-
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Multi-Parte + Anti-Tale + Web Raw)...", flush=True)
 
 for f_path, default_val in [
     (TXT_FILE, ""),
     (DATASET_ENTRENAMIENTO, []),
     (CORRECCIONES_WHISPER, {}),
-    ("memoria_tareas.json", [{"tarea": "Escribirle a Leandro en el día", "pendiente": True, "estado": "pendiente"}]),
     (PERFIL_DINAMICO, {
         "nombre": "Leandro",
         "estilo": "Colega y compañero de vibe coding con tonada rioplatense, yeísmo y ritmo auténtico",
         "notas_aprendizaje": []
     }),
     (CONFIG_TIMBRE, {
-        "voice": DEFAULT_VOICE,
-        "pitch": DEFAULT_PITCH,
-        "rate": DEFAULT_RATE,
-        "volume": DEFAULT_VOLUME,
+        "voice": "es-AR-TomasNeural",
+        "pitch": "-4Hz",
+        "rate": "-5%",
+        "volume": "+10%",
         "f0Hz": 125,
         "harmonics": [],
         "descripcion": "Motor acústico dinámico por Vibe Coding"
@@ -121,6 +62,13 @@ for f_path, default_val in [
         else:
             with open(f_path, "w", encoding="utf-8") as f:
                 json_lib.dump(default_val, f, indent=4, ensure_ascii=False)
+
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+
+CHAT_ID_ACTIVO = None
 
 try:
     from google import genai
@@ -139,17 +87,17 @@ def asegurar_ollama_en_runner():
         pass
 
     try:
-        print(f"🦙 [OLLAMA AUTO-HEAL]: Intentando levantar Ollama en {OLLAMA_HOST}...", flush=True)
+        print(f"🦙 [OLLAMA RUNNER]: Intentando conectar / levantar servicio en {OLLAMA_HOST}...", flush=True)
         subprocess.Popen(
             ["ollama", "serve"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True
         )
-        time.sleep(4)
-        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=4.0)
+        time.sleep(3)
+        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
         if r.status_code == 200:
-            print("🦙 [OLLAMA AUTO-HEAL]: ¡Servicio Ollama restablecido!", flush=True)
+            print("🦙 [OLLAMA RUNNER]: ¡Servicio conectado con éxito en el runner!", flush=True)
             return True
     except Exception as ex:
         print(f"⚠️ Aviso conexión Ollama en runner: {ex}", flush=True)
@@ -167,57 +115,36 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
         )
         salida = res.stdout.strip() if res.stdout else res.stderr.strip()
         if not salida:
-            salida = "Comando ejecutado con éxito (sin salida gráfica)."
+            salida = "Comando ejecutado con éxito (sin salida en consola)."
         return True, salida
     except Exception as e:
         return False, f"Error ejecutando comando: {str(e)}"
 
-def obtener_contenido_archivo_via_web(ruta_relativa):
-    repo = os.environ.get("GITHUB_REPOSITORY", "LeandroViv/Bot")
-    gh_token = os.environ.get("GH_PAT") or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
+def obtener_mapa_repositorio(root_dir="."):
+    mapa = []
+    ignorar = {".git", "__pycache__", ".github", "venv", "downloads"}
     
-    url_raw = f"https://raw.githubusercontent.com/{repo}/main/{ruta_relativa}"
-    headers = {}
-    if gh_token:
-        headers["Authorization"] = f"token {gh_token}"
-        
-    try:
-        print(f"🌐 [LECTURA WEB RAW]: Descargando '{ruta_relativa}' de GitHub...", flush=True)
-        res = requests.get(url_raw, headers=headers, timeout=10)
-        if res.status_code == 200:
-            return res.text
-    except Exception as e:
-        print(f"⚠️ Error leyendo archivo vía Raw URL: {e}", flush=True)
-        
-    if os.path.exists(ruta_relativa):
-        try:
-            with open(ruta_relativa, "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception:
-            pass
-    return ""
-
-def obtener_contexto_focalizado_web(instruccion_usuario):
-    archivo_objetivo = SCRIPT_PRINCIPAL
-    match = re.search(r'([\w\-_/]+\.(?:py|json|md|txt|sh|yml))', instruccion_usuario, re.IGNORECASE)
-    if match:
-        archivo_objetivo = match.group(1).strip()
-
-    contenido_web = obtener_contenido_archivo_via_web(archivo_objetivo)
-    if contenido_web:
-        return f"=== ARCHIVO CONSULTADO VÍA WEB ({archivo_objetivo}) ===\n```python\n{contenido_web}\n```"
-    return f"=== ARCHIVO ({archivo_objetivo}): No disponible en la web ni en disco ==="
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        dirnames[:] = [d for d in dirnames if d not in ignorar]
+        rel_path = os.path.relpath(dirpath, root_dir)
+        if rel_path == ".":
+            rel_path = ""
+            
+        for f in filenames:
+            if f.endswith((".py", ".json", ".txt", ".md", ".sh", ".yml")):
+                path_completo = os.path.join(rel_path, f) if rel_path else f
+                mapa.append(f"  📄 {path_completo}")
+                
+    return "\n".join(mapa) if mapa else "  📄 procesar.py\n  📄 config_timbre.json"
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
-    gh_token = os.environ.get("GH_PAT") or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
-    repo = os.environ.get("GITHUB_REPOSITORY", "LeandroViv/Bot")
+    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
     try:
-        subprocess.run(["git", "config", "--global", "--add", "safe.directory", "*"], check=False)
         subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=True)
         subprocess.run(["git", "config", "user.email", "leandrobot@users.noreply.github.com"], check=True)
         
         if gh_token:
-            remote_url = f"https://x-access-token:{gh_token}@github.com/{repo}.git"
+            remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
 
         subprocess.run(["git", "add", archivo_modificado], check=True)
@@ -228,71 +155,58 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             return True
 
         subprocess.run(["git", "commit", "-m", mensaje_commit], check=True)
-        res_push = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
-        if res_push.returncode != 0:
-            print("⚠️ [GIT PUSH RETRY]: Intentando pull --rebase antes de reintentar push...", flush=True)
-            subprocess.run(["git", "pull", "--rebase", "origin", "HEAD"], check=False)
-            subprocess.run(["git", "push", "origin", "HEAD"], check=True)
+        subprocess.run(["git", "push", "origin", "HEAD"], check=True)
         
-        print(f"🚀 [GIT PUSH EN CALIENTE]: Cambios en '{archivo_modificado}' pusheados con éxito.", flush=True)
+        print(f"🚀 [GIT PUSH EN CALIENTE]: Cambios en '{archivo_modificado}' pusheados como LeandroBot[bot].", flush=True)
         return True
     except Exception as e:
         print(f"⚠️ Aviso git push automático: {e}", flush=True)
         return False
 
-def aplicar_cambio_llave_maestra(ruta_archivo, nuevo_contenido):
+def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_PROPUESTO_FILE):
+    if not os.path.exists(ruta_txt):
+        print(f"⚠️ No se encontró el archivo puente {ruta_txt}", flush=True)
+        return False
+
+    with open(ruta_txt, "r", encoding="utf-8") as f:
+        nuevo_contenido = f.read()
+
+    lineas = nuevo_contenido.splitlines()
+    if lineas and lineas[0].strip() == "[FORCE_OVERWRITE]":
+        nuevo_contenido = "\n".join(lineas[1:]).lstrip()
+
     try:
-        dir_name = os.path.dirname(ruta_archivo)
-        if dir_name and not os.path.exists(dir_name):
-            os.makedirs(dir_name, exist_ok=True)
+        ast.parse(nuevo_contenido)
+    except SyntaxError as e:
+        print(f"❌ [ERROR DE SINTAXIS]: El código en {ruta_txt} tiene un error: {e}", flush=True)
+        return False
 
-        # Freno Anti-Tale Estricto (salvo que sea forzado explícitamente)
-        contenido_previo = obtener_contenido_archivo_via_web(ruta_archivo)
-        if contenido_previo and "FORCE_OVERWRITE" not in nuevo_contenido:
-            lineas_orig = len(contenido_previo.splitlines())
-            lineas_nuevas = len(nuevo_contenido.splitlines())
-            if lineas_orig > 200 and lineas_nuevas < (lineas_orig * 0.5):
-                print(f"🛑 [ANTI-TALE REJECT]: Intento de mutilación detectado en {ruta_archivo} ({lineas_orig} -> {lineas_nuevas} líneas). Abortando.", flush=True)
-                return False, f"Rechazado por Anti-Tale: El código generado ({lineas_nuevas} líneas) es sospechosamente más corto que el original web ({lineas_orig} líneas). Usá bloques multi-parte o FORCE_OVERWRITE."
+    if os.path.exists(ruta_destino):
+        shutil.copy2(ruta_destino, f"{ruta_destino}.bak")
 
-        limpio_contenido = re.sub(r'#\s*FORCE_OVERWRITE\b.*', '', nuevo_contenido).strip()
+    ruta_tmp = f"{ruta_destino}.tmp"
+    with open(ruta_tmp, "w", encoding="utf-8") as f:
+        f.write(nuevo_contenido)
+    os.replace(ruta_tmp, ruta_destino)
 
-        if ruta_archivo.endswith(".py"):
-            try:
-                ast.parse(limpio_contenido)
-            except SyntaxError as e:
-                print(f"⚠️ [INTEGRIDAD AST]: Sintaxis inválida en {ruta_archivo}: {e}", flush=True)
-                return False, f"Error de sintaxis Python: {e}"
-
-        if os.path.exists(ruta_archivo):
-            shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
-
-        ruta_tmp = f"{ruta_archivo}.tmp"
-        with open(ruta_tmp, "w", encoding="utf-8") as f:
-            f.write(limpio_contenido)
-        os.replace(ruta_tmp, ruta_archivo)
-
-        print(f"✅ [LLAVE MAESTRA]: Archivo '{ruta_archivo}' actualizado e íntegro.", flush=True)
-        guardar_y_pushear_como_leandrobot(ruta_archivo, f"vibe-coding: actualización protegida de {ruta_archivo}")
-        return True, ""
-    except Exception as e:
-        return False, str(e)
+    print(f"✅ [VIBE CODING ATÓMICO]: {ruta_destino} actualizado limpiamente desde {ruta_txt}.", flush=True)
+    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica por txt puente")
 
 def cargar_config_timbre():
     try:
         with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
             cfg = json_lib.load(f)
-            vol_raw = str(cfg.get("volume", DEFAULT_VOLUME))
+            vol_raw = str(cfg.get("volume", "+10%"))
             if "db" in vol_raw.lower():
-                vol_num = re.sub(r'[^0-9+-]', '', vol_raw)
+                vol_num = re.sub(r"[^0-9+-]", "", vol_raw)
                 cfg["volume"] = f"{vol_num}%"
             return cfg
     except Exception:
         return {
-            "voice": DEFAULT_VOICE,
-            "pitch": DEFAULT_PITCH,
-            "rate": DEFAULT_RATE,
-            "volume": DEFAULT_VOLUME,
+            "voice": "es-AR-TomasNeural",
+            "pitch": "-4Hz",
+            "rate": "-5%",
+            "volume": "+10%",
             "f0Hz": 125,
             "harmonics": [],
             "descripcion": "Motor acústico dinámico"
@@ -302,7 +216,7 @@ def registrar_conversacion(remitente, texto):
     try:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {remitente}: {texto}" + chr(10))
+            f.write(f"[{ts}] {remitente}: {texto}\n")
         print(f"📝 [LOG CHAT] [{remitente}]: {texto[:80]}...", flush=True)
     except Exception as e:
         print(f"⚠️ Error conversacion: {e}", flush=True)
@@ -320,23 +234,19 @@ def obtener_memoria_aprendizaje():
 
 def buscar_en_web(query):
     try:
-        from ddgs import DDGS
+        try:
+            from ddgs import DDGS
+        except ImportError:
+            from duckduckgo_search import DDGS
+
         with DDGS() as ddgs_instance:
             results = list(ddgs_instance.text(query, max_results=3))
             if results:
                 lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
-                print(f"🌐 [BUSQUEDA WEB DDGS]: {query[:40]}...", flush=True)
+                print(f"🌐 [WEB SEARCH]: {query[:40]}...", flush=True)
                 return "\n".join(lineas)
-    except Exception:
-        try:
-            from duckduckgo_search import DDGS
-            with DDGS() as ddgs_instance:
-                results = list(ddgs_instance.text(query, max_results=3))
-                if results:
-                    lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
-                    return "\n".join(lineas)
-        except Exception as e:
-            print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
+    except Exception as e:
+        print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
     return ""
 
 def construir_filtro_ffmpeg_desde_armonicos(cfg):
@@ -351,8 +261,8 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
             if 50 < hz < 16000:
                 partes.append(f"equalizer=f={hz}:width_type=q:w={q}:g={gain}")
 
-    vol_raw = str(cfg.get("volume", DEFAULT_VOLUME))
-    vol_num = re.sub(r'[^0-9+-]', '', vol_raw)
+    vol_raw = str(cfg.get("volume", "+10%"))
+    vol_num = re.sub(r"[^0-9+-]", "", vol_raw)
     try:
         v_pct = float(vol_num)
         if v_pct != 0:
@@ -361,8 +271,8 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
     except Exception:
         pass
 
-    rate_raw = str(cfg.get("rate", DEFAULT_RATE))
-    rate_num = re.sub(r'[^0-9+-]', '', rate_raw)
+    rate_raw = str(cfg.get("rate", "-5%"))
+    rate_num = re.sub(r"[^0-9+-]", "", rate_raw)
     try:
         r_pct = float(rate_num)
         if r_pct != 0:
@@ -374,326 +284,294 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
 
     return ",".join(partes)
 
-def construir_prompt_sistema(prompt_usuario="", es_modo_codigo=False):
-    if es_modo_codigo:
-        contexto_web = obtener_contexto_focalizado_web(prompt_usuario)
-        return (
-            "SOS UN AGENTE DE VIBE CODING AUTÓNOMO CON LLAVE MAESTRA.\n"
-            f"REPOSITORIO OFICIAL: {URL_REPOSITORIO}\n\n"
-            f"{contexto_web}\n\n"
-            "INSTRUCCIONES CRÍTICAS DE SALIDA MULTI-PARTE:\n"
-            "1. NO HABLES, NO SALUDES, NO EXPLIQUES, NO PIDAS CONFIRMACIÓN.\n"
-            "2. DEVOLVÉ EL CÓDIGO COMPLETO SIN OMITIR NINGUNA LÍNEA NI ESTRUCTURA EXISTENTE.\n"
-            "3. SI EL CÓDIGO ES EXTENSO O CORRE RIESGO DE TRUNCARSE, DIVIDILO EN VARIOS BLOQUES NUMERADOS DENTRO DE ```python ... ``` USANDO '# PARTE: 1', '# PARTE: 2', ETC.\n"
-            "4. INDICÁ LA RUTA EXACTA AL INICIO DE CADA BLOQUE (Ej: `# ARCHIVO: procesar.py`).\n"
-            "5. CERO TRUNCAMIENTO: Cierra correctamente todas las comillas, paréntesis y funciones.\n"
-        )
-
+def construir_prompt_sistema():
     memoria = obtener_memoria_aprendizaje()
+    mapa_repo = obtener_mapa_repositorio()
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
-        f"REPOSITORIO OFICIAL: {URL_REPOSITORIO}\n\n"
-        "REGLAS LINGÜÍSTICAS Y DE CHAT:\n"
-        "1. EL USUARIO ES LEANDRO. Hablale de 'vos' o 'che'. Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "2. CERO RELLENO: Respondé directo y al pie con datos verificados.\n\n"
+        f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
+        "REGLAS CRÍTICAS DE CÓDIGO Y VIBE CODING ATÓMICO:\n"
+        "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
+        "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
+        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches de fragmentos de código. Eso infla y rompe el script.\n"
+        "4. VOLCADO ATÓMICO COMPLETO EN TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO de principio a fin (desde los imports hasta el `if __name__ == '__main__': main()`) en 'cambio_propuesto.txt'. NUNCA cortes el archivo ni omitas funciones.\n"
+        "5. REGLA RIGUROSA DE REGEX: Todas las expresiones regulares (`re.sub`) deben escribirse estrictamente en una sola línea usando cadenas raw r\"...\" o comillas simples/dobles. PROHIBIDO usar comillas triples con saltos de línea para evitar errores de sintaxis.\n"
+        "6. INTEGRIDAD MULTI-PARTE: Conservá siempre la función enviar_mensaje_en_partes para evitar el límite de 4000 caracteres de Telegram.\n"
+        "7. VALIDACIÓN PREVIA: Antes de avisar, ejecutá internamente python -m py_compile cambio_propuesto.txt para garantizar sintaxis limpia.\n"
+        "8. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
+        f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
 
-def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
-    system_prompt = construir_prompt_sistema(prompt_usuario=prompt_usuario, es_modo_codigo=es_modo_codigo)
-    
+def generar_texto_ia(prompt_usuario):
+    system_prompt = construir_prompt_sistema()
     p = prompt_usuario
-    info_web = buscar_en_web(prompt_usuario)
-    if info_web:
-        p = f"{prompt_usuario}\n\n[Contexto Verificado Web]:\n{info_web}"
+    if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
+        info_web = buscar_en_web(prompt_usuario)
+        if info_web:
+            p = f"{prompt_usuario}\n\n[Información fresca]:\n{info_web}"
 
     if client:
         try:
-            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Multi-Parte Web)...", flush=True)
             res = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.5-flash",
                 contents=p,
                 config=dict(system_instruction=system_prompt)
             )
             raw = (res.text or "").strip()
-            if raw: 
+            if raw:
                 return raw
-        except Exception as e:
-            print(f"⚠️ [IA ENGINE ERROR - Gemini]: {e}", flush=True)
+        except Exception:
+            pass
 
-    for intento in range(2):
-        if asegurar_ollama_en_runner():
-            try:
-                print(f"🦙 [OLLAMA TRY {intento+1}]: Enviando consulta a {OLLAMA_MODEL}...", flush=True)
-                prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
-                r = requests.post(
-                    f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                    json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False, "keep_alive": "10m"},
-                    timeout=240
-                )
-                if r.status_code == 200:
-                    texto = r.json().get("response", "").strip()
-                    if texto: 
-                        return texto
-            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as ex:
-                print(f"⚠️ [OLLAMA ERROR]: Intento {intento+1} falló ({ex}). Reiniciando servicio...", flush=True)
-                asegurar_ollama_en_runner()
-                time.sleep(2)
-            except Exception as ex:
-                print(f"⚠️ [OLLAMA ERROR - General]: {ex}", flush=True)
+    if asegurar_ollama_en_runner():
+        try:
+            prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
+            r = requests.post(
+                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False},
+                timeout=60
+            )
+            if r.status_code == 200:
+                texto = r.json().get("response", "").strip()
+                if texto:
+                    return texto
+        except Exception:
+            pass
 
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
 def preparar_texto_para_voz(texto):
-    t = re.sub(r'```[\s\S]*?```', 'Te pasé el bloque de código por texto para que lo mires tranqui.', texto)
-    t = t.replace("*", "").replace("_", "").replace(chr(96), "").replace("#", "").strip()
-    t = re.sub(r'\b(che|mirá|fijate|escuchá|vení|posta)\b', r'\g<1>...', t, flags=re.IGNORECASE)
-    palabras = t.split()
-    if len(palabras) > 60:
-        t = " ".join(palabras[:55]) + "... te lo resumo hasta acá, che."
+    t = texto
+    t = re.sub(r"https?://\S+", "", t)
+    t = re.sub(r"[*_`~#\[\]<>]", " ", t)
+    t = re.sub(r"[\U00010000-\U0010ffff]", "", t)
+    t = re.sub(r"\s+", " ", t)
     return t.strip()
 
-async def sintetizar_voz_edge_tts(texto, ogg_salida="resp.ogg"):
+async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.ogg"):
     cfg = cargar_config_timbre()
-    voice = cfg.get("voice", DEFAULT_VOICE)
-    pitch = cfg.get("pitch", DEFAULT_PITCH)
-    rate = cfg.get("rate", DEFAULT_RATE)
-    volume = f"{re.sub(r'[^0-9+-]', '', str(cfg.get('volume', DEFAULT_VOLUME)))}%"
-    texto_oral = preparar_texto_para_voz(texto)
+    texto_limpio = preparar_texto_para_voz(texto)
+    if not texto_limpio:
+        texto_limpio = "Dale, te escucho."
+
+    archivo_raw = "temp_raw.mp3"
+    voice = cfg.get("voice", "es-AR-TomasNeural")
+    pitch = cfg.get("pitch", "-4Hz")
+    rate = cfg.get("rate", "-5%")
+    volume = cfg.get("volume", "+10%")
+
+    cmd_tts = [
+        "edge-tts",
+        f"--voice={voice}",
+        f"--pitch={pitch}",
+        f"--rate={rate}",
+        f"--volume={volume}",
+        f"--text={texto_limpio}",
+        f"--write-media={archivo_raw}"
+    ]
 
     try:
-        import edge_tts
-        communicate = edge_tts.Communicate(texto_oral, voice=voice, pitch=pitch, rate=rate, volume=volume)
-        mp3_tmp = f"tmp_edge_{int(time.time()*1000)}.mp3"
-        await communicate.save(mp3_tmp)
-
-        if not os.path.exists(mp3_tmp) or os.path.getsize(mp3_tmp) < 100:
-            return False, None
-
-        filtro_af = construir_filtro_ffmpeg_desde_armonicos(cfg)
-        cmd_ffmpeg = ["ffmpeg", "-y", "-i", mp3_tmp]
-        if filtro_af: cmd_ffmpeg.extend(["-af", filtro_af])
-        cmd_ffmpeg.extend(["-ar", "48000", "-ac", "1", "-c:a", "libopus", "-b:a", "48k", ogg_salida])
-        subprocess.run(cmd_ffmpeg, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-
-        if os.path.exists(mp3_tmp):
-            try: os.remove(mp3_tmp)
-            except Exception: pass
-
-        if os.path.exists(ogg_salida) and os.path.getsize(ogg_salida) > 200:
-            return True, ogg_salida
-        return False, None
-    except Exception:
-        return False, None
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID_ACTIVO
-    if update.message:
-        CHAT_ID_ACTIVO = update.message.chat_id
-        await update.message.reply_text(
-            f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
-            f"• /codigo <instrucción>: Modifica archivos con multi-parte y anti-tale.\n"
-            "• /estado: Muestra métricas detalladas y tareas pendientes."
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_tts,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
+        await proc.communicate()
 
-async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
+        if not os.path.exists(archivo_raw) or os.path.getsize(archivo_raw) == 0:
+            print("⚠️ Edge-TTS no generó el audio temporal.", flush=True)
+            return None
 
-    texto_raw = (update.message.text or "").strip('\u200b\ufeff\t\r\n ')
-    instruccion = re.sub(r'^[/\\]*(codigo|código|vibe)\s*', '', texto_raw, flags=re.IGNORECASE).strip()
+        filtro = construir_filtro_ffmpeg_desde_armonicos(cfg)
+        cmd_ffmpeg = ["ffmpeg", "-y", "-i", archivo_raw]
+        if filtro:
+            cmd_ffmpeg.extend(["-af", filtro])
+        cmd_ffmpeg.extend(["-c:a", "libopus", "-b:a", "32k", "-vn", archivo_salida])
 
-    if not instruccion and context.args:
-        instruccion = " ".join(context.args).strip()
-
-    if not instruccion:
-        await update.message.reply_text(f"Decime qué comando querés correr o qué archivo modificamos, che.")
-        return
-
-    u_low = instruccion.lower()
-    if u_low.startswith(("pip ", "python ", "git ", "ls", "pwd", "apt", "curl", "npm")) or "instalar" in u_low:
-        cmd = instruccion
-        if "instalar " in u_low:
-            paquete = instruccion.split("instalar ", 1)[1].strip()
-            cmd = f"{sys.executable} -m pip install --upgrade {paquete}"
-        ok, salida = ejecutar_comando_runner_en_vivo(cmd)
-        await update.message.reply_text(f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```", parse_mode="Markdown")
-        return
-
-    print(f"🤖 [VIBE CODING MULTI-PARTE]: Procesando instrucción: '{instruccion[:60]}...'", flush=True)
-    await update.message.reply_text(f"🌐 Descargando versión web y procesando actualización multi-parte...")
-
-    t0 = time.time()
-    resp = generar_texto_ia(instruccion, es_modo_codigo=True)
-    duracion = round(time.time() - t0, 2)
-
-    matches = re.findall(r'```python\s*([\s\S]*?)\s*```', resp)
-    if matches:
-        acumulado_por_archivo = {}
-        for bloque in matches:
-            bloque_limpio = bloque.strip()
-            
-            ruta_destino = SCRIPT_PRINCIPAL
-            match_archivo = re.search(r'#\s*(?:ARCHIVO|PATH|FILE):\s*([^\s\n]+)', bloque_limpio, re.IGNORECASE)
-            if match_archivo:
-                ruta_destino = match_archivo.group(1).strip()
-                bloque_limpio = re.sub(r'#\s*(?:ARCHIVO|PATH|FILE):\s*[^\s\n]+\n?', '', bloque_limpio, count=1).strip()
-            
-            bloque_limpio = re.sub(r'#\s*PARTE:\s*\d+\n?', '', bloque_limpio, flags=re.IGNORECASE).strip()
-            
-            if ruta_destino not in acumulado_por_archivo:
-                acumulado_por_archivo[ruta_destino] = []
-            acumulado_por_archivo[ruta_destino].append(bloque_limpio)
-
-        for ruta_destino, fragmentos in acumulado_por_archivo.items():
-            fragmento_final = "\n".join(fragmentos)
-            print(f"📄 [VIBE CODING MULTI-PARTE]: Ensamblando destino '{ruta_destino}' ({len(fragmento_final)} chars). Aplicando...", flush=True)
-            exito, err = aplicar_cambio_llave_maestra(ruta_destino, fragmento_final)
-            if not exito:
-                await update.message.reply_text(f"⚠️ Error al aplicar cambio en `{ruta_destino}` (`{err}`).")
-                return
-
-        await update.message.reply_text(
-            f"🚀 **¡Modificación multi-parte aplicada con éxito en {duracion}s!**\n"
-            f"Ensamblado, validado y pusheado a GitHub.",
-            parse_mode="Markdown"
+        proc_ff = await asyncio.create_subprocess_exec(
+            *cmd_ffmpeg,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
-        return
+        await proc_ff.communicate()
 
-    print("⚠️ [VIBE CODING MULTI-PARTE]: La respuesta no incluyó bloques ```python ... ``` válidos.", flush=True)
-    await update.message.reply_text(resp)
+        if os.path.exists(archivo_raw):
+            os.remove(archivo_raw)
 
-async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    segundos = int(time.time() - TIEMPO_INICIO)
-    horas = segundos // 3600
-    minutos = (segundos % 3600) // 60
-    secs = segundos % 60
-    uptime_str = f"{horas}h {minutos}m {secs}s"
+        if os.path.exists(archivo_salida) and os.path.getsize(archivo_salida) > 0:
+            return archivo_salida
+    except Exception as e:
+        print(f"⚠️ Error en sintetizar_audio_dsp: {e}", flush=True)
 
+    return None
+
+def corregir_transcripcion(texto):
+    if not os.path.exists(CORRECCIONES_WHISPER):
+        return texto
     try:
-        import psutil
-        process = psutil.Process(os.getpid())
-        ram_mb = process.memory_info().rss / (1024 * 1024)
-        ram_str = f"{ram_mb:.2f} MB"
-        cpu_pct = f"{psutil.cpu_percent(interval=None)}%"
+        with open(CORRECCIONES_WHISPER, "r", encoding="utf-8") as f:
+            corrs = json_lib.load(f)
+        for original, correccion in corrs.items():
+            texto = re.sub(rf"\b{re.escape(original)}\b", correccion, texto, flags=re.IGNORECASE)
     except Exception:
-        ram_str = "psutil no disponible"
-        cpu_pct = "N/A"
+        pass
+    return texto
 
-    motor_ia = "Gemini 3.8 Flash" if GENAI_DISPONIBLE else f"Ollama ({OLLAMA_MODEL})"
-    cfg_audio = cargar_config_timbre()
-    v_pitch = cfg_audio.get("pitch", DEFAULT_PITCH)
-    v_vol = cfg_audio.get("volume", DEFAULT_VOLUME)
-    v_voice = cfg_audio.get("voice", DEFAULT_VOICE)
-
-    sis_info = f"{platform.system()} {platform.release()}"
-    total_lineas = 0
-    if os.path.exists(SCRIPT_PRINCIPAL):
+def transcribir_audio_local(audio_path):
+    texto = ""
+    try:
+        from faster_whisper import WhisperModel
+        modelo = WhisperModel("base", device="cpu", compute_type="int8")
+        segmentos, _ = modelo.transcribe(audio_path, language="es")
+        texto = " ".join([seg.text for seg in segmentos]).strip()
+    except Exception:
         try:
-            with open(SCRIPT_PRINCIPAL, "r", encoding="utf-8") as f:
-                total_lineas = len(f.readlines())
-        except Exception:
-            pass
-
-    tareas_pendientes = []
-    if os.path.exists("memoria_tareas.json"):
-        try:
-            with open("memoria_tareas.json", "r", encoding="utf-8") as f:
-                datos = json_lib.load(f)
-                lista = datos if isinstance(datos, list) else datos.get("tareas", [])
-                for t in lista:
-                    if isinstance(t, dict):
-                        if t.get("pendiente", True) and t.get("estado") != "completada":
-                            tareas_pendientes.append(t.get("tarea", str(t)))
-                    else:
-                        tareas_pendientes.append(str(t))
+            res = subprocess.run(
+                ["whisper", audio_path, "--model", "base", "--language", "Spanish", "--output_format", "txt"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            txt_salida = f"{os.path.splitext(audio_path)[0]}.txt"
+            if os.path.exists(txt_salida):
+                with open(txt_salida, "r", encoding="utf-8") as f:
+                    texto = f.read().strip()
+                os.remove(txt_salida)
         except Exception as e:
-            print(f"⚠️ Error leyendo memoria_tareas.json: {e}", flush=True)
+            print(f"⚠️ Fallo transcripción whisper CLI: {e}", flush=True)
 
-    bloque_tareas = "\n".join([f"• {t}" for t in tareas_pendientes]) if tareas_pendientes else "• Ninguna tarea pendiente."
+    return corregir_transcripcion(texto)
 
-    await update.message.reply_text(
-        f"¡Qué hacés, Leandro! 🚀\n\n"
-        f"📊 **Estado del Sistema (Multi-Parte + Anti-Tale):**\n"
-        f"• Uptime: {uptime_str}\n"
-        f"• RAM en uso: {ram_str}\n"
-        f"• CPU: {cpu_pct}\n"
-        f"• Entorno / OS: {sis_info}\n"
-        f"• Motor IA principal: {motor_ia}\n"
-        f"• Audio / Timbre: {v_voice} (Pitch: {v_pitch}, Vol: {v_vol})\n"
-        f"• PID Activo: {os.getpid()}\n"
-        f"• Estado: Operativo y respondiendo impecable, che.\n"
-        f"• Total de líneas en {SCRIPT_PRINCIPAL}: {total_lineas}\n\n"
-        f"📋 **Tareas Pendientes (`memoria_tareas.json`):**\n{bloque_tareas}"
-    )
-
-async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
+async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
+    if not texto:
         return
+    for i in range(0, len(texto), max_chunk):
+        fragmento = texto[i:i + max_chunk]
+        await update.message.reply_text(fragmento)
+
+async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
-    CHAT_ID_ACTIVO = update.message.chat_id
+    CHAT_ID_ACTIVO = update.effective_chat.id
+    bienvenida = (
+        "¡Qué hacés Leandro! Acá LeandroBot activo y conectado al runner.\n\n"
+        "Comandos disponibles:\n"
+        "• /status - Estado del sistema y repositorio\n"
+        "• /run <comando> - Ejecuta terminal runner directo\n"
+        "• /aplicar - Aplica cambio_propuesto.txt a procesar.py de forma atómica\n"
+        "• Mandame un audio o mensaje de texto y te respondo al toque con DSP."
+    )
+    await update.message.reply_text(bienvenida)
 
-    u_text = (update.message.text or update.message.caption or "").strip('\u200b\ufeff\t\r\n ')
-    if re.search(r'^[/\\]*(codigo|código|vibe)', u_text, re.IGNORECASE):
-        await manejar_vibe_coding(update, context)
+async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
+    cfg = cargar_config_timbre()
+    status_txt = (
+        f"🤖 [ESTADO LEANDROBOT]\n"
+        f"• Uptime: {uptime_min} minutos\n"
+        f"• Voz configurada: {cfg.get('voice', 'Tomas')}\n"
+        f"• Pitch/Rate: {cfg.get('pitch', '-4Hz')} / {cfg.get('rate', '-5%')}\n"
+        f"• Gemini Disponible: {'Sí' if GENAI_DISPONIBLE else 'No'}\n"
+        f"• Repositorio: {URL_REPOSITORIO}\n\n"
+        f"Mapa de archivos:\n{obtener_mapa_repositorio()}"
+    )
+    await enviar_mensaje_en_partes(update, status_txt)
+
+async def comando_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /run <comando>")
+        return
+    cmd = " ".join(context.args)
+    ok, salida = ejecutar_comando_runner_en_vivo(cmd)
+    prefijo = "✅ [Salida]:" if ok else "❌ [Error]:"
+    texto_total = f"{prefijo}\n{salida}"
+    await enviar_mensaje_en_partes(update, texto_total)
+
+async def comando_aplicar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists(CAMBIO_PROPUESTO_FILE):
+        await update.message.reply_text("⚠️ No se encontró cambio_propuesto.txt en la raíz.")
+        return
+    await update.message.reply_text("⏳ Verificando sintaxis y aplicando cambio atómico en procesar.py...")
+    exito = aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE)
+    if exito:
+        await update.message.reply_text("✅ ¡Cambio aplicado y pusheado con éxito a GitHub! Reiniciando proceso...")
+        sys.exit(0)
+    else:
+        await update.message.reply_text("❌ Error al aplicar cambio. Revisá la consola para más detalles.")
+
+async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.effective_chat.id
+    texto_usuario = update.message.text
+    if not texto_usuario:
         return
 
-    if not u_text:
-        u_text = "¡Qué hacés che! Decime cómo andás."
+    registrar_conversacion("Leandro", texto_usuario)
+    respuesta = generar_texto_ia(texto_usuario)
+    registrar_conversacion("LeandroBot", respuesta)
 
-    registrar_conversacion("Usuario", u_text)
-    resp = generar_texto_ia(u_text, es_modo_codigo=False)
-    registrar_conversacion("LeandroBot", resp)
-    await update.message.reply_text(resp)
+    audio_path = await sintetizar_audio_dsp(respuesta)
+    if audio_path and os.path.exists(audio_path):
+        with open(audio_path, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=respuesta[:1024] if len(respuesta) <= 1024 else None)
+        if len(respuesta) > 1024:
+            await enviar_mensaje_en_partes(update, respuesta)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+    else:
+        await enviar_mensaje_en_partes(update, respuesta)
 
-    ogg_f = f"resp_{int(time.time())}.ogg"
-    exito, archivo_audio = await sintetizar_voz_edge_tts(resp, ogg_f)
-    if exito and archivo_audio and os.path.exists(archivo_audio):
-        try:
-            with open(archivo_audio, "rb") as vf:
-                await update.message.reply_voice(voice=vf, caption="📻 Leandro")
-        except Exception: pass
-        try: os.remove(archivo_audio)
-        except Exception: pass
+async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.effective_chat.id
+    audio_obj = update.message.voice or update.message.audio
+    if not audio_obj:
+        return
+
+    archivo = await context.bot.get_file(audio_obj.file_id)
+    ruta_temp = "input_audio.ogg"
+    await archivo.download_to_drive(ruta_temp)
+
+    texto_transcrito = transcribir_audio_local(ruta_temp)
+    if os.path.exists(ruta_temp):
+        os.remove(ruta_temp)
+
+    if not texto_transcrito:
+        texto_transcrito = "(Audio ininteligible)"
+
+    registrar_conversacion("Leandro (Audio)", texto_transcrito)
+    respuesta = generar_texto_ia(texto_transcrito)
+    registrar_conversacion("LeandroBot", respuesta)
+
+    audio_path = await sintetizar_audio_dsp(respuesta)
+    if audio_path and os.path.exists(audio_path):
+        with open(audio_path, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=f"🗣 Transcripción: {texto_transcrito[:200]}")
+        if len(respuesta) > 200:
+            await enviar_mensaje_en_partes(update, respuesta)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+    else:
+        await enviar_mensaje_en_partes(update, f"🗣 Transcripción: {texto_transcrito}\n\n{respuesta}")
 
 def main():
     if not TOKEN:
-        print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con Multi-Parte y Anti-Tale...", flush=True)
-    
-    if os.path.exists("memoria_tareas.json"):
-        try:
-            with open("memoria_tareas.json", "r", encoding="utf-8") as f:
-                datos = json_lib.load(f)
-                lista = datos if isinstance(datos, list) else datos.get("tareas", [])
-                pendientes = [
-                    t.get("tarea", str(t)) if isinstance(t, dict) else str(t) 
-                    for t in lista 
-                    if not isinstance(t, dict) or (t.get("pendiente", True) and t.get("estado") != "completada")
-                ]
-                if pendientes:
-                    print(f"📋 [TAREAS EN ARRANQUE]: {len(pendientes)} tarea(s) pendiente(s):", flush=True)
-                    for t in pendientes:
-                        print(f"  ▫️ {t}", flush=True)
-                else:
-                    print("📋 [TAREAS EN ARRANQUE]: Sin tareas pendientes.", flush=True)
-        except Exception as e:
-            print(f"⚠️ Error leyendo memoria_tareas.json en arranque: {e}", flush=True)
-    else:
-        print("📋 [TAREAS EN ARRANQUE]: memoria_tareas.json no existe aún.", flush=True)
+    asegurar_ollama_en_runner()
 
-    request_config = HTTPXRequest(connect_timeout=60.0, read_timeout=120.0, write_timeout=120.0, pool_timeout=120.0)
+    req = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
+    app = Application.builder().token(TOKEN).request(req).build()
 
-    app = Application.builder().token(TOKEN).request(request_config).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("codigo", manejar_vibe_coding))
-    app.add_handler(CommandHandler("vibe", manejar_vibe_coding))
-    app.add_handler(CommandHandler("estado", manejar_estado))
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, manejar_mensaje))
+    app.add_handler(CommandHandler("start", comando_start))
+    app.add_handler(CommandHandler("status", comando_status))
+    app.add_handler(CommandHandler("run", comando_run))
+    app.add_handler(CommandHandler("aplicar", comando_aplicar))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
 
-    print("🔄 [POLLING]: Bot escuchando en Telegram...", flush=True)
+    print("🤖 LeandroBot listo y a la escucha en Telegram...", flush=True)
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
