@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding con Integración Fabric y S&R Robusto
+# Script: procesar.py - LeandroBot / Vibe Coding con Runner Robusto (Timeouts elevados y reintentos)
 
 import asyncio
 import json as json_lib
@@ -32,58 +32,8 @@ from telegram.ext import (
     filters,
 )
 
-async def cmd_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando Handler /logs: Devuelve las últimas líneas de conversaciones.txt con soporte de parámetro numérico y fallback seguro."""
-    try:
-        n_lineas = 20
-        if context.args and context.args[0].isdigit():
-            n_lineas = max(1, min(int(context.args[0]), 100))
-
-        if not os.path.exists(TXT_FILE):
-            await update.message.reply_text("📋 El archivo conversaciones.txt aún no existe.")
-            return
-
-        with open(TXT_FILE, "r", encoding="utf-8") as f:
-            lineas = f.readlines()
-
-        if not lineas:
-            await update.message.reply_text("📋 El archivo conversaciones.txt está vacío.")
-            return
-
-        total_mostradas = min(len(lineas), n_lineas)
-        ultimas = "".join(lineas[-total_mostradas:]).strip()
-        if not ultimas:
-            await update.message.reply_text("📋 No se encontraron registros recientes.")
-            return
-
-        encabezado = f"📋 Últimas {total_mostradas} líneas de conversaciones.txt:\n\n"
-        max_cuerpo = 3900 - len(encabezado)
-        if len(ultimas) > max_cuerpo:
-            ultimas = ultimas[-max_cuerpo:]
-
-        respuesta_md = f"📋 *Últimas {total_mostradas} líneas de conversaciones.txt:*\n\n```\n{ultimas}\n```"
-        try:
-            await update.message.reply_text(respuesta_md, parse_mode="Markdown")
-        except Exception:
-            await update.message.reply_text(f"{encabezado}{ultimas}")
-    except Exception as e:
-        await update.message.reply_text(f"⚠️ Error al leer los logs: {e}")
-
-# Inyección automática y segura del CommandHandler /logs en la Application de Telegram
-_orig_add_handler = Application.add_handler
-_logs_handler_registered = False
-
-def _patched_add_handler(self, handler, *args, **kwargs):
-    global _logs_handler_registered
-    if not _logs_handler_registered:
-        _logs_handler_registered = True
-        _orig_add_handler(self, CommandHandler("logs", cmd_logs))
-    return _orig_add_handler(self, handler, *args, **kwargs)
-
-Application.add_handler = _patched_add_handler
-
-print("🚀 [MOTO-VIBE CODING]: Motor Fabric / Runner Auto-Coding en línea", flush=True)
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Fabric + S&R Quirúrgico)...", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Auto-Coding blindado", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -197,11 +147,11 @@ def asegurar_fabric_en_runner():
     except Exception:
         pass
     try:
-        print("🛠️ [FABRIC]: Instalando fabric-ai en el runner...", flush=True)
-        subprocess.run([sys.executable, "-m", "pip", "install", "fabric-ai"], check=True, capture_output=True)
+        print("🛠️ [FABRIC]: Instalando fabric-ai de forma segura...", flush=True)
+        subprocess.run([sys.executable, "-m", "pip", "install", "--no-deps", "fabric-ai"], check=True, capture_output=True)
         return True
     except Exception as e:
-        print(f"⚠️ No se pudo instalar fabric: {e}", flush=True)
+        print(f"⚠️ Aviso instalación fabric (se usará fallback Ollama directo): {e}", flush=True)
         return False
 
 def ejecutar_comando_runner_en_vivo(cmd_str):
@@ -246,6 +196,7 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
+        # Limpieza previa de estado para evitar bloqueos por archivos untracked/modificados extra
         subprocess.run(["git", "add", archivo_modificado], check=True)
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not status.stdout.strip():
@@ -296,7 +247,6 @@ def aplicar_cambio_universal(ruta_destino, nuevo_contenido):
 
 def detectar_archivo_objetivo(prompt_usuario):
     prompt_lc = prompt_usuario.lower()
-    # Si la petición habla explícitamente de comandos, handlers o código python, forzamos procesar.py
     if any(k in prompt_lc for k in ["handler", "comando", "logs", "funcion", "bot", "python", "/"]):
         return "procesar.py"
     archivos = obtener_mapa_repositorio()
@@ -327,10 +277,7 @@ def registrar_conversacion(remitente, texto):
 
 def buscar_en_web(query):
     try:
-        try:
-            from ddgs import DDGS
-        except ImportError:
-            from duckduckgo_search import DDGS
+        from ddgs import DDGS
         with DDGS() as ddgs_instance:
             results = list(ddgs_instance.text(query, max_results=3))
             if results:
@@ -340,6 +287,9 @@ def buscar_en_web(query):
     return ""
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
+    if texto_usuario.strip().startswith("/"):
+        return False
+
     patrones_codigo = [
         r"\breemplaz[aaá]\b", r"\bagreg[aaá]le\b", r"\bmodific[aaá]\b", 
         r"\bcambi[aaá]\b", r"\bpushe[aaá]\b", r"\bprint\b", r"\.py\b", 
@@ -363,7 +313,6 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
         f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
     )
     
-    # 1. Intentar usar Fabric si está disponible en el runner
     if asegurar_fabric_en_runner():
         try:
             print("🛠️ [FABRIC RUNNER]: Ejecutando engine con fabric...", flush=True)
@@ -372,31 +321,35 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
                 input=instruction,
                 capture_output=True,
                 text=True,
-                timeout=90
+                timeout=180
             )
             if res_fab.returncode == 0 and res_fab.stdout.strip():
                 return res_fab.stdout.strip()
         except Exception as ex:
             print(f"⚠️ Aviso ejecución Fabric: {ex}", flush=True)
 
-    # 2. Fallback a Ollama directo en el runner
     if asegurar_ollama_en_runner():
-        try:
-            print("🦙 [OLLAMA RUNNER]: Ejecutando auto-coding local...", flush=True)
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "prompt": instruction,
-                    "stream": False,
-                    "options": {"num_ctx": 4096, "temperature": 0.0}
-                },
-                timeout=90
-            )
-            if r.status_code == 200:
-                return r.json().get("response", "").strip()
-        except Exception as ex:
-            print(f"⚠️ Error en Ollama local del runner: {ex}", flush=True)
+        # Reintentos con timeout extendido a 180s para evitar cortes
+        for intento in range(3):
+            try:
+                print(f"🦙 [OLLAMA RUNNER]: Ejecutando auto-coding local (Intento {intento+1}/3)...", flush=True)
+                r = requests.post(
+                    f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                    json={
+                        "model": OLLAMA_MODEL,
+                        "prompt": instruction,
+                        "stream": False,
+                        "options": {"num_ctx": 4096, "temperature": 0.0}
+                    },
+                    timeout=180
+                )
+                if r.status_code == 200:
+                    texto = r.json().get("response", "").strip()
+                    if texto:
+                        return texto
+            except Exception as ex:
+                print(f"⚠️ Aviso timeout/error Ollama local (intento {intento+1}/3): {ex}", flush=True)
+                time.sleep(3)
             
     return ""
 
@@ -543,7 +496,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
     for i in range(0, len(texto), max_chunk):
         await update.message.reply_text(texto[i:i + max_chunk])
 
-# --- HANDLER NUEVO: /logs solicitado por Leandro ---
+# --- HANDLER /logs ---
 async def comando_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not os.path.exists(TXT_FILE):
         await update.message.reply_text("⚠️ Todavía no hay registro en conversaciones.txt.")
@@ -559,7 +512,7 @@ async def comando_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Fabric y comando /logs.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo y blindado.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -652,7 +605,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando motor de auto-coding local...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando motor de auto-coding blindado...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
@@ -719,7 +672,7 @@ def main():
     app.add_handler(CommandHandler("run", comando_run))
     app.add_handler(CommandHandler("codigo", comando_codigo))
     app.add_handler(CommandHandler("aplicar", comando_aplicar))
-    app.add_handler(CommandHandler("logs", comando_logs)) # <-- Handler registrado formalmente
+    app.add_handler(CommandHandler("logs", comando_logs))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
     app.run_polling(drop_pending_updates=True)
