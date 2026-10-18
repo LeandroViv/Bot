@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Lectura de Archivos Vía Web (GitHub Raw API) + Anti-Tale + GH_PAT
+# Script: procesar.py - LeandroBot / Vibe Coding Multi-Parte + Anti-Tale + Lectura Web Raw
 
 import asyncio
 import json as json_lib
@@ -92,7 +92,7 @@ def matar_instancia_anterior():
 
 matar_instancia_anterior()
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Consulta de Archivos Vía Web)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Multi-Parte + Anti-Tale + Web Raw)...", flush=True)
 
 for f_path, default_val in [
     (TXT_FILE, ""),
@@ -173,10 +173,6 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
         return False, f"Error ejecutando comando: {str(e)}"
 
 def obtener_contenido_archivo_via_web(ruta_relativa):
-    """
-    Lee el archivo objetivo directamente desde la Web (GitHub Raw API)
-    usando GH_PAT para garantizar que siempre vea la última versión del repo.
-    """
     repo = os.environ.get("GITHUB_REPOSITORY", "LeandroViv/Bot")
     gh_token = os.environ.get("GH_PAT") or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
     
@@ -186,14 +182,13 @@ def obtener_contenido_archivo_via_web(ruta_relativa):
         headers["Authorization"] = f"token {gh_token}"
         
     try:
-        print(f"🌐 [LECTURA WEB RAW]: Descargando '{ruta_relativa}' de GitHub ({url_raw})...", flush=True)
+        print(f"🌐 [LECTURA WEB RAW]: Descargando '{ruta_relativa}' de GitHub...", flush=True)
         res = requests.get(url_raw, headers=headers, timeout=10)
         if res.status_code == 200:
             return res.text
     except Exception as e:
         print(f"⚠️ Error leyendo archivo vía Raw URL: {e}", flush=True)
         
-    # Fallback a disco local si falla la red
     if os.path.exists(ruta_relativa):
         try:
             with open(ruta_relativa, "r", encoding="utf-8") as f:
@@ -251,18 +246,20 @@ def aplicar_cambio_llave_maestra(ruta_archivo, nuevo_contenido):
         if dir_name and not os.path.exists(dir_name):
             os.makedirs(dir_name, exist_ok=True)
 
-        # Validación Anti-Tale comparando contra versión web/local
+        # Freno Anti-Tale Estricto (salvo que sea forzado explícitamente)
         contenido_previo = obtener_contenido_archivo_via_web(ruta_archivo)
-        if contenido_previo:
+        if contenido_previo and "FORCE_OVERWRITE" not in nuevo_contenido:
             lineas_orig = len(contenido_previo.splitlines())
             lineas_nuevas = len(nuevo_contenido.splitlines())
             if lineas_orig > 200 and lineas_nuevas < (lineas_orig * 0.5):
                 print(f"🛑 [ANTI-TALE REJECT]: Intento de mutilación detectado en {ruta_archivo} ({lineas_orig} -> {lineas_nuevas} líneas). Abortando.", flush=True)
-                return False, f"Rechazado por Anti-Tale: El código generado ({lineas_nuevas} líneas) recortaría masivamente el archivo web original ({lineas_orig} líneas)."
+                return False, f"Rechazado por Anti-Tale: El código generado ({lineas_nuevas} líneas) es sospechosamente más corto que el original web ({lineas_orig} líneas). Usá bloques multi-parte o FORCE_OVERWRITE."
+
+        limpio_contenido = re.sub(r'#\s*FORCE_OVERWRITE\b.*', '', nuevo_contenido).strip()
 
         if ruta_archivo.endswith(".py"):
             try:
-                ast.parse(nuevo_contenido)
+                ast.parse(limpio_contenido)
             except SyntaxError as e:
                 print(f"⚠️ [INTEGRIDAD AST]: Sintaxis inválida en {ruta_archivo}: {e}", flush=True)
                 return False, f"Error de sintaxis Python: {e}"
@@ -272,7 +269,7 @@ def aplicar_cambio_llave_maestra(ruta_archivo, nuevo_contenido):
 
         ruta_tmp = f"{ruta_archivo}.tmp"
         with open(ruta_tmp, "w", encoding="utf-8") as f:
-            f.write(nuevo_contenido)
+            f.write(limpio_contenido)
         os.replace(ruta_tmp, ruta_archivo)
 
         print(f"✅ [LLAVE MAESTRA]: Archivo '{ruta_archivo}' actualizado e íntegro.", flush=True)
@@ -381,14 +378,15 @@ def construir_prompt_sistema(prompt_usuario="", es_modo_codigo=False):
     if es_modo_codigo:
         contexto_web = obtener_contexto_focalizado_web(prompt_usuario)
         return (
-            "SOS UN AGENTE DE VIBE CODING AUTÓNOMO.\n"
+            "SOS UN AGENTE DE VIBE CODING AUTÓNOMO CON LLAVE MAESTRA.\n"
             f"REPOSITORIO OFICIAL: {URL_REPOSITORIO}\n\n"
             f"{contexto_web}\n\n"
-            "INSTRUCCIONES CRÍTICAS:\n"
+            "INSTRUCCIONES CRÍTICAS DE SALIDA MULTI-PARTE:\n"
             "1. NO HABLES, NO SALUDES, NO EXPLIQUES, NO PIDAS CONFIRMACIÓN.\n"
             "2. DEVOLVÉ EL CÓDIGO COMPLETO SIN OMITIR NINGUNA LÍNEA NI ESTRUCTURA EXISTENTE.\n"
-            "3. INDICÁ LA RUTA EXACTA AL INICIO DEL BLOQUE (Ej: `# ARCHIVO: procesar.py`).\n"
-            "4. DEVOLVÉ ÚNICAMENTE EL BLOQUE ```python ... ``` CON LA TOTALIDAD DEL SCRIPT.\n"
+            "3. SI EL CÓDIGO ES EXTENSO O CORRE RIESGO DE TRUNCARSE, DIVIDILO EN VARIOS BLOQUES NUMERADOS DENTRO DE ```python ... ``` USANDO '# PARTE: 1', '# PARTE: 2', ETC.\n"
+            "4. INDICÁ LA RUTA EXACTA AL INICIO DE CADA BLOQUE (Ej: `# ARCHIVO: procesar.py`).\n"
+            "5. CERO TRUNCAMIENTO: Cierra correctamente todas las comillas, paréntesis y funciones.\n"
         )
 
     memoria = obtener_memoria_aprendizaje()
@@ -411,7 +409,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
 
     if client:
         try:
-            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Consulta Vía Web Raw)...", flush=True)
+            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Multi-Parte Web)...", flush=True)
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=p,
@@ -494,7 +492,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         CHAT_ID_ACTIVO = update.message.chat_id
         await update.message.reply_text(
             f"¡Qué hacés che! Acá Leandro.\nRepo: {URL_REPOSITORIO}\n\n"
-            f"• /codigo <instrucción>: Modifica archivos leyéndolos directo desde GitHub Raw.\n"
+            f"• /codigo <instrucción>: Modifica archivos con multi-parte y anti-tale.\n"
             "• /estado: Muestra métricas detalladas y tareas pendientes."
         )
 
@@ -522,8 +520,8 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"💻 **Consola Runner Output:**\n```\n{salida[:1500]}\n```", parse_mode="Markdown")
         return
 
-    print(f"🤖 [VIBE CODING WEB]: Procesando instrucción de Leandro: '{instruccion[:60]}...'", flush=True)
-    await update.message.reply_text(f"🌐 Descargando versión web del archivo y procesando cambio...")
+    print(f"🤖 [VIBE CODING MULTI-PARTE]: Procesando instrucción: '{instruccion[:60]}...'", flush=True)
+    await update.message.reply_text(f"🌐 Descargando versión web y procesando actualización multi-parte...")
 
     t0 = time.time()
     resp = generar_texto_ia(instruccion, es_modo_codigo=True)
@@ -549,20 +547,20 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         for ruta_destino, fragmentos in acumulado_por_archivo.items():
             fragmento_final = "\n".join(fragmentos)
-            print(f"📄 [VIBE CODING WEB]: Ensamblando destino '{ruta_destino}' ({len(fragmento_final)} chars). Aplicando...", flush=True)
+            print(f"📄 [VIBE CODING MULTI-PARTE]: Ensamblando destino '{ruta_destino}' ({len(fragmento_final)} chars). Aplicando...", flush=True)
             exito, err = aplicar_cambio_llave_maestra(ruta_destino, fragmento_final)
             if not exito:
                 await update.message.reply_text(f"⚠️ Error al aplicar cambio en `{ruta_destino}` (`{err}`).")
                 return
 
         await update.message.reply_text(
-            f"🚀 **¡Modificación aplicada con éxito en {duracion}s!**\n"
-            f"Integrado, validado y pusheado a GitHub.",
+            f"🚀 **¡Modificación multi-parte aplicada con éxito en {duracion}s!**\n"
+            f"Ensamblado, validado y pusheado a GitHub.",
             parse_mode="Markdown"
         )
         return
 
-    print("⚠️ [VIBE CODING WEB]: La respuesta no incluyó bloques ```python ... ``` válidos.", flush=True)
+    print("⚠️ [VIBE CODING MULTI-PARTE]: La respuesta no incluyó bloques ```python ... ``` válidos.", flush=True)
     await update.message.reply_text(resp)
 
 async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -616,7 +614,7 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"¡Qué hacés, Leandro! 🚀\n\n"
-        f"📊 **Estado del Sistema (Lectura Vía Web Raw / GH_PAT):**\n"
+        f"📊 **Estado del Sistema (Multi-Parte + Anti-Tale):**\n"
         f"• Uptime: {uptime_str}\n"
         f"• RAM en uso: {ram_str}\n"
         f"• CPU: {cpu_pct}\n"
@@ -663,7 +661,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con lectura web Raw + GH_PAT...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Multi-Parte y Anti-Tale...", flush=True)
     
     if os.path.exists("memoria_tareas.json"):
         try:
