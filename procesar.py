@@ -1,7 +1,7 @@
 [FORCE_OVERWRITE]
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper + Métricas de Voz
 
 import asyncio
 import json as json_lib
@@ -33,6 +33,7 @@ CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
 CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 CORRECCIONES_WHISPER = "correcciones_whisper.json"
+HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
 
@@ -40,6 +41,7 @@ for f_path, default_val in [
     (TXT_FILE, ""),
     (DATASET_ENTRENAMIENTO, []),
     (CORRECCIONES_WHISPER, {}),
+    (HISTORIAL_METRICAS, []),
     (PERFIL_DINAMICO, {
         "nombre": "Leandro",
         "estilo": "Colega y compañero de vibe coding con tonada rioplatense, yeísmo y ritmo auténtico",
@@ -77,6 +79,36 @@ try:
 except Exception:
     client = None
     GENAI_DISPONIBLE = False
+
+def registrar_metrica_voz(cfg, texto_limpio):
+    try:
+        metrica = {
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "voice": cfg.get("voice", "es-AR-TomasNeural"),
+            "pitch": cfg.get("pitch", "-4Hz"),
+            "rate": cfg.get("rate", "-5%"),
+            "volume": cfg.get("volume", "+10%"),
+            "harmonics": cfg.get("harmonics", []),
+            "longitud_texto": len(texto_limpio),
+            "fragmento_texto": texto_limpio[:120]
+        }
+        historial = []
+        if os.path.exists(HISTORIAL_METRICAS):
+            try:
+                with open(HISTORIAL_METRICAS, "r", encoding="utf-8") as f:
+                    historial = json_lib.load(f)
+                    if not isinstance(historial, list):
+                        historial = []
+            except Exception:
+                historial = []
+        historial.append(metrica)
+        if len(historial) > 500:
+            historial = historial[-500:]
+        with open(HISTORIAL_METRICAS, "w", encoding="utf-8") as f:
+            json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+        print("📊 [MÉTRICA VOZ]: Métrica registrada correctamente.", flush=True)
+    except Exception as e:
+        print(f"⚠️ Error registrando métrica de voz: {e}", flush=True)
 
 def asegurar_ollama_en_runner():
     try:
@@ -294,11 +326,8 @@ def construir_prompt_sistema():
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
         "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
         "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches de fragmentos de código. Eso infla y rompe el script.\n"
-        "4. VOLCADO ATÓMICO COMPLETO EN TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO de principio a fin (desde los imports hasta el `if __name__ == '__main__': main()`) en 'cambio_propuesto.txt'. NUNCA cortes el archivo ni omitas funciones.\n"
-        "5. REGLA RIGUROSA DE REGEX: Todas las expresiones regulares (`re.sub`) deben escribirse estrictamente en una sola línea usando cadenas raw r\"...\" o comillas simples/dobles. PROHIBIDO usar comillas triples con saltos de línea para evitar errores de sintaxis.\n"
-        "6. INTEGRIDAD MULTI-PARTE: Conservá siempre la función enviar_mensaje_en_partes para evitar el límite de 4000 caracteres de Telegram.\n"
-        "7. VALIDACIÓN PREVIA: Antes de avisar, ejecutá internamente python -m py_compile cambio_propuesto.txt para garantizar sintaxis limpia.\n"
-        "8. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
+        "4. VOLCADO ATÓMICO POR TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO y limpio, guardarlo en 'cambio_propuesto.txt', y avisarle a Leandro para que lo aplique de golpe de punta a punta.\n"
+        "5. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
         f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
@@ -400,6 +429,7 @@ async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.ogg"):
             os.remove(archivo_raw)
 
         if os.path.exists(archivo_salida) and os.path.getsize(archivo_salida) > 0:
+            registrar_metrica_voz(cfg, texto_limpio)
             return archivo_salida
     except Exception as e:
         print(f"⚠️ Error en sintetizar_audio_dsp: {e}", flush=True)
