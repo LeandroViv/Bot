@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Autónomo con S&R Corregido (Sin backslash en f-string)
+# Script: procesar.py - LeandroBot / Vibe Coding Autónomo con Engine de Auto-Coding en Runner
 
 import asyncio
 import json as json_lib
@@ -32,8 +32,8 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema de codificado en línea con corrección sintáctica", flush=True)
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (S&R con f-string limpia)...", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Engine de auto-coding local en runner activado", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (S&R Orquestado en Runner)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -76,6 +76,7 @@ for f_path, default_val in [
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 
@@ -282,6 +283,39 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
     res_clasif = generar_texto_ia(f"¿Este mensaje pide modificar código o archivos? Responde SI o NO: {texto_usuario}", es_clasificador=True)
     return "SI" in (res_clasif or "").upper()
 
+def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py"):
+    """
+    Ejecuta el orquestador local en el runner para generar parches S&R sin limite de cuota de API.
+    """
+    codigo_actual = obtener_contenido_archivo(ruta_archivo)
+    instruction = (
+        f"Sos un motor de Auto-Coding en el runner. Modifica el archivo '{ruta_archivo}'.\n"
+        "INSTRUCCIÓN ESTRICTA:\n"
+        "Devuelve ÚNICAMENTE un bloque con este formato exacto:\n"
+        "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
+        "REEMPLAZAR:\n```python\n<linea o bloque nuevo>\n```\n\n"
+        f"Petición: {prompt_usuario}\n\n"
+        f"--- CONTENIDO ACTUAL ---\n```python\n{codigo_actual[:8000]}\n```"
+    )
+    
+    try:
+        print("🛠️ [RUNNER AUTO-CODING]: Invocando engine local en el runner...", flush=True)
+        r = requests.post(
+            f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": instruction,
+                "stream": False,
+                "options": {"num_ctx": 4096, "temperature": 0.0}
+            },
+            timeout=90
+        )
+        if r.status_code == 200:
+            return r.json().get("response", "").strip()
+    except Exception as ex:
+        print(f"⚠️ Error en Auto-Coding local del runner: {ex}", flush=True)
+    return ""
+
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     
@@ -326,8 +360,13 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
     p = prompt_usuario
 
     if client:
-        modelos_disponibles = ["gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-        for modelo in modelos_disponibles:
+        modelos_a_probar = [AI_STUDIO_MODEL, "gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+        modelos_unicos = []
+        for m in modelos_a_probar:
+            if m not in modelos_unicos:
+                modelos_unicos.append(m)
+
+        for modelo in modelos_unicos:
             try:
                 res = client.models.generate_content(
                     model=modelo,
@@ -339,19 +378,23 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                 )
                 raw = (res.text or "").strip()
                 if raw:
-                    print(f"🤖 [IA USADA]: Gemini ({modelo}) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
+                    print(f"🤖 [IA USADA]: AI Studio / Gemini ({modelo}) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
                     return raw
             except Exception:
                 continue
+
+    if es_modo_codigo:
+        res_runner = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
+        if res_runner:
+            print("🦙 [IA USADA]: Engine Local de Auto-Coding en Runner", flush=True)
+            return res_runner
 
     if asegurar_ollama_en_runner():
         for intento in range(2):
             try:
                 prompt_ollama = (
                     f"{system_prompt}\n\nMensaje: '{p}'\nRespuesta (SI/NO):"
-                ) if es_clasificador else (
-                    f"Modifica el archivo {ruta_archivo} aplicando: {p}. Devuelve el bloque BUSCAR/REEMPLAZAR exacto."
-                ) if es_modo_codigo else f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
+                ) if es_clasificador else f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
                 
                 r = requests.post(
                     f"{OLLAMA_HOST.rstrip('/')}/api/generate",
@@ -446,7 +489,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo y corregido.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con engine local de auto-coding en runner.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -539,7 +582,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Aplicando Search & Replace...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando auto-coding local en runner...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
