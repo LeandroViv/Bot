@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper + Métricas de Voz
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper + Métricas de Voz + LLM Natural
 
 import asyncio
 import json as json_lib
@@ -23,9 +23,8 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente + Lenguaje Natural)...", flush=True)
 
-# --- 1. CONSTANTES GLOBALES (SIEMPRE ARRIBA DE TODO) ---
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -79,9 +78,6 @@ try:
 except Exception:
     client = None
     GENAI_DISPONIBLE = False
-
-
-# --- 2. FUNCIONES DEL SISTEMA ---
 
 def registrar_metrica_voz(cfg, texto_limpio):
     try:
@@ -155,6 +151,16 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
     except Exception as e:
         return False, f"Error ejecutando comando: {str(e)}"
 
+def obtener_codigo_actual():
+    """Lee el código fuente actual de procesar.py para contextualizar al LLM."""
+    if os.path.exists("procesar.py"):
+        try:
+            with open("procesar.py", "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return ""
+
 def obtener_mapa_repositorio(root_dir="."):
     mapa = []
     ignorar = {".git", "__pycache__", ".github", "venv", "downloads"}
@@ -190,7 +196,10 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             return True
 
         subprocess.run(["git", "commit", "-m", mensaje_commit], check=True)
-        subprocess.run(["git", "push", "origin", "HEAD"], check=True)
+        res_push = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
+        if res_push.returncode != 0:
+            subprocess.run(["git", "pull", "--rebase", "origin", "HEAD"], check=False)
+            subprocess.run(["git", "push", "origin", "HEAD"], check=True)
         
         print(f"🚀 [GIT PUSH EN CALIENTE]: Cambios en '{archivo_modificado}' pusheados como LeandroBot[bot].", flush=True)
         return True
@@ -319,26 +328,37 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
 
     return ",".join(partes)
 
-def construir_prompt_sistema():
+def construir_prompt_sistema(es_modo_codigo=False):
     memoria = obtener_memoria_aprendizaje()
     mapa_repo = obtener_mapa_repositorio()
+    codigo_actual = obtener_codigo_actual()
+
+    if es_modo_codigo:
+        return (
+            "Sos LeandroBot, agente de Vibe Coding autónomo y atómico.\n"
+            f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
+            f"CÓDIGO FUENTE ACTUAL COMPLETO (procesar.py):\n```python\n{codigo_actual}\n```\n\n"
+            "REGLAS CRÍTICAS DE MODIFICACIÓN:\n"
+            "1. Cuando Leandro te pida modificar o agregar código en lenguaje natural, generá el script completo y actualizado de 'procesar.py' dentro de un bloque ```python ... ```.\n"
+            "2. No te limites a charla vacía: ejecutá la lógica para volcarlo y aplicarlo.\n"
+        )
+
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense.\n"
         f"REPOSITORIO AUTÓNOMO DE TRABAJO: {URL_REPOSITORIO}\n\n"
         "REGLAS CRÍTICAS DE CÓDIGO Y VIBE CODING ATÓMICO:\n"
         "1. EL USUARIO ES LEANDRO (tu colega). Hablale de 'vos' o 'che'. NUNCA hables de Leandro en tercera persona.\n"
         "2. REGLA LINGÜÍSTICA RIOPLATENSE: Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "3. CERO PARCHES PARCIALES NI SED: PROHIBIDO usar comandos sed, expresiones regulares a ciegas o parches de fragmentos de código. Eso infla y rompe el script.\n"
-        "4. VOLCADO ATÓMICO POR TXT: Cada vez que tengas que modificar o agregar código en 'procesar.py', debés generar el archivo Python ENTERO y limpio, guardarlo en 'cambio_propuesto.txt', y avisarle a Leandro para que lo aplique de golpe de punta a punta.\n"
-        "5. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
+        "3. REGLA DE ORO DE VIBE CODING: Si te pide modificar tu código en lenguaje natural, generá el script completo en 'cambio_propuesto.txt' y aplicalo de punta a punta.\n"
+        "4. CERO RELLENO: Respondé directo y al pie, natural para ser leído en voz alta por Edge-TTS, sin asteriscos ni markdown roto que ensucie el audio.\n\n"
         f"MAPA DE ARCHIVOS:\n{mapa_repo}\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
 
-def generar_texto_ia(prompt_usuario):
-    system_prompt = construir_prompt_sistema()
+def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
+    system_prompt = construir_prompt_sistema(es_modo_codigo=es_modo_codigo)
     p = prompt_usuario
-    if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
+    if not es_modo_codigo and any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
         info_web = buscar_en_web(prompt_usuario)
         if info_web:
             p = f"{prompt_usuario}\n\n[Información fresca]:\n{info_web}"
@@ -491,8 +511,9 @@ async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Comandos disponibles:\n"
         "• /status - Estado del sistema y repositorio\n"
         "• /run <comando> - Ejecuta terminal runner directo\n"
+        "• /codigo <código> - Inyecta y aplica código atómico\n"
         "• /aplicar - Aplica cambio_propuesto.txt a procesar.py de forma atómica\n"
-        "• Mandame un audio o mensaje de texto y te respondo al toque con DSP."
+        "• Mandame un audio o mensaje de texto (o pedidos en lenguaje natural) y te respondo al toque."
     )
     await update.message.reply_text(bienvenida)
 
@@ -520,6 +541,33 @@ async def comando_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_total = f"{prefijo}\n{salida}"
     await enviar_mensaje_en_partes(update, texto_total)
 
+async def comando_codigo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Inyecta código directamente vía /codigo <código> o respondiendo a un mensaje."""
+    nuevo_codigo = " ".join(context.args) if context.args else ""
+    if not nuevo_codigo and update.message.reply_to_message:
+        nuevo_codigo = update.message.reply_to_message.text or update.message.reply_to_message.caption or ""
+
+    if not nuevo_codigo:
+        await update.message.reply_text("⚠️ Mándame el código junto con el comando `/codigo <tu_codigo>` o respondiendo a un mensaje con código.")
+        return
+
+    if nuevo_codigo.startswith("```"):
+        lines = nuevo_codigo.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        nuevo_codigo = "\n".join(lines)
+
+    with open(CAMBIO_PROPUESTO_FILE, "w", encoding="utf-8") as f:
+        f.write(nuevo_codigo.strip())
+
+    if aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE):
+        await update.message.reply_text("✅ ¡Código recibido, validado y pusheado a GitHub en caliente! Reiniciando...")
+        sys.exit(0)
+    else:
+        await update.message.reply_text("❌ Hubo un error sintáctico (AST) en el código que mandaste. Revisalo.")
+
 async def comando_aplicar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not os.path.exists(CAMBIO_PROPUESTO_FILE):
         await update.message.reply_text("⚠️ No se encontró cambio_propuesto.txt en la raíz.")
@@ -540,7 +588,28 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     registrar_conversacion("Leandro", texto_usuario)
-    respuesta = generar_texto_ia(texto_usuario)
+
+    # Detección de intención de vibe coding por lenguaje natural
+    u_low = texto_usuario.lower()
+    if any(k in u_low for k in ["agrega", "modifica", "sumale", "cambiá", "crea la función", "haz que", "correge"]):
+        await update.message.reply_text("🧠 Analizando pedido y generando código...")
+        respuesta_ia = generar_texto_ia(texto_usuario, es_modo_codigo=True)
+        match_code = re.search(r"```python\s*([\s\S]*?)\s*```", respuesta_ia)
+        if match_code:
+            codigo_extraido = match_code.group(1).strip()
+            with open(CAMBIO_PROPUESTO_FILE, "w", encoding="utf-8") as f:
+                f.write(codigo_extraido)
+            if aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE):
+                await update.message.reply_text("🚀 ¡Entendido! Modifiqué el código, lo validé y lo pusheé a GitHub en caliente. Reiniciando...")
+                sys.exit(0)
+            else:
+                await update.message.reply_text("❌ Generé el código pero falló la validación AST.")
+                return
+        else:
+            await enviar_mensaje_en_partes(update, respuesta_ia)
+            return
+
+    respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
     registrar_conversacion("LeandroBot", respuesta)
 
     audio_path = await sintetizar_audio_dsp(respuesta)
@@ -573,7 +642,20 @@ async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TY
         texto_transcrito = "(Audio ininteligible)"
 
     registrar_conversacion("Leandro (Audio)", texto_transcrito)
-    respuesta = generar_texto_ia(texto_transcrito)
+    
+    u_low = texto_transcrito.lower()
+    if any(k in u_low for k in ["agrega", "modifica", "sumale", "cambiá", "crea la función"]):
+        respuesta_ia = generar_texto_ia(texto_transcrito, es_modo_codigo=True)
+        match_code = re.search(r"```python\s*([\s\S]*?)\s*```", respuesta_ia)
+        if match_code:
+            codigo_extraido = match_code.group(1).strip()
+            with open(CAMBIO_PROPUESTO_FILE, "w", encoding="utf-8") as f:
+                f.write(codigo_extraido)
+            if aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE):
+                await update.message.reply_text("🚀 ¡Entendido por audio! Parche aplicado y pusheado. Reiniciando...")
+                sys.exit(0)
+
+    respuesta = generar_texto_ia(texto_transcrito, es_modo_codigo=False)
     registrar_conversacion("LeandroBot", respuesta)
 
     audio_path = await sintetizar_audio_dsp(respuesta)
@@ -600,6 +682,7 @@ def main():
     app.add_handler(CommandHandler("start", comando_start))
     app.add_handler(CommandHandler("status", comando_status))
     app.add_handler(CommandHandler("run", comando_run))
+    app.add_handler(CommandHandler("codigo", comando_codigo))
     app.add_handler(CommandHandler("aplicar", comando_aplicar))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
@@ -609,6 +692,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# update
-# salud bot
