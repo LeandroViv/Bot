@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Universal + Chat IA Natural + Autoinstalación de psutil
+# Script: procesar.py - LeandroBot / Vibe Coding Universal + Ollama Local Integrado + Gemini + psutil
 
 import asyncio
 import json as json_lib
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Chat IA)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Ollama Local + Gemini)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -125,13 +125,15 @@ def asegurar_ollama_en_runner():
     except Exception:
         pass
     try:
+        print(f"🦙 [OLLAMA]: Levantando servicio local en {OLLAMA_HOST}...", flush=True)
         subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        time.sleep(3)
+        time.sleep(4)
         r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
         if r.status_code == 200:
+            print("🦙 [OLLAMA]: ¡Servicio levantado y conectado con éxito!", flush=True)
             return True
-    except Exception:
-        pass
+    except Exception as ex:
+        print(f"⚠️ Aviso conexión Ollama: {ex}", flush=True)
     return False
 
 def ejecutar_comando_runner_en_vivo(cmd_str):
@@ -205,7 +207,7 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
     with open(ruta_tmp, "w", encoding="utf-8") as f:
         f.write(nuevo_contenido)
     os.replace(ruta_tmp, ruta_destino)
-    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización autónoma atómica")
+    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica universal con ollama")
 
 def cargar_config_timbre():
     try:
@@ -227,16 +229,6 @@ def registrar_conversacion(remitente, texto):
     except Exception:
         pass
 
-def obtener_memoria_aprendizaje():
-    if not os.path.exists(TXT_FILE):
-        return ""
-    try:
-        with open(TXT_FILE, "r", encoding="utf-8") as f:
-            lineas = f.readlines()
-        return "".join(lineas[-14:])
-    except Exception:
-        return ""
-
 def buscar_en_web(query):
     try:
         try:
@@ -250,17 +242,6 @@ def buscar_en_web(query):
     except Exception:
         pass
     return ""
-
-def construir_filtro_ffmpeg_desde_armonicos(cfg):
-    partes = []
-    for h in cfg.get("harmonics", []):
-        if h.get("enabled", True) and h.get("gainDb", 0) != 0:
-            hz = h.get("hz", 0)
-            gain = max(-18.0, min(12.0, float(h.get("gainDb", 0))))
-            q = max(1.0, min(4.0, float(h.get("q", 2.0))))
-            if 50 < hz < 16000:
-                partes.append(f"equalizer=f={hz}:width_type=q:w={q}:g={gain}")
-    return ",".join(partes)
 
 def construir_prompt_sistema(es_modo_codigo=False):
     codigo_actual = obtener_codigo_actual()
@@ -286,15 +267,17 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
         if info_web:
             p = f"{prompt_usuario}\n\n[Información fresca]:\n{info_web}"
 
+    # 1. Intentar con Gemini si está disponible
     if client:
         try:
             res = client.models.generate_content(model="gemini-2.5-flash", contents=p, config=dict(system_instruction=system_prompt))
             raw = (res.text or "").strip()
             if raw:
                 return raw
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ Aviso Gemini: {e}", flush=True)
 
+    # 2. Fallback con Ollama Local
     if asegurar_ollama_en_runner():
         try:
             prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
@@ -307,8 +290,8 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
                 texto = r.json().get("response", "").strip()
                 if texto:
                     return texto
-        except Exception:
-            pass
+        except Exception as ex:
+            print(f"⚠️ Aviso Ollama: {ex}", flush=True)
 
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
@@ -355,14 +338,13 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo y listo para charlar o vibe-codear.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Gemini, Ollama y Vibe Coding autónomo.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
     await enviar_mensaje_en_partes(update, f"🤖 Uptime: {uptime_min} min\nRepo: {URL_REPOSITORIO}")
 
 async def comando_health(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando /health: Diagnóstico de RAM, Uptime y estado de Gemini y Ollama."""
     try:
         process = psutil.Process(os.getpid())
         ram_mb = process.memory_info().rss / (1024 * 1024)
@@ -442,7 +424,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         return
     registrar_conversacion("Leandro", texto_usuario)
 
-    # Interceptor universal de intención (IA decidiendo si es vibe coding o chat normal)
+    # Clasificador universal de intención
     prompt_intencion = (
         f"Analiza si el siguiente mensaje del usuario solicita modificar, corregir, ampliar, programar o agregar código/comandos en este bot de Telegram.\n"
         f"Mensaje: '{texto_usuario}'\n"
@@ -450,16 +432,14 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     )
     
     es_solicitud_codigo = False
-    if client:
-        try:
-            res_intencion = client.models.generate_content(model="gemini-2.5-flash", contents=prompt_intencion)
-            txt_intencion = (res_intencion.text or "").strip().upper()
-            print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> Clasificado como: {txt_intencion}", flush=True)
-            if "SI" in txt_intencion:
-                es_solicitud_codigo = True
-        except Exception as e:
-            print(f"⚠️ Error en clasificador de intención: {e}", flush=True)
-            pass
+    try:
+        res_int = generar_texto_ia(prompt_intencion, es_modo_codigo=False)
+        txt_intencion = (res_int or "").strip().upper()
+        print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> {txt_intencion}", flush=True)
+        if "SI" in txt_intencion:
+            es_solicitud_codigo = True
+    except Exception as e:
+        print(f"⚠️ Error en clasificador de intención: {e}", flush=True)
 
     if es_solicitud_codigo:
         await update.message.reply_text("🧠 ¡Intención de código detectada! Analizando pedido y generando actualización autónoma...")
@@ -479,7 +459,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
             await enviar_mensaje_en_partes(update, respuesta_ia)
             return
 
-    # Chat normal / Conversación con el bot e integración de voz DSP
+    # Chat normal con soporte de IAs y voz DSP
     respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
     registrar_conversacion("LeandroBot", respuesta)
     audio_path = await sintetizar_audio_dsp(respuesta)
