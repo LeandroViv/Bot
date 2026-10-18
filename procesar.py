@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Universal sin Hardcodeo con Search & Replace y Rotación de IAs
+# Script: procesar.py - LeandroBot / Search & Replace Flexible + Robustez Git y AST
 
 import asyncio
 import json as json_lib
@@ -33,7 +33,7 @@ from telegram.ext import (
 )
 
 print("🚀 [MOTO-VIBE CODING]: Sistema atómico dinámico en línea, impecable che!", flush=True)
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Search & Replace + Rotación Inteligente)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Search & Replace Robustecido)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -179,10 +179,14 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         if gh_token:
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
+        
+        # Agregamos el archivo destino explícitamente a Git
         subprocess.run(["git", "add", archivo_modificado], check=True)
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not status.stdout.strip():
+            print("⚠️ [GIT]: No se detectaron cambios para commitear.", flush=True)
             return True
+
         subprocess.run(["git", "commit", "-m", mensaje_commit], check=True)
         res_push = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
         if res_push.returncode != 0:
@@ -194,6 +198,10 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return False
 
 def aplicar_cambio_universal(ruta_destino, nuevo_contenido):
+    if not nuevo_contenido or nuevo_contenido.strip() == "":
+        print("❌ [CANCELADO]: Contenido vacío generado.", flush=True)
+        return False
+
     if ruta_destino.endswith(".py"):
         try:
             ast.parse(nuevo_contenido)
@@ -250,7 +258,6 @@ def registrar_conversacion(remitente, texto):
         pass
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
-    # Detección heurística local sin hardcodeo (patrones universales de código)
     patrones_codigo = [
         r"\breemplaz[aaá]\b", r"\bagreg[aaá]le\b", r"\bmodific[aaá]\b", 
         r"\bcambi[aaá]\b", r"\bpushe[aaá]\b", r"\bprint\b", r"\.py\b", 
@@ -259,7 +266,6 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
     if any(re.search(p, texto_usuario.lower()) for p in patrones_codigo):
         return True
     
-    # Fallback con IA en modo clasificador rápido
     res_clasif = generar_texto_ia(f"¿Este mensaje pide modificar código o archivos? Responde SI o NO: {texto_usuario}", es_clasificador=True)
     return "SI" in (res_clasif or "").upper()
 
@@ -273,9 +279,9 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
         system_prompt = (
             f"Sos un motor de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
             "INSTRUCCIÓN ESTRICTA:\n"
-            "Devuelve un bloque de reemplazo exacto con este formato:\n"
-            "BUSCAR:\n```python\n<fragmento exacto existente>\n```\n"
-            "REEMPLAZAR:\n```python\n<fragmento nuevo actualizado>\n```\n\n"
+            "Devuelve ÚNICAMENTE un bloque de reemplazo exacto con este formato:\n"
+            "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
+            "REEMPLAZAR:\n```python\n<linea o bloque nuevo>\n```\n\n"
             f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
         )
         temp_target = 0.1
@@ -288,7 +294,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
 
     p = prompt_usuario
 
-    # 1. Rotación dinámica de modelos en Gemini (evita caídas por cuota o deprecación)
+    # 1. Rotación dinámica de modelos en Gemini
     if client:
         modelos_disponibles = ["gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
         for modelo in modelos_disponibles:
@@ -305,11 +311,10 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                 if raw:
                     print(f"🤖 [IA USADA]: Gemini ({modelo}) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
                     return raw
-            except Exception as ex:
-                # Si da error de cuota o modelo no encontrado, probamos el siguiente de la lista
+            except Exception:
                 continue
 
-    # 2. Fallback con Ollama Local optimizado
+    # 2. Fallback Ollama Local
     if asegurar_ollama_en_runner():
         for intento in range(2):
             try:
@@ -338,7 +343,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                 print(f"⚠️ Aviso Ollama (intento {intento+1}/2): {ex}", flush=True)
                 time.sleep(2)
 
-    return "¡Qué hacés che! Las IAs están recalientes o sin cuota por un rato. Probá de nuevo en unos minutos."
+    return "¡Qué hacés che! Las IAs están sin cuota o apagadas un toque. Probá de nuevo en breve."
 
 def aplicar_parche_search_replace(prompt_usuario, ruta_archivo):
     contenido_actual = obtener_contenido_archivo(ruta_archivo)
@@ -352,16 +357,19 @@ def aplicar_parche_search_replace(prompt_usuario, ruta_archivo):
         texto_reemplazar = match_reemplazar.group(1)
 
         if texto_buscar in contenido_actual:
-            print(f"🎯 [SEARCH & REPLACE]: Parche aplicado con éxito en '{ruta_archivo}'.", flush=True)
+            print(f"🎯 [SEARCH & REPLACE]: Match exacto aplicado en '{ruta_archivo}'.", flush=True)
             return contenido_actual.replace(texto_buscar, texto_reemplazar, 1)
-        else:
-            print(f"⚠️ [SEARCH & REPLACE]: Bloque BUSCAR no exacto. Buscando coincidencia parcial...", flush=True)
-            # Intento de limpieza de espacios para match flexible
-            limpiar = lambda s: "\n".join([line.strip() for line in s.splitlines() if line.strip()])
-            if limpiar(texto_buscar) in limpiar(contenido_actual):
-                return contenido_actual # Si matcheó difuso pero seguro
 
-    # Fallback si devuelve código completo
+        # Fallback de normalización flexible por líneas si fallan los espacios en blanco
+        lineas_buscar = [line.strip() for line in texto_buscar.splitlines() if line.strip()]
+        if lineas_buscar:
+            linea_pivote = lineas_buscar[0]
+            for linea_original in contenido_actual.splitlines():
+                if linea_pivote in linea_original.strip():
+                    print(f"🎯 [SEARCH & REPLACE]: Match flexible encontrado por línea pivote.", flush=True)
+                    return contenido_actual.replace(linea_original, texto_reemplazar, 1)
+
+    # Fallback si devuelve todo el script completo en Markdown
     match_full = re.search(r"```(?:\w+)?\s*([\s\S]*?)\s*```", respuesta_ia)
     if match_full and len(match_full.group(1).splitlines()) > 40:
         return match_full.group(1).strip()
@@ -411,7 +419,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con rotación inteligente y Search & Replace.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Search & Replace flexible.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -499,7 +507,6 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         return
     registrar_conversacion("Leandro", texto_usuario)
 
-    # Evaluación de intención con soporte híbrido local + IA
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
     print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> {'SI' if es_solicitud_codigo else 'NO'}", flush=True)
 
