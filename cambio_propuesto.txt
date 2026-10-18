@@ -191,14 +191,13 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
 
     print(f"✅ [VIBE CODING ATÓMICO]: {ruta_destino} actualizado limpiamente desde {ruta_txt}.", flush=True)
     return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica por txt puente")
-
 def cargar_config_timbre():
     try:
         with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
             cfg = json_lib.load(f)
             vol_raw = str(cfg.get("volume", "+10%"))
             if "db" in vol_raw.lower():
-                vol_num = re.sub(r"""[^0-9+-]""", "", vol_raw)
+                vol_num = re.sub(r"[^0-9+-]", "", vol_raw)
                 cfg["volume"] = f"{vol_num}%"
             return cfg
     except Exception:
@@ -262,7 +261,7 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
                 partes.append(f"equalizer=f={hz}:width_type=q:w={q}:g={gain}")
 
     vol_raw = str(cfg.get("volume", "+10%"))
-    vol_num = re.sub(r"""[^0-9+-]""", "", vol_raw)
+    vol_num = re.sub(r"[^0-9+-]", "", vol_raw)
     try:
         v_pct = float(vol_num)
         if v_pct != 0:
@@ -272,7 +271,7 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
         pass
 
     rate_raw = str(cfg.get("rate", "-5%"))
-    rate_num = re.sub(r"""[^0-9+-]""", "", rate_raw)
+    rate_num = re.sub(r"[^0-9+-]", "", rate_raw)
     try:
         r_pct = float(rate_num)
         if r_pct != 0:
@@ -340,4 +339,135 @@ def generar_texto_ia(prompt_usuario):
 
 def preparar_texto_para_voz(texto):
     t = texto
-    t = re.sub(r"""
+    t = re.sub(r"
+async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.ogg"):
+    cfg = cargar_config_timbre()
+    texto_limpio = preparar_texto_para_voz(texto)
+    if not texto_limpio:
+        texto_limpio = "Dale, te escucho."
+
+    archivo_raw = "temp_raw.mp3"
+    voice = cfg.get("voice", "es-AR-TomasNeural")
+    pitch = cfg.get("pitch", "-4Hz")
+    rate = cfg.get("rate", "-5%")
+    volume = cfg.get("volume", "+10%")
+
+    cmd_tts = [
+        "edge-tts",
+        f"--voice={voice}",
+        f"--pitch={pitch}",
+        f"--rate={rate}",
+        f"--volume={volume}",
+        f"--text={texto_limpio}",
+        f"--write-media={archivo_raw}"
+    ]
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_tts,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await proc.communicate()
+
+        if not os.path.exists(archivo_raw) or os.path.getsize(archivo_raw) == 0:
+            print("⚠️ Edge-TTS no generó el audio temporal.", flush=True)
+            return None
+
+        filtro = construir_filtro_ffmpeg_desde_armonicos(cfg)
+        cmd_ffmpeg = ["ffmpeg", "-y", "-i", archivo_raw]
+        if filtro:
+            cmd_ffmpeg.extend(["-af", filtro])
+        cmd_ffmpeg.extend(["-c:a", "libopus", "-b:a", "32k", "-vn", archivo_salida])
+
+        proc_ff = await asyncio.create_subprocess_exec(
+            *cmd_ffmpeg,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await proc_ff.communicate()
+
+        if os.path.exists(archivo_raw):
+            os.remove(archivo_raw)
+
+        if os.path.exists(archivo_salida) and os.path.getsize(archivo_salida) > 0:
+            return archivo_salida
+    except Exception as e:
+        print(f"⚠️ Error en sintetizar_audio_dsp: {e}", flush=True)
+
+    return None
+
+def corregir_transcripcion(texto):
+    if not os.path.exists(CORRECCIONES_WHISPER):
+        return texto
+    try:
+        with open(CORRECCIONES_WHISPER, "r", encoding="utf-8") as f:
+            corrs = json_lib.load(f)
+        for original, correccion in corrs.items():
+            texto = re.sub(rf"\b{re.escape(original)}\b", correccion, texto, flags=re.IGNORECASE)
+    except Exception:
+        pass
+    return texto
+
+def transcribir_audio_local(audio_path):
+    texto = ""
+    try:
+        from faster_whisper import WhisperModel
+        modelo = WhisperModel("base", device="cpu", compute_type="int8")
+        segmentos, _ = modelo.transcribe(audio_path, language="es")
+        texto = " ".join([seg.text for seg in segmentos]).strip()
+    except Exception:
+        try:
+            res = subprocess.run(
+                ["whisper", audio_path, "--model", "base", "--language", "Spanish", "--output_format", "txt"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            txt_salida = f"{os.path.splitext(audio_path)[0]}.txt"
+            if os.path.exists(txt_salida):
+                with open(txt_salida, "r", encoding="utf-8") as f:
+                    texto = f.read().strip()
+                os.remove(txt_salida)
+        except Exception as e:
+            print(f"⚠️ Fallo transcripción whisper CLI: {e}", flush=True)
+
+    return corregir_transcripcion(texto)
+
+async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.effective_chat.id
+    bienvenida = (
+        "¡Qué hacés Leandro! Acá LeandroBot activo y conectado al runner.\n\n"
+        "Comandos disponibles:\n"
+        "• /status - Estado del sistema y repositorio\n"
+        "• /run <comando> - Ejecuta terminal runner directo\n"
+        "• /aplicar - Aplica cambio_propuesto.txt a procesar.py de forma atómica\n"
+        "• Mandame un audio o mensaje de texto y te respondo al toque con DSP."
+    )
+    await update.message.reply_text(bienvenida)
+
+async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
+    cfg = cargar_config_timbre()
+    status_txt = (
+        f"🤖 [ESTADO LEANDROBOT]\n"
+        f"• Uptime: {uptime_min} minutos\n"
+        f"• Voz configurada: {cfg.get('voice', 'Tomas')}\n"
+        f"• Pitch/Rate: {cfg.get('pitch', '-4Hz')} / {cfg.get('rate', '-5%')}\n"
+        f"• Gemini Disponible: {'Sí' if GENAI_DISPONIBLE else 'No'}\n"
+        f"• Repositorio: {URL_REPOSITORIO}\n\n"
+        f"Mapa de archivos:\n{obtener_mapa_repositorio()}"
+    )
+    await update.message.reply_text(status_txt)
+
+async def comando_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /run <comando>")
+        return
+    cmd = " ".join(context.args)
+    ok, salida = ejecutar_comando_runner_en_vivo(cmd)
+    if len(salida) > 3500:
+        salida = salida[:3500] + "\n...[salida recortada]"
+    prefijo = "✅" if ok else "❌"
+    await update.message.reply_text(f"{prefijo} [Salida]:\n
