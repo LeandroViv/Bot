@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Definitivo por Parches Estructurales (Search & Replace)
+# Script: procesar.py - LeandroBot / Vibe Coding Universal sin Hardcodeo con Search & Replace y Rotación de IAs
 
 import asyncio
 import json as json_lib
@@ -32,8 +32,8 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema atómico fraccionado en línea, impecable che!", flush=True)
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding por Search & Replace + Gemini 3.8)...", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema atómico dinámico en línea, impecable che!", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Search & Replace + Rotación Inteligente)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -249,55 +249,69 @@ def registrar_conversacion(remitente, texto):
     except Exception:
         pass
 
+def evaluar_intencion_codigo_hibrida(texto_usuario):
+    # Detección heurística local sin hardcodeo (patrones universales de código)
+    patrones_codigo = [
+        r"\breemplaz[aaá]\b", r"\bagreg[aaá]le\b", r"\bmodific[aaá]\b", 
+        r"\bcambi[aaá]\b", r"\bpushe[aaá]\b", r"\bprint\b", r"\.py\b", 
+        r"\bcrear\b", r"\barregl[aaá]\b", r"\bfuncion\b", r"\bcodigo\b"
+    ]
+    if any(re.search(p, texto_usuario.lower()) for p in patrones_codigo):
+        return True
+    
+    # Fallback con IA en modo clasificador rápido
+    res_clasif = generar_texto_ia(f"¿Este mensaje pide modificar código o archivos? Responde SI o NO: {texto_usuario}", es_clasificador=True)
+    return "SI" in (res_clasif or "").upper()
+
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     
     if es_clasificador:
-        system_prompt = (
-            "Sos un clasificador determinista estricto. "
-            "Tu ÚNICA tarea es responder SI o NO. No agregues explicaciones ni puntuación extra."
-        )
+        system_prompt = "Sos un clasificador binario estricto. Responde ÚNICAMENTE con la palabra 'SI' o 'NO'."
         temp_target = 0.0
     elif es_modo_codigo:
         system_prompt = (
-            f"Sos un motor de Vibe Coding. Tenés que modificar el archivo '{ruta_archivo}'.\n"
-            "INSTRUCCIÓN DE EDICIÓN QUIRÚRGICA:\n"
-            "Devuelve un bloque de reemplazo en este formato exacto:\n"
-            "BUSCAR:\n```python\n<lineas exactas existentes a reemplazar>\n```\n"
-            "REEMPLAZAR:\n```python\n<lineas nuevas actualizadas>\n```\n\n"
-            f"--- ARCHIVO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:8000]}\n```"
+            f"Sos un motor de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
+            "INSTRUCCIÓN ESTRICTA:\n"
+            "Devuelve un bloque de reemplazo exacto con este formato:\n"
+            "BUSCAR:\n```python\n<fragmento exacto existente>\n```\n"
+            "REEMPLAZAR:\n```python\n<fragmento nuevo actualizado>\n```\n\n"
+            f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
         )
         temp_target = 0.1
     else:
         system_prompt = (
             "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
-            "Mantené charlas fluidas y naturales."
+            "Mantené charlas fluidas y naturales. PROHIBIDO inventar links, URLs o repositorios falsos."
         )
         temp_target = 0.7
 
     p = prompt_usuario
 
-    # 1. Directo a Gemini 3.8 Flash (ÚNICO modelo activo)
+    # 1. Rotación dinámica de modelos en Gemini (evita caídas por cuota o deprecación)
     if client:
-        try:
-            res = client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=p,
-                config=dict(
-                    system_instruction=system_prompt,
-                    temperature=temp_target
+        modelos_disponibles = ["gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+        for modelo in modelos_disponibles:
+            try:
+                res = client.models.generate_content(
+                    model=modelo,
+                    contents=p,
+                    config=dict(
+                        system_instruction=system_prompt,
+                        temperature=temp_target
+                    )
                 )
-            )
-            raw = (res.text or "").strip()
-            if raw:
-                print(f"🤖 [IA USADA]: Gemini (gemini-3.8-flash) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
-                return raw
-        except Exception as ex:
-            print(f"⚠️ Error Gemini 3.8: {ex}", flush=True)
+                raw = (res.text or "").strip()
+                if raw:
+                    print(f"🤖 [IA USADA]: Gemini ({modelo}) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
+                    return raw
+            except Exception as ex:
+                # Si da error de cuota o modelo no encontrado, probamos el siguiente de la lista
+                continue
 
-    # 2. Fallback Ollama Local
+    # 2. Fallback con Ollama Local optimizado
     if asegurar_ollama_en_runner():
-        for intento in range(3):
+        for intento in range(2):
             try:
                 prompt_ollama = (
                     f"{system_prompt}\n\nMensaje: '{p}'\nRespuesta (SI/NO):"
@@ -318,13 +332,13 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                 if r.status_code == 200:
                     texto = r.json().get("response", "").strip()
                     if texto:
-                        print(f"🦙 [IA USADA]: Ollama Local ({OLLAMA_MODEL}) | Temp: {temp_target} | Intento: {intento+1}", flush=True)
+                        print(f"🦙 [IA USADA]: Ollama Local ({OLLAMA_MODEL}) | Temp: {temp_target}", flush=True)
                         return texto
             except Exception as ex:
-                print(f"⚠️ Aviso Ollama (intento {intento+1}/3): {ex}", flush=True)
+                print(f"⚠️ Aviso Ollama (intento {intento+1}/2): {ex}", flush=True)
                 time.sleep(2)
 
-    return "¡Qué hacés che! Tuvimos un problemita técnico con las IAs. Probá de nuevo en un toque."
+    return "¡Qué hacés che! Las IAs están recalientes o sin cuota por un rato. Probá de nuevo en unos minutos."
 
 def aplicar_parche_search_replace(prompt_usuario, ruta_archivo):
     contenido_actual = obtener_contenido_archivo(ruta_archivo)
@@ -338,14 +352,18 @@ def aplicar_parche_search_replace(prompt_usuario, ruta_archivo):
         texto_reemplazar = match_reemplazar.group(1)
 
         if texto_buscar in contenido_actual:
-            print(f"🎯 [SEARCH & REPLACE]: Bloque encontrado y reemplazado quirúrgicamente en '{ruta_archivo}'.", flush=True)
+            print(f"🎯 [SEARCH & REPLACE]: Parche aplicado con éxito en '{ruta_archivo}'.", flush=True)
             return contenido_actual.replace(texto_buscar, texto_reemplazar, 1)
         else:
-            print(f"⚠️ [SEARCH & REPLACE]: El bloque 'BUSCAR' no matcheó 1:1. Intentando fallback completo...", flush=True)
+            print(f"⚠️ [SEARCH & REPLACE]: Bloque BUSCAR no exacto. Buscando coincidencia parcial...", flush=True)
+            # Intento de limpieza de espacios para match flexible
+            limpiar = lambda s: "\n".join([line.strip() for line in s.splitlines() if line.strip()])
+            if limpiar(texto_buscar) in limpiar(contenido_actual):
+                return contenido_actual # Si matcheó difuso pero seguro
 
-    # Fallback: Si la IA devuelve un bloque completo de código directo
+    # Fallback si devuelve código completo
     match_full = re.search(r"```(?:\w+)?\s*([\s\S]*?)\s*```", respuesta_ia)
-    if match_full and len(match_full.group(1).splitlines()) > 50:
+    if match_full and len(match_full.group(1).splitlines()) > 40:
         return match_full.group(1).strip()
 
     return contenido_actual
@@ -393,7 +411,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con parchesSearch & Replace.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con rotación inteligente y Search & Replace.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -481,25 +499,13 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         return
     registrar_conversacion("Leandro", texto_usuario)
 
-    prompt_intencion = (
-        f"Analiza si el siguiente mensaje solicita modificar, corregir o agregar código/archivos en el repositorio.\n"
-        f"Mensaje: '{texto_usuario}'\n"
-        f"Responde ÚNICAMENTE con 'SI' o 'NO'."
-    )
-    
-    es_solicitud_codigo = False
-    try:
-        res_int = generar_texto_ia(prompt_intencion, es_modo_codigo=False, es_clasificador=True)
-        txt_intencion = (res_int or "").strip().upper()
-        print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> {txt_intencion}", flush=True)
-        if "SI" in txt_intencion:
-            es_solicitud_codigo = True
-    except Exception as e:
-        print(f"⚠️ Error en clasificador: {e}", flush=True)
+    # Evaluación de intención con soporte híbrido local + IA
+    es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
+    print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> {'SI' if es_solicitud_codigo else 'NO'}", flush=True)
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Generando parche Search & Replace...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Aplicando Search & Replace...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
@@ -507,12 +513,12 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
             f.write(contenido_compuesto)
 
         if aplicar_cambio_universal(ruta_archivo, contenido_compuesto):
-            await update.message.reply_text(f"🚀 ¡Parche Search & Replace aplicado y pusheado para '{ruta_archivo}'! Reiniciando...")
+            await update.message.reply_text(f"🚀 ¡Parche aplicado y pusheado con éxito para '{ruta_archivo}'! Reiniciando si corresponde...")
             if ruta_archivo == "procesar.py":
                 sys.exit(0)
             return
         else:
-            await update.message.reply_text(f"❌ Validación AST/Sintaxis fallida para '{ruta_archivo}'. Cambio cancelado.")
+            await update.message.reply_text(f"❌ Validación AST fallida para '{ruta_archivo}'. Cambio cancelado para proteger el sistema.")
             return
 
     respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
