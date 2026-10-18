@@ -1228,3 +1228,4 @@ Esa es la corrección para que la guardes y me vayas comprendiendo mejor las pal
 [2026-10-15 06:17:53] Bot: "vale, pero qué pasó che, ¿qué sucedió?"
 [2026-10-15 06:18:20] Usuario: bajame el pitch por favor
 [2026-10-15 06:18:25] Bot: dale, que te vamo a dar la presentación de mi nuevo proyecto en 3 minutos, ¿che?
+[2026-10-18 23:16:13] Leandro: Agregá un nuevo comando Handler /logs en procesar.py que lea las últimas 20 líneas del archivo conversaciones.txt y las responda formateadas en un mensaje de Telegram.
