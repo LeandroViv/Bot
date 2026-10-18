@@ -164,16 +164,16 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return False
 
 def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_PROPUESTO_FILE):
-    """
-    Lee el archivo de texto puente completo, valida sintaxis con AST,
-    hace backup y sobreescribe de forma atómica sin parches parciales ni inflación.
-    """
     if not os.path.exists(ruta_txt):
         print(f"⚠️ No se encontró el archivo puente {ruta_txt}", flush=True)
         return False
 
     with open(ruta_txt, "r", encoding="utf-8") as f:
         nuevo_contenido = f.read()
+
+    lineas = nuevo_contenido.splitlines()
+    if lineas and lineas[0].strip() == "[FORCE_OVERWRITE]":
+        nuevo_contenido = "\n".join(lineas[1:]).lstrip()
 
     try:
         ast.parse(nuevo_contenido)
@@ -198,7 +198,7 @@ def cargar_config_timbre():
             cfg = json_lib.load(f)
             vol_raw = str(cfg.get("volume", "+10%"))
             if "db" in vol_raw.lower():
-                vol_num = re.sub(r'[^0-9+-]', '', vol_raw)
+                vol_num = re.sub(r"""[^0-9+-]""", "", vol_raw)
                 cfg["volume"] = f"{vol_num}%"
             return cfg
     except Exception:
@@ -216,7 +216,7 @@ def registrar_conversacion(remitente, texto):
     try:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         with open(TXT_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {remitente}: {texto}" + chr(10))
+            f.write(f"[{ts}] {remitente}: {texto}\n")
         print(f"📝 [LOG CHAT] [{remitente}]: {texto[:80]}...", flush=True)
     except Exception as e:
         print(f"⚠️ Error conversacion: {e}", flush=True)
@@ -262,7 +262,7 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
                 partes.append(f"equalizer=f={hz}:width_type=q:w={q}:g={gain}")
 
     vol_raw = str(cfg.get("volume", "+10%"))
-    vol_num = re.sub(r'[^0-9+-]', '', vol_raw)
+    vol_num = re.sub(r"""[^0-9+-]""", "", vol_raw)
     try:
         v_pct = float(vol_num)
         if v_pct != 0:
@@ -272,7 +272,7 @@ def construir_filtro_ffmpeg_desde_armonicos(cfg):
         pass
 
     rate_raw = str(cfg.get("rate", "-5%"))
-    rate_num = re.sub(r'[^0-9+-]', '', rate_raw)
+    rate_num = re.sub(r"""[^0-9+-]""", "", rate_raw)
     try:
         r_pct = float(rate_num)
         if r_pct != 0:
@@ -306,18 +306,20 @@ def generar_texto_ia(prompt_usuario):
     if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
         info_web = buscar_en_web(prompt_usuario)
         if info_web:
-            p = prompt_usuario + chr(10) + chr(10) + "[Información fresca]:" + chr(10) + info_web
+            p = f"{prompt_usuario}\n\n[Información fresca]:\n{info_web}"
 
     if client:
         try:
             res = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.5-flash",
                 contents=p,
                 config=dict(system_instruction=system_prompt)
             )
             raw = (res.text or "").strip()
-            if raw: return raw
-        except Exception: pass
+            if raw:
+                return raw
+        except Exception:
+            pass
 
     if asegurar_ollama_en_runner():
         try:
@@ -329,10 +331,13 @@ def generar_texto_ia(prompt_usuario):
             )
             if r.status_code == 200:
                 texto = r.json().get("response", "").strip()
-                if texto: return texto
-        except Exception: pass
+                if texto:
+                    return texto
+        except Exception:
+            pass
 
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
 def preparar_texto_para_voz(texto):
-    t = re.sub(r'
+    t = texto
+    t = re.sub(r"""
