@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Autónomo Multi-Parte con Llave Maestra y GH_PAT
+# Script: procesar.py - LeandroBot / Auto-Reconexión Ollama + Llave Maestra + Búsqueda Web Universal
 
 import asyncio
 import json as json_lib
@@ -92,7 +92,7 @@ def matar_instancia_anterior():
 
 matar_instancia_anterior()
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Llave Maestra Multi-Parte + GH_PAT)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Ollama Auto-Reconnect + Anti-Fruta)...", flush=True)
 
 for f_path, default_val in [
     (TXT_FILE, ""),
@@ -139,17 +139,17 @@ def asegurar_ollama_en_runner():
         pass
 
     try:
-        print(f"🦙 [OLLAMA RUNNER]: Intentando conectar / levantar servicio en {OLLAMA_HOST}...", flush=True)
+        print(f"🦙 [OLLAMA AUTO-HEAL]: Intentando re-levantar Ollama en {OLLAMA_HOST}...", flush=True)
         subprocess.Popen(
             ["ollama", "serve"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True
         )
-        time.sleep(3)
-        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
+        time.sleep(4)
+        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=4.0)
         if r.status_code == 200:
-            print("🦙 [OLLAMA RUNNER]: ¡Servicio conectado con éxito en el runner!", flush=True)
+            print("🦙 [OLLAMA AUTO-HEAL]: ¡Servicio Ollama restablecido e intentando nuevo request!", flush=True)
             return True
     except Exception as ex:
         print(f"⚠️ Aviso conexión Ollama en runner: {ex}", flush=True)
@@ -236,7 +236,8 @@ def aplicar_cambio_llave_maestra(ruta_archivo, nuevo_contenido):
             try:
                 ast.parse(nuevo_contenido)
             except SyntaxError as e:
-                return False, f"Error de sintaxis Python en {ruta_archivo}: {e}"
+                print(f"⚠️ [INTEGRIDAD AST]: Sintaxis inválida o trunca en {ruta_archivo}: {e}", flush=True)
+                return False, f"Error de sintaxis / código trunco detectado: {e}"
 
         if os.path.exists(ruta_archivo):
             shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
@@ -246,8 +247,8 @@ def aplicar_cambio_llave_maestra(ruta_archivo, nuevo_contenido):
             f.write(nuevo_contenido)
         os.replace(ruta_tmp, ruta_archivo)
 
-        print(f"✅ [LLAVE MAESTRA]: Archivo '{ruta_archivo}' actualizado correctamente.", flush=True)
-        guardar_y_pushear_como_leandrobot(ruta_archivo, f"vibe-coding: actualización universal de {ruta_archivo}")
+        print(f"✅ [LLAVE MAESTRA]: Archivo '{ruta_archivo}' actualizado de forma íntegra.", flush=True)
+        guardar_y_pushear_como_leandrobot(ruta_archivo, f"vibe-coding: actualización universal blindada de {ruta_archivo}")
         return True, ""
     except Exception as e:
         return False, str(e)
@@ -303,7 +304,7 @@ def buscar_en_web(query):
             results = list(ddgs_instance.text(query, max_results=3))
             if results:
                 lineas = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
-                print(f"🌐 [WEB SEARCH]: {query[:40]}...", flush=True)
+                print(f"🌐 [BUSQUEDA WEB ANTI-FRUTA]: {query[:40]}...", flush=True)
                 return "\n".join(lineas)
     except Exception as e:
         print(f"⚠️ Aviso búsqueda web: {e}", flush=True)
@@ -356,6 +357,7 @@ def construir_prompt_sistema(es_modo_codigo=False):
             "1. NO HABLES, NO SALUDES, NO EXPLIQUES, NO PIDAS CONFIRMACIÓN.\n"
             "2. SI EL CÓDIGO ES LARGO, DIVIDELO EN PARTES NUMERADAS DENTRO DE BLOQUES ```python ... ``` USANDO `# PARTE: 1`, `# PARTE: 2`, ETC.\n"
             "3. INDICAR LA RUTA EXACTA DEL ARCHIVO AL INICIO DE CADA BLOQUE (Ej: `# ARCHIVO: procesar.py`).\n"
+            "4. CERO TRUNCAMIENTO: Asegurá cerrar correctamente todos los paréntesis, strings y comillas.\n"
         )
 
     memoria = obtener_memoria_aprendizaje()
@@ -364,21 +366,22 @@ def construir_prompt_sistema(es_modo_codigo=False):
         f"REPOSITORIO OFICIAL: {URL_REPOSITORIO}\n\n"
         "REGLAS LINGÜÍSTICAS Y DE CHAT:\n"
         "1. EL USUARIO ES LEANDRO. Hablale de 'vos' o 'che'. Usá voseo porteño real ('mirá', 'fijate', 'decime', 'dale', 'che', 'posta').\n"
-        "2. CERO RELLENO: Respondé directo y al pie.\n\n"
+        "2. CERO RELLENO Y CERO FRUTA: Respondé directo y al pie con datos verificados.\n\n"
         f"Historial reciente:\n{memoria}\n"
     )
 
-def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
+def generar_texto_ia(prompt_usuario, es_modo_codigo=False, error_previo=""):
     system_prompt = construir_prompt_sistema(es_modo_codigo=es_modo_codigo)
+    
+    # Búsqueda web preventiva ante baches o consultas abiertas
     p = prompt_usuario
-    if not es_modo_codigo and any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
-        info_web = buscar_en_web(prompt_usuario)
-        if info_web:
-            p = prompt_usuario + chr(10) + chr(10) + "[Información fresca]:" + chr(10) + info_web
+    info_web = buscar_en_web(prompt_usuario)
+    if info_web:
+        p = f"{prompt_usuario}\n\n[Contexto Verificado Web]:\n{info_web}"
 
     if client:
         try:
-            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Multi-Parte: {es_modo_codigo})...", flush=True)
+            print(f"🤖 [IA ENGINE]: Consultando Gemini API (Modo Anti-Fruta Multi-Parte)...", flush=True)
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=p,
@@ -386,29 +389,32 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
             )
             raw = (res.text or "").strip()
             if raw: 
-                print(f"✅ [IA ENGINE]: Respuesta recibida de Gemini ({len(raw)} chars).", flush=True)
                 return raw
         except Exception as e:
             print(f"⚠️ [IA ENGINE ERROR - Gemini]: {e}", flush=True)
 
-    if asegurar_ollama_en_runner():
-        try:
-            print(f"🤖 [IA ENGINE]: Fallback a Ollama ({OLLAMA_MODEL})...", flush=True)
-            prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False, "keep_alive": "5m"},
-                timeout=180
-            )
-            if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
-                if texto: 
-                    print(f"✅ [IA ENGINE]: Respuesta recibida de Ollama ({len(texto)} chars).", flush=True)
-                    return texto
-        except Exception as ex:
-            print(f"⚠️ [IA ENGINE ERROR - Ollama]: {ex}", flush=True)
+    # Fallback con Auto-Reconexión / Retry Loop para Ollama
+    for intento in range(2):
+        if asegurar_ollama_en_runner():
+            try:
+                print(f"🦙 [OLLAMA TRY {intento+1}]: Enviando consulta a {OLLAMA_MODEL}...", flush=True)
+                prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
+                r = requests.post(
+                    f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                    json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False, "keep_alive": "10m"},
+                    timeout=240
+                )
+                if r.status_code == 200:
+                    texto = r.json().get("response", "").strip()
+                    if texto: 
+                        return texto
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as ex:
+                print(f"⚠️ [OLLAMA TIMEOUT/CONN ERROR]: Intento {intento+1} falló ({ex}). Reiniciando servicio...", flush=True)
+                asegurar_ollama_en_runner()
+                time.sleep(2)
+            except Exception as ex:
+                print(f"⚠️ [OLLAMA ERROR - General]: {ex}", flush=True)
 
-    print("❌ [IA ENGINE]: Todos los motores fallaron, devolviendo respuesta default.", flush=True)
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
 def preparar_texto_para_voz(texto):
@@ -494,8 +500,6 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
     resp = generar_texto_ia(instruccion, es_modo_codigo=True)
     duracion = round(time.time() - t0, 2)
 
-    print(f"🤖 [MULTI-PARTE]: IA respondió en {duracion}s (Longitud: {len(resp)} chars)", flush=True)
-
     matches = re.findall(r'```python\s*([\s\S]*?)\s*```', resp)
     if matches:
         acumulado_por_archivo = {}
@@ -523,8 +527,8 @@ async def manejar_vibe_coding(update: Update, context: ContextTypes.DEFAULT_TYPE
                 return
 
         await update.message.reply_text(
-            f"🚀 **¡Modificación multi-parte aplicada con éxito en {duracion}s!**\n"
-            f"Integrado, validado y pusheado a GitHub.",
+            f"🚀 **¡Modificación aplicada con éxito en {duracion}s!**\n"
+            f"Integrado, validado por AST y pusheado a GitHub.",
             parse_mode="Markdown"
         )
         return
@@ -583,7 +587,7 @@ async def manejar_estado(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"¡Qué hacés, Leandro! 🚀\n\n"
-        f"📊 **Estado del Sistema (Multi-Parte / Llave Maestra):**\n"
+        f"📊 **Estado del Sistema (Ollama Auto-Reconnect):**\n"
         f"• Uptime: {uptime_str}\n"
         f"• RAM en uso: {ram_str}\n"
         f"• CPU: {cpu_pct}\n"
@@ -630,7 +634,7 @@ def main():
         print("❌ [ERROR CRÍTICO]: Falta la variable TELEGRAM_BOT_TOKEN.", flush=True)
         return
 
-    print("🚀 [INIT]: Arrancando polling con Llave Maestra Multi-Parte...", flush=True)
+    print("🚀 [INIT]: Arrancando polling con Auto-Reconexión Ollama...", flush=True)
     
     if os.path.exists("memoria_tareas.json"):
         try:
