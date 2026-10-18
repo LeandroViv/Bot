@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Autónomo con Engine de Auto-Coding en Runner
+# Script: procesar.py - LeandroBot / Vibe Coding con Integración Fabric y S&R Robusto
 
 import asyncio
 import json as json_lib
@@ -32,8 +32,8 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Engine de auto-coding local en runner activado", flush=True)
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (S&R Orquestado en Runner)...", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Motor Fabric / Runner Auto-Coding en línea", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Fabric + S&R Quirúrgico)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -139,6 +139,21 @@ def asegurar_ollama_en_runner():
             time.sleep(2)
     return False
 
+def asegurar_fabric_en_runner():
+    try:
+        res = subprocess.run(["fabric", "--version"], capture_output=True, text=True, timeout=5)
+        if res.returncode == 0:
+            return True
+    except Exception:
+        pass
+    try:
+        print("🛠️ [FABRIC]: Instalando fabric-ai en el runner...", flush=True)
+        subprocess.run([sys.executable, "-m", "pip", "install", "fabric-ai"], check=True, capture_output=True)
+        return True
+    except Exception as e:
+        print(f"⚠️ No se pudo instalar fabric: {e}", flush=True)
+        return False
+
 def ejecutar_comando_runner_en_vivo(cmd_str):
     try:
         res = subprocess.run(cmd_str, shell=True, capture_output=True, text=True, timeout=120)
@@ -230,8 +245,11 @@ def aplicar_cambio_universal(ruta_destino, nuevo_contenido):
     return guardar_y_pushear_como_leandrobot(ruta_destino, f"vibe-coding: modificación autónoma en {ruta_destino}")
 
 def detectar_archivo_objetivo(prompt_usuario):
-    archivos = obtener_mapa_repositorio()
     prompt_lc = prompt_usuario.lower()
+    # Si la petición habla explícitamente de comandos, handlers o código python, forzamos procesar.py
+    if any(k in prompt_lc for k in ["handler", "comando", "logs", "funcion", "bot", "python", "/"]):
+        return "procesar.py"
+    archivos = obtener_mapa_repositorio()
     for arch in archivos:
         if os.path.basename(arch).lower() in prompt_lc or arch.lower() in prompt_lc:
             return arch
@@ -275,7 +293,7 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
     patrones_codigo = [
         r"\breemplaz[aaá]\b", r"\bagreg[aaá]le\b", r"\bmodific[aaá]\b", 
         r"\bcambi[aaá]\b", r"\bpushe[aaá]\b", r"\bprint\b", r"\.py\b", 
-        r"\bcrear\b", r"\barregl[aaá]\b", r"\bfuncion\b", r"\bcodigo\b"
+        r"\bcrear\b", r"\barregl[aaá]\b", r"\bfuncion\b", r"\bcodigo\b", r"\bhandler\b", r"\bcomando\b"
     ]
     if any(re.search(p, texto_usuario.lower()) for p in patrones_codigo):
         return True
@@ -284,36 +302,52 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
     return "SI" in (res_clasif or "").upper()
 
 def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py"):
-    """
-    Ejecuta el orquestador local en el runner para generar parches S&R sin limite de cuota de API.
-    """
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     instruction = (
-        f"Sos un motor de Auto-Coding en el runner. Modifica el archivo '{ruta_archivo}'.\n"
+        f"Sos un motor experto de Auto-Coding Python. Modifica el archivo '{ruta_archivo}'.\n"
         "INSTRUCCIÓN ESTRICTA:\n"
         "Devuelve ÚNICAMENTE un bloque con este formato exacto:\n"
         "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
         "REEMPLAZAR:\n```python\n<linea o bloque nuevo>\n```\n\n"
         f"Petición: {prompt_usuario}\n\n"
-        f"--- CONTENIDO ACTUAL ---\n```python\n{codigo_actual[:8000]}\n```"
+        f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
     )
     
-    try:
-        print("🛠️ [RUNNER AUTO-CODING]: Invocando engine local en el runner...", flush=True)
-        r = requests.post(
-            f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": instruction,
-                "stream": False,
-                "options": {"num_ctx": 4096, "temperature": 0.0}
-            },
-            timeout=90
-        )
-        if r.status_code == 200:
-            return r.json().get("response", "").strip()
-    except Exception as ex:
-        print(f"⚠️ Error en Auto-Coding local del runner: {ex}", flush=True)
+    # 1. Intentar usar Fabric si está disponible en el runner
+    if asegurar_fabric_en_runner():
+        try:
+            print("🛠️ [FABRIC RUNNER]: Ejecutando engine con fabric...", flush=True)
+            res_fab = subprocess.run(
+                ["fabric", "--stream=false"],
+                input=instruction,
+                capture_output=True,
+                text=True,
+                timeout=90
+            )
+            if res_fab.returncode == 0 and res_fab.stdout.strip():
+                return res_fab.stdout.strip()
+        except Exception as ex:
+            print(f"⚠️ Aviso ejecución Fabric: {ex}", flush=True)
+
+    # 2. Fallback a Ollama directo en el runner
+    if asegurar_ollama_en_runner():
+        try:
+            print("🦙 [OLLAMA RUNNER]: Ejecutando auto-coding local...", flush=True)
+            r = requests.post(
+                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "prompt": instruction,
+                    "stream": False,
+                    "options": {"num_ctx": 4096, "temperature": 0.0}
+                },
+                timeout=90
+            )
+            if r.status_code == 200:
+                return r.json().get("response", "").strip()
+        except Exception as ex:
+            print(f"⚠️ Error en Ollama local del runner: {ex}", flush=True)
+            
     return ""
 
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
@@ -326,10 +360,9 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
         info_tecnica = ""
         try:
             query_tecnica = f"python documentation example {prompt_usuario[:60]}"
-            print(f"🔍 [WEB SEARCH CODE]: Consultando referencias técnicas para: '{query_tecnica}'...", flush=True)
             info_tecnica = buscar_en_web(query_tecnica)
-        except Exception as ex:
-            print(f"⚠️ Error en búsqueda técnica web: {ex}", flush=True)
+        except Exception:
+            pass
 
         bloque_referencia = f"--- REFERENCIAS TÉCNICAS EXTRAÍDAS DE LA WEB ---\n{info_tecnica}\n" if info_tecnica else ""
 
@@ -386,34 +419,8 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
     if es_modo_codigo:
         res_runner = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
         if res_runner:
-            print("🦙 [IA USADA]: Engine Local de Auto-Coding en Runner", flush=True)
+            print("🛠️ [IA USADA]: Engine Local Fabric/Ollama en Runner", flush=True)
             return res_runner
-
-    if asegurar_ollama_en_runner():
-        for intento in range(2):
-            try:
-                prompt_ollama = (
-                    f"{system_prompt}\n\nMensaje: '{p}'\nRespuesta (SI/NO):"
-                ) if es_clasificador else f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
-                
-                r = requests.post(
-                    f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                    json={
-                        "model": OLLAMA_MODEL,
-                        "prompt": prompt_ollama,
-                        "stream": False,
-                        "options": {"num_ctx": 4096, "temperature": temp_target}
-                    },
-                    timeout=60
-                )
-                if r.status_code == 200:
-                    texto = r.json().get("response", "").strip()
-                    if texto:
-                        print(f"🦙 [IA USADA]: Ollama Local ({OLLAMA_MODEL}) | Temp: {temp_target}", flush=True)
-                        return texto
-            except Exception as ex:
-                print(f"⚠️ Aviso Ollama (intento {intento+1}/2): {ex}", flush=True)
-                time.sleep(2)
 
     return "¡Qué hacés che! Las IAs están sin cuota o apagadas un toque. Probá de nuevo en breve."
 
@@ -486,10 +493,23 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
     for i in range(0, len(texto), max_chunk):
         await update.message.reply_text(texto[i:i + max_chunk])
 
+# --- HANDLER NUEVO: /logs solicitado por Leandro ---
+async def comando_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists(TXT_FILE):
+        await update.message.reply_text("⚠️ Todavía no hay registro en conversaciones.txt.")
+        return
+    try:
+        with open(TXT_FILE, "r", encoding="utf-8") as f:
+            lineas = f.readlines()
+        ultimas = "".join(lineas[-20:]) if lineas else "Archivo vacío."
+        await enviar_mensaje_en_partes(update, f"📜 **Últimas 20 líneas de conversaciones.txt:**\n\n{ultimas}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error leyendo logs: {e}")
+
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con engine local de auto-coding en runner.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Fabric y comando /logs.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -582,7 +602,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando auto-coding local en runner...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando motor de auto-coding local...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
@@ -649,6 +669,7 @@ def main():
     app.add_handler(CommandHandler("run", comando_run))
     app.add_handler(CommandHandler("codigo", comando_codigo))
     app.add_handler(CommandHandler("aplicar", comando_aplicar))
+    app.add_handler(CommandHandler("logs", comando_logs)) # <-- Handler registrado formalmente
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
     app.run_polling(drop_pending_updates=True)
