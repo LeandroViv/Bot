@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Universal + Ollama Local Integrado + Gemini + psutil
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico Universal con Reintentos de Ollama y Prompt Estricto
 
 import asyncio
 import json as json_lib
@@ -14,7 +14,6 @@ import ast
 import shutil
 from datetime import datetime
 
-# Importación defensiva y autogestionada de psutil
 try:
     import psutil
 except ImportError:
@@ -32,7 +31,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Ollama Local + Gemini)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Ollama con reintentos)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -124,16 +123,18 @@ def asegurar_ollama_en_runner():
             return True
     except Exception:
         pass
-    try:
-        print(f"🦙 [OLLAMA]: Levantando servicio local en {OLLAMA_HOST}...", flush=True)
-        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        time.sleep(4)
-        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
-        if r.status_code == 200:
-            print("🦙 [OLLAMA]: ¡Servicio levantado y conectado con éxito!", flush=True)
-            return True
-    except Exception as ex:
-        print(f"⚠️ Aviso conexión Ollama: {ex}", flush=True)
+    for intento in range(3):
+        try:
+            print(f"🦙 [OLLAMA]: Intentando levantar servicio local (Intento {intento+1}/3)...", flush=True)
+            subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            time.sleep(4)
+            r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=4.0)
+            if r.status_code == 200:
+                print("🦙 [OLLAMA]: ¡Servicio levantado y conectado con éxito!", flush=True)
+                return True
+        except Exception as ex:
+            print(f"⚠️ Aviso conexión Ollama (intento {intento+1}): {ex}", flush=True)
+            time.sleep(2)
     return False
 
 def ejecutar_comando_runner_en_vivo(cmd_str):
@@ -154,20 +155,6 @@ def obtener_codigo_actual():
         except Exception:
             pass
     return ""
-
-def obtener_mapa_repositorio(root_dir="."):
-    mapa = []
-    ignorar = {".git", "__pycache__", ".github", "venv", "downloads"}
-    for dirpath, dirnames, filenames in os.walk(root_dir):
-        dirnames[:] = [d for d in dirnames if d not in ignorar]
-        rel_path = os.path.relpath(dirpath, root_dir)
-        if rel_path == ".":
-            rel_path = ""
-        for f in filenames:
-            if f.endswith((".py", ".json", ".txt", ".md", ".sh", ".yml")):
-                path_completo = os.path.join(rel_path, f) if rel_path else f
-                mapa.append(f"  📄 {path_completo}")
-    return "\n".join(mapa) if mapa else "  📄 procesar.py"
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
@@ -199,7 +186,7 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
     try:
         ast.parse(nuevo_contenido)
     except SyntaxError as e:
-        print(f"❌ [ERROR DE SINTAXIS]: {e}", flush=True)
+        print(f"❌ [ERROR DE SINTAXIS AST]: {e}", flush=True)
         return False
     if os.path.exists(ruta_destino):
         shutil.copy2(ruta_destino, f"{ruta_destino}.bak")
@@ -207,7 +194,7 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
     with open(ruta_tmp, "w", encoding="utf-8") as f:
         f.write(nuevo_contenido)
     os.replace(ruta_tmp, ruta_destino)
-    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica universal con ollama")
+    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica con reintentos")
 
 def cargar_config_timbre():
     try:
@@ -250,8 +237,9 @@ def construir_prompt_sistema(es_modo_codigo=False):
             "Sos LeandroBot, un bot adaptativo en Python desarrollado para Vibe Coding autónomo.\n"
             "Tu tono es rioplatense, directo, relajado y de cancha.\n\n"
             "INSTRUCCIÓN CRÍTICA DE VIBE CODING:\n"
-            "El usuario Leandro te pidió modificar tu propio código en lenguaje natural. Debes generar el script completo y actualizado de 'procesar.py' incorporando todas las mejoras solicitadas.\n"
-            "DEVUELVE ÚNICAMENTE EL CÓDIGO PYTHON DENTRO DE UN BLOQUE MARKDOWN ```python ... ``` SIN NINGÚN TIPO DE TEXTO EXPLICATIVO AFUERA.\n\n"
+            "El usuario Leandro te pidió modificar tu propio código en lenguaje natural. Debes generar EL SCRIPT COMPLETO Y ACTUALIZADO de 'procesar.py' incorporando estrictamente lo que pidió.\n"
+            "DEVUELVE ÚNICAMENTE EL CÓDIGO PYTHON DENTRO DE UN BLOQUE MARKDOWN ```python ... ```. "
+            "PROHIBIDO incluir explicaciones, saludos ni texto fuera del bloque markdown.\n\n"
             f"Código actual de 'procesar.py':\n```python\n{codigo_actual}\n```"
         )
     return (
@@ -267,33 +255,41 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
         if info_web:
             p = f"{prompt_usuario}\n\n[Información fresca]:\n{info_web}"
 
-    # 1. Intentar con Gemini si está disponible
+    # 1. Intentar con Gemini usando gemini-2.5-flash (actualizado)
     if client:
-        try:
-            res = client.models.generate_content(model="gemini-2.5-flash", contents=p, config=dict(system_instruction=system_prompt))
-            raw = (res.text or "").strip()
-            if raw:
-                return raw
-        except Exception as e:
-            print(f"⚠️ Aviso Gemini: {e}", flush=True)
+        for intento_gemini in range(2):
+            try:
+                res = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=p,
+                    config=dict(system_instruction=system_prompt)
+                )
+                raw = (res.text or "").strip()
+                if raw:
+                    return raw
+            except Exception as e:
+                print(f"⚠️ Aviso Gemini (intento {intento_gemini+1}): {e}", flush=True)
+                time.sleep(1)
 
-    # 2. Fallback con Ollama Local
+    # 2. Fallback robusto con Ollama Local con reintentos
     if asegurar_ollama_en_runner():
-        try:
-            prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
-            r = requests.post(
-                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False},
-                timeout=60
-            )
-            if r.status_code == 200:
-                texto = r.json().get("response", "").strip()
-                if texto:
-                    return texto
-        except Exception as ex:
-            print(f"⚠️ Aviso Ollama: {ex}", flush=True)
+        for intento_ollama in range(3):
+            try:
+                prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
+                r = requests.post(
+                    f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                    json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False},
+                    timeout=90
+                )
+                if r.status_code == 200:
+                    texto = r.json().get("response", "").strip()
+                    if texto:
+                        return texto
+            except Exception as ex:
+                print(f"⚠️ Aviso Ollama (intento {intento_ollama+1}/3): {ex}", flush=True)
+                time.sleep(2)
 
-    return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
+    return "¡Qué hacés che! Tuvimos un problemita técnico con las IAs. Probá de nuevo en un toque."
 
 def preparar_texto_para_voz(texto):
     t = re.sub(r"https?://\S+", "", texto)
@@ -338,7 +334,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Gemini, Ollama y Vibe Coding autónomo.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con reintentos, Ollama y Vibe Coding autónomo.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -456,7 +452,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
                 await update.message.reply_text("❌ Falló la validación AST del código generado.")
                 return
         else:
-            await enviar_mensaje_en_partes(update, respuesta_ia)
+            await enviar_mensaje_en_partes(update, "⚠️ La IA no devolvió un bloque de código válido en Markdown.")
             return
 
     # Chat normal con soporte de IAs y voz DSP
