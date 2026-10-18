@@ -115,7 +115,7 @@ def ejecutar_comando_runner_en_vivo(cmd_str):
         )
         salida = res.stdout.strip() if res.stdout else res.stderr.strip()
         if not salida:
-            salida = "Comando ejecutado con éxito (sin salida gráfica)."
+            salida = "Comando ejecutado con éxito (sin salida en consola)."
         return True, salida
     except Exception as e:
         return False, f"Error ejecutando comando: {str(e)}"
@@ -191,6 +191,7 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
 
     print(f"✅ [VIBE CODING ATÓMICO]: {ruta_destino} actualizado limpiamente desde {ruta_txt}.", flush=True)
     return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica por txt puente")
+
 def cargar_config_timbre():
     try:
         with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
@@ -339,7 +340,12 @@ def generar_texto_ia(prompt_usuario):
 
 def preparar_texto_para_voz(texto):
     t = texto
-    t = re.sub(r"
+    t = re.sub(r"https?://\S+", "", t)
+    t = re.sub(r"[*_`~#\[\]<>]", " ", t)
+    t = re.sub(r"[\U00010000-\U0010ffff]", "", t)
+    t = re.sub(r"\s+", " ", t)
+    return t.strip()
+
 async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.ogg"):
     cfg = cargar_config_timbre()
     texto_limpio = preparar_texto_para_voz(texto)
@@ -434,6 +440,13 @@ def transcribir_audio_local(audio_path):
 
     return corregir_transcripcion(texto)
 
+async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
+    if not texto:
+        return
+    for i in range(0, len(texto), max_chunk):
+        fragmento = texto[i:i + max_chunk]
+        await update.message.reply_text(fragmento)
+
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
@@ -459,7 +472,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"• Repositorio: {URL_REPOSITORIO}\n\n"
         f"Mapa de archivos:\n{obtener_mapa_repositorio()}"
     )
-    await update.message.reply_text(status_txt)
+    await enviar_mensaje_en_partes(update, status_txt)
 
 async def comando_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
@@ -467,7 +480,96 @@ async def comando_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     cmd = " ".join(context.args)
     ok, salida = ejecutar_comando_runner_en_vivo(cmd)
-    if len(salida) > 3500:
-        salida = salida[:3500] + "\n...[salida recortada]"
-    prefijo = "✅" if ok else "❌"
-    await update.message.reply_text(f"{prefijo} [Salida]:\n
+    prefijo = "✅ [Salida]:" if ok else "❌ [Error]:"
+    texto_total = f"{prefijo}\n{salida}"
+    await enviar_mensaje_en_partes(update, texto_total)
+
+async def comando_aplicar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists(CAMBIO_PROPUESTO_FILE):
+        await update.message.reply_text("⚠️ No se encontró cambio_propuesto.txt en la raíz.")
+        return
+    await update.message.reply_text("⏳ Verificando sintaxis y aplicando cambio atómico en procesar.py...")
+    exito = aplicar_cambio_por_txt_completo("procesar.py", CAMBIO_PROPUESTO_FILE)
+    if exito:
+        await update.message.reply_text("✅ ¡Cambio aplicado y pusheado con éxito a GitHub! Reiniciando proceso...")
+        sys.exit(0)
+    else:
+        await update.message.reply_text("❌ Error al aplicar cambio. Revisá la consola para más detalles.")
+
+async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.effective_chat.id
+    texto_usuario = update.message.text
+    if not texto_usuario:
+        return
+
+    registrar_conversacion("Leandro", texto_usuario)
+    respuesta = generar_texto_ia(texto_usuario)
+    registrar_conversacion("LeandroBot", respuesta)
+
+    audio_path = await sintetizar_audio_dsp(respuesta)
+    if audio_path and os.path.exists(audio_path):
+        with open(audio_path, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=respuesta[:1024] if len(respuesta) <= 1024 else None)
+        if len(respuesta) > 1024:
+            await enviar_mensaje_en_partes(update, respuesta)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+    else:
+        await enviar_mensaje_en_partes(update, respuesta)
+
+async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID_ACTIVO
+    CHAT_ID_ACTIVO = update.effective_chat.id
+    audio_obj = update.message.voice or update.message.audio
+    if not audio_obj:
+        return
+
+    archivo = await context.bot.get_file(audio_obj.file_id)
+    ruta_temp = "input_audio.ogg"
+    await archivo.download_to_drive(ruta_temp)
+
+    texto_transcrito = transcribir_audio_local(ruta_temp)
+    if os.path.exists(ruta_temp):
+        os.remove(ruta_temp)
+
+    if not texto_transcrito:
+        texto_transcrito = "(Audio ininteligible)"
+
+    registrar_conversacion("Leandro (Audio)", texto_transcrito)
+    respuesta = generar_texto_ia(texto_transcrito)
+    registrar_conversacion("LeandroBot", respuesta)
+
+    audio_path = await sintetizar_audio_dsp(respuesta)
+    if audio_path and os.path.exists(audio_path):
+        with open(audio_path, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=f"🗣 Transcripción: {texto_transcrito[:200]}")
+        if len(respuesta) > 200:
+            await enviar_mensaje_en_partes(update, respuesta)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+    else:
+        await enviar_mensaje_en_partes(update, f"🗣 Transcripción: {texto_transcrito}\n\n{respuesta}")
+
+def main():
+    if not TOKEN:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno.", flush=True)
+        return
+
+    asegurar_ollama_en_runner()
+
+    req = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
+    app = Application.builder().token(TOKEN).request(req).build()
+
+    app.add_handler(CommandHandler("start", comando_start))
+    app.add_handler(CommandHandler("status", comando_status))
+    app.add_handler(CommandHandler("run", comando_run))
+    app.add_handler(CommandHandler("aplicar", comando_aplicar))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
+
+    print("🤖 LeandroBot listo y a la escucha en Telegram...", flush=True)
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
