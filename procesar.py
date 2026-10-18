@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Search & Replace Flexible + Robustez Git y AST
+# Script: procesar.py - LeandroBot / Vibe Coding Autónomo con Instrucción Técnica Web y S&R Robustecido
 
 import asyncio
 import json as json_lib
@@ -32,8 +32,8 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema atómico dinámico en línea, impecable che!", flush=True)
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Search & Replace Robustecido)...", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema de codificado en línea con consulta técnica web", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Búsqueda Técnica Web)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -180,12 +180,11 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
-        # Agregamos el archivo destino explícitamente a Git
         subprocess.run(["git", "add", archivo_modificado], check=True)
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not status.stdout.strip():
-            print("⚠️ [GIT]: No se detectaron cambios para commitear.", flush=True)
-            return True
+            print("⚠️ [GIT]: No se detectaron cambios reales para commitear.", flush=True)
+            return False
 
         subprocess.run(["git", "commit", "-m", mensaje_commit], check=True)
         res_push = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
@@ -257,6 +256,20 @@ def registrar_conversacion(remitente, texto):
     except Exception:
         pass
 
+def buscar_en_web(query):
+    try:
+        try:
+            from ddgs import DDGS
+        except ImportError:
+            from duckduckgo_search import DDGS
+        with DDGS() as ddgs_instance:
+            results = list(ddgs_instance.text(query, max_results=3))
+            if results:
+                return "\n".join([f"- {r.get('title', '')}: {r.get('body', '')}" for r in results])
+    except Exception:
+        pass
+    return ""
+
 def evaluar_intencion_codigo_hibrida(texto_usuario):
     patrones_codigo = [
         r"\breemplaz[aaá]\b", r"\bagreg[aaá]le\b", r"\bmodific[aaá]\b", 
@@ -276,21 +289,39 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
         system_prompt = "Sos un clasificador binario estricto. Responde ÚNICAMENTE con la palabra 'SI' o 'NO'."
         temp_target = 0.0
     elif es_modo_codigo:
+        # Búsqueda técnica automática en la web sobre la tarea de código para no adivinar ni inventar
+        info_tecnica = ""
+        try:
+            query_tecnica = f"python documentation example {prompt_usuario[:60]}"
+            print(f"🔍 [WEB SEARCH CODE]: Consultando referencias técnicas para: '{query_tecnica}'...", flush=True)
+            info_tecnica = buscar_en_web(query_tecnica)
+        except Exception as ex:
+            print(f"⚠️ Error en búsqueda técnica web: {ex}", flush=True)
+
         system_prompt = (
             f"Sos un motor de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
+            f"{f'--- REFERENCIAS Y DOCUMENTACIÓN TÉCNICA EXTRAÍDA DE LA WEB ---\n{info_tecnica}\n' if info_tecnica else ''}"
             "INSTRUCCIÓN ESTRICTA:\n"
             "Devuelve ÚNICAMENTE un bloque de reemplazo exacto con este formato:\n"
             "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
             "REEMPLAZAR:\n```python\n<linea o bloque nuevo>\n```\n\n"
-            f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
+            f"--- CONTENIDO ACTUAL DE {ruta_archivo} ---\n```python\n{codigo_actual[:9000]}\n```"
         )
         temp_target = 0.1
     else:
+        # Búsqueda web opcional para charla casual
+        p_extra = ""
+        if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
+            info_web = buscar_en_web(prompt_usuario)
+            if info_web:
+                p_extra = f"\n\n[Información web fresca]:\n{info_web}"
+
         system_prompt = (
             "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
             "Mantené charlas fluidas y naturales. PROHIBIDO inventar links, URLs o repositorios falsos."
         )
         temp_target = 0.7
+        prompt_usuario += p_extra
 
     p = prompt_usuario
 
@@ -356,20 +387,21 @@ def aplicar_parche_search_replace(prompt_usuario, ruta_archivo):
         texto_buscar = match_buscar.group(1)
         texto_reemplazar = match_reemplazar.group(1)
 
+        # 1. Match exacto de bloque
         if texto_buscar in contenido_actual:
             print(f"🎯 [SEARCH & REPLACE]: Match exacto aplicado en '{ruta_archivo}'.", flush=True)
             return contenido_actual.replace(texto_buscar, texto_reemplazar, 1)
 
-        # Fallback de normalización flexible por líneas si fallan los espacios en blanco
+        # 2. Match flexible por líneas normalizadas (anti-espacios/tabs)
         lineas_buscar = [line.strip() for line in texto_buscar.splitlines() if line.strip()]
         if lineas_buscar:
             linea_pivote = lineas_buscar[0]
             for linea_original in contenido_actual.splitlines():
                 if linea_pivote in linea_original.strip():
-                    print(f"🎯 [SEARCH & REPLACE]: Match flexible encontrado por línea pivote.", flush=True)
+                    print(f"🎯 [SEARCH & REPLACE]: Match por línea pivote en '{ruta_archivo}'.", flush=True)
                     return contenido_actual.replace(linea_original, texto_reemplazar, 1)
 
-    # Fallback si devuelve todo el script completo en Markdown
+    # 3. Fallback: Si devolvió todo el archivo entero dentro de Markdown
     match_full = re.search(r"```(?:\w+)?\s*([\s\S]*?)\s*```", respuesta_ia)
     if match_full and len(match_full.group(1).splitlines()) > 40:
         return match_full.group(1).strip()
@@ -419,7 +451,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Search & Replace flexible.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con consulta técnica web y Search & Replace.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -512,7 +544,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Aplicando Search & Replace...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Consultando web y aplicando Search & Replace...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
@@ -525,7 +557,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
                 sys.exit(0)
             return
         else:
-            await update.message.reply_text(f"❌ Validación AST fallida para '{ruta_archivo}'. Cambio cancelado para proteger el sistema.")
+            await update.message.reply_text(f"❌ Validación AST o Git fallida para '{ruta_archivo}'. Cambio cancelado para proteger el sistema.")
             return
 
     respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
