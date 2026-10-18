@@ -172,8 +172,9 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
         nuevo_contenido = f.read()
 
     lineas = nuevo_contenido.splitlines()
-    if lineas and lineas[0].strip() == "[FORCE_OVERWRITE]":
-        nuevo_contenido = "\n".join(lineas[1:]).lstrip()
+    while lineas and (lineas[0].strip() == "[FORCE_OVERWRITE]" or lineas[0].strip().startswith("[")):
+        lineas.pop(0)
+    nuevo_contenido = "\n".join(lineas).lstrip()
 
     try:
         ast.parse(nuevo_contenido)
