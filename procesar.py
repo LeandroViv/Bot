@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por Lotes Universal sobre Cualquier Archivo
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico Universal con Temperatura Calibrada y Logs de IA
 
 import asyncio
 import json as json_lib
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [TEST VIBE CODING]: Todo en orden, maestro", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema atómico fraccionado en línea, impecable che!", flush=True)
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Universal por Lotes + Ollama)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
@@ -194,7 +194,6 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         return False
 
 def aplicar_cambio_universal(ruta_destino, nuevo_contenido):
-    # Validaciones según tipo de archivo
     if ruta_destino.endswith(".py"):
         try:
             ast.parse(nuevo_contenido)
@@ -264,21 +263,29 @@ def buscar_en_web(query):
         pass
     return ""
 
-def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py"):
+def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     
-    if es_modo_codigo:
+    if es_clasificador:
+        system_prompt = (
+            "Sos un clasificador determinista estricto. "
+            "Tu ÚNICA tarea es responder SI o NO. No agregues explicaciones ni puntuación extra."
+        )
+        temp_target = 0.0
+    elif es_modo_codigo:
         system_prompt = (
             f"Sos un motor de Vibe Coding por lotes. Tenés que modificar el archivo '{ruta_archivo}'.\n"
             "MANTÉN EL CÓDIGO EXISTENTE Y APLICA ÚNICAMENTE LA MODIFICACIÓN SOLICITADA.\n"
             "DEVUELVE ÚNICAMENTE EL ARCHIVO COMPLETO Y ACTUALIZADO EN UN BLOQUE MARKDOWN (```python, ```json, o ```txt según corresponda) SIN TEXTO ADICIONAL.\n\n"
             f"--- CONTENIDO ACTUAL DE {ruta_archivo} ---\n```\n{codigo_actual[:6000]}\n```"
         )
+        temp_target = 0.1
     else:
         system_prompt = (
             "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
             "Mantené charlas fluidas y naturales."
         )
+        temp_target = 0.7
 
     p = prompt_usuario
 
@@ -289,19 +296,26 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                 res = client.models.generate_content(
                     model=modelo,
                     contents=p,
-                    config=dict(system_instruction=system_prompt)
+                    config=dict(
+                        system_instruction=system_prompt,
+                        temperature=temp_target
+                    )
                 )
                 raw = (res.text or "").strip()
                 if raw:
+                    print(f"🤖 [IA USADA]: Gemini ({modelo}) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
                     return raw
-            except Exception:
+            except Exception as ex:
+                print(f"⚠️ Error Gemini ({modelo}): {ex}", flush=True)
                 continue
 
-    # 2. Fallback Ollama Local por lotes y reintentos ante timeout
+    # 2. Fallback Ollama Local calibrado con reintentos
     if asegurar_ollama_en_runner():
         for intento in range(3):
             try:
                 prompt_ollama = (
+                    f"{system_prompt}\n\nMensaje: '{p}'\nRespuesta (SI/NO):"
+                ) if es_clasificador else (
                     f"Modifica el archivo {ruta_archivo} aplicando: {p}. Devuelve el bloque de código actualizado completo."
                 ) if es_modo_codigo else f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
                 
@@ -311,13 +325,14 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                         "model": OLLAMA_MODEL,
                         "prompt": prompt_ollama,
                         "stream": False,
-                        "options": {"num_ctx": 4096, "temperature": 0.2}
+                        "options": {"num_ctx": 4096, "temperature": temp_target}
                     },
                     timeout=60
                 )
                 if r.status_code == 200:
                     texto = r.json().get("response", "").strip()
                     if texto:
+                        print(f"🦙 [IA USADA]: Ollama Local ({OLLAMA_MODEL}) | Temp: {temp_target} | Intento: {intento+1}", flush=True)
                         return texto
             except Exception as ex:
                 print(f"⚠️ Aviso Ollama (intento {intento+1}/3): {ex}", flush=True)
@@ -329,13 +344,11 @@ def procesar_cambio_por_lotes(prompt_usuario, ruta_archivo):
     contenido_actual = obtener_contenido_archivo(ruta_archivo)
     lineas = contenido_actual.splitlines()
 
-    # Si el archivo es chico, se procesa en una sola llamada
     if len(lineas) <= 120:
         respuesta_raw = generar_texto_ia(prompt_usuario, es_modo_codigo=True, ruta_archivo=ruta_archivo)
         match_code = re.search(r"```(?:\w+)?\s*([\s\S]*?)\s*```", respuesta_raw)
         return match_code.group(1).strip() if match_code else respuesta_raw
 
-    # Batch / Fragmentación para archivos grandes
     print(f"🧩 [BATCH]: Dividiendo '{ruta_archivo}' en lotes para procesamiento seguro...", flush=True)
     mitad = len(lineas) // 2
     bloque_head = "\n".join(lineas[:mitad])
@@ -346,7 +359,7 @@ def procesar_cambio_por_lotes(prompt_usuario, ruta_archivo):
         f"Solicitud: {prompt_usuario}\n"
         f"Devuelve ÚNICAMENTE la palabra 'PARTE1' o 'PARTE2'."
     )
-    res_lote = generar_texto_ia(prompt_batch, es_modo_codigo=False)
+    res_lote = generar_texto_ia(prompt_batch, es_modo_codigo=False, es_clasificador=True)
 
     if "PARTE1" in res_lote.upper():
         print("🧩 [BATCH]: Procesando Lote 1/2...", flush=True)
@@ -404,7 +417,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Vibe Coding por lotes universal.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Vibe Coding y logs de IA en vivo.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -495,12 +508,12 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     prompt_intencion = (
         f"Analiza si el siguiente mensaje solicita modificar, corregir o agregar código/archivos en el repositorio.\n"
         f"Mensaje: '{texto_usuario}'\n"
-        f"Responde ÚNICAMENTE 'SI' o 'NO'."
+        f"Responde ÚNICAMENTE con 'SI' o 'NO'."
     )
     
     es_solicitud_codigo = False
     try:
-        res_int = generar_texto_ia(prompt_intencion, es_modo_codigo=False)
+        res_int = generar_texto_ia(prompt_intencion, es_modo_codigo=False, es_clasificador=True)
         txt_intencion = (res_int or "").strip().upper()
         print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> {txt_intencion}", flush=True)
         if "SI" in txt_intencion:
