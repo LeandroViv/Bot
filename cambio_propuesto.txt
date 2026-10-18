@@ -1,7 +1,6 @@
-[FORCE_OVERWRITE]
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico por TXT Puente + Terminal Runner + DSP + Whisper + Métricas de Voz
 
 import asyncio
 import json as json_lib
@@ -26,6 +25,7 @@ from telegram.ext import (
 
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Atómico por TXT Puente)...", flush=True)
 
+# --- 1. CONSTANTES GLOBALES (SIEMPRE ARRIBA DE TODO) ---
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
@@ -33,6 +33,7 @@ CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
 CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 CORRECCIONES_WHISPER = "correcciones_whisper.json"
+HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
 
@@ -40,6 +41,7 @@ for f_path, default_val in [
     (TXT_FILE, ""),
     (DATASET_ENTRENAMIENTO, []),
     (CORRECCIONES_WHISPER, {}),
+    (HISTORIAL_METRICAS, []),
     (PERFIL_DINAMICO, {
         "nombre": "Leandro",
         "estilo": "Colega y compañero de vibe coding con tonada rioplatense, yeísmo y ritmo auténtico",
@@ -77,6 +79,39 @@ try:
 except Exception:
     client = None
     GENAI_DISPONIBLE = False
+
+
+# --- 2. FUNCIONES DEL SISTEMA ---
+
+def registrar_metrica_voz(cfg, texto_limpio):
+    try:
+        metrica = {
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "voice": cfg.get("voice", "es-AR-TomasNeural"),
+            "pitch": cfg.get("pitch", "-4Hz"),
+            "rate": cfg.get("rate", "-5%"),
+            "volume": cfg.get("volume", "+10%"),
+            "harmonics": cfg.get("harmonics", []),
+            "longitud_texto": len(texto_limpio),
+            "fragmento_texto": texto_limpio[:120]
+        }
+        historial = []
+        if os.path.exists(HISTORIAL_METRICAS):
+            try:
+                with open(HISTORIAL_METRICAS, "r", encoding="utf-8") as f:
+                    historial = json_lib.load(f)
+                    if not isinstance(historial, list):
+                        historial = []
+            except Exception:
+                historial = []
+        historial.append(metrica)
+        if len(historial) > 500:
+            historial = historial[-500:]
+        with open(HISTORIAL_METRICAS, "w", encoding="utf-8") as f:
+            json_lib.dump(historial, f, indent=4, ensure_ascii=False)
+        print("📊 [MÉTRICA VOZ]: Métrica registrada correctamente.", flush=True)
+    except Exception as e:
+        print(f"⚠️ Error registrando métrica de voz: {e}", flush=True)
 
 def asegurar_ollama_en_runner():
     try:
@@ -172,9 +207,8 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
         nuevo_contenido = f.read()
 
     lineas = nuevo_contenido.splitlines()
-    while lineas and (lineas[0].strip() == "[FORCE_OVERWRITE]" or lineas[0].strip().startswith("[")):
-        lineas.pop(0)
-    nuevo_contenido = "\n".join(lineas).lstrip()
+    if lineas and lineas[0].strip() == "[FORCE_OVERWRITE]":
+        nuevo_contenido = "\n".join(lineas[1:]).lstrip()
 
     try:
         ast.parse(nuevo_contenido)
@@ -398,6 +432,7 @@ async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.ogg"):
             os.remove(archivo_raw)
 
         if os.path.exists(archivo_salida) and os.path.getsize(archivo_salida) > 0:
+            registrar_metrica_voz(cfg, texto_limpio)
             return archivo_salida
     except Exception as e:
         print(f"⚠️ Error en sintetizar_audio_dsp: {e}", flush=True)
