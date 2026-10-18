@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico Universal con Autoinstalación de Dependencias
+# Script: procesar.py - LeandroBot / Vibe Coding Universal + Chat IA Natural + Autoinstalación de psutil
 
 import asyncio
 import json as json_lib
@@ -14,7 +14,7 @@ import ast
 import shutil
 from datetime import datetime
 
-# Importación defensiva y autogestionada de psutil para evitar fallos en el runner
+# Importación defensiva y autogestionada de psutil
 try:
     import psutil
 except ImportError:
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding Universal sin hardcodeo)...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Adaptativo (Vibe Coding + Chat IA)...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -205,7 +205,7 @@ def aplicar_cambio_por_txt_completo(ruta_destino="procesar.py", ruta_txt=CAMBIO_
     with open(ruta_tmp, "w", encoding="utf-8") as f:
         f.write(nuevo_contenido)
     os.replace(ruta_tmp, ruta_destino)
-    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización atómica universal")
+    return guardar_y_pushear_como_leandrobot(ruta_destino, "vibe-coding: actualización autónoma atómica")
 
 def cargar_config_timbre():
     try:
@@ -275,12 +275,17 @@ def construir_prompt_sistema(es_modo_codigo=False):
         )
     return (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
-        "Si Leandro te pide en lenguaje natural modificar, actualizar, cambiar o agregar algo a tu código fuente, evaluá su intención y respondé estructurando un cambio de código."
+        "Mantené charlas fluidas, copadas y naturales respondiendo a lo que te diga."
     )
 
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
     system_prompt = construir_prompt_sistema(es_modo_codigo)
     p = prompt_usuario
+    if not es_modo_codigo and any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
+        info_web = buscar_en_web(prompt_usuario)
+        if info_web:
+            p = f"{prompt_usuario}\n\n[Información fresca]:\n{info_web}"
+
     if client:
         try:
             res = client.models.generate_content(model="gemini-2.5-flash", contents=p, config=dict(system_instruction=system_prompt))
@@ -289,6 +294,22 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False):
                 return raw
         except Exception:
             pass
+
+    if asegurar_ollama_en_runner():
+        try:
+            prompt_completo = f"{system_prompt}\n\nUsuario: {p}\nLeandro:"
+            r = requests.post(
+                f"{OLLAMA_HOST.rstrip('/')}/api/generate",
+                json={"model": OLLAMA_MODEL, "prompt": prompt_completo, "stream": False},
+                timeout=60
+            )
+            if r.status_code == 200:
+                texto = r.json().get("response", "").strip()
+                if texto:
+                    return texto
+        except Exception:
+            pass
+
     return "¡Qué hacés che! Te capté perfecto. Mandale nomás."
 
 def preparar_texto_para_voz(texto):
@@ -334,7 +355,7 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo y autónomo.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo y listo para charlar o vibe-codear.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -421,23 +442,27 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         return
     registrar_conversacion("Leandro", texto_usuario)
 
+    # Interceptor universal de intención (IA decidiendo si es vibe coding o chat normal)
     prompt_intencion = (
-        f"Analiza si el siguiente mensaje del usuario solicita modificar, corregir, ampliar o programar código en este bot de Telegram.\n"
+        f"Analiza si el siguiente mensaje del usuario solicita modificar, corregir, ampliar, programar o agregar código/comandos en este bot de Telegram.\n"
         f"Mensaje: '{texto_usuario}'\n"
-        f"Responde ÚNICAMENTE con la palabra 'SI' si requiere modificar el código fuente, o 'NO' si es una charla normal o consulta."
+        f"Responde ÚNICAMENTE con la palabra 'SI' si requiere modificar el código fuente, o 'NO' si es una charla normal, saludo o consulta."
     )
     
     es_solicitud_codigo = False
     if client:
         try:
             res_intencion = client.models.generate_content(model="gemini-2.5-flash", contents=prompt_intencion)
-            if "SI" in (res_intencion.text or "").upper():
+            txt_intencion = (res_intencion.text or "").strip().upper()
+            print(f"🧠 [INTENT CHECK]: '{texto_usuario[:30]}' -> Clasificado como: {txt_intencion}", flush=True)
+            if "SI" in txt_intencion:
                 es_solicitud_codigo = True
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Error en clasificador de intención: {e}", flush=True)
             pass
 
     if es_solicitud_codigo:
-        await update.message.reply_text("🧠 Interpretando solicitud y generando actualización autónoma...")
+        await update.message.reply_text("🧠 ¡Intención de código detectada! Analizando pedido y generando actualización autónoma...")
         respuesta_ia = generar_texto_ia(texto_usuario, es_modo_codigo=True)
         match_code = re.search(r"```python\s*([\s\S]*?)\s*```", respuesta_ia)
         if match_code:
@@ -454,12 +479,15 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
             await enviar_mensaje_en_partes(update, respuesta_ia)
             return
 
+    # Chat normal / Conversación con el bot e integración de voz DSP
     respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
     registrar_conversacion("LeandroBot", respuesta)
     audio_path = await sintetizar_audio_dsp(respuesta)
     if audio_path and os.path.exists(audio_path):
         with open(audio_path, "rb") as voice_file:
-            await update.message.reply_voice(voice=voice_file, caption=respuesta[:1024])
+            await update.message.reply_voice(voice=voice_file, caption=respuesta[:1024] if len(respuesta) <= 1024 else None)
+        if len(respuesta) > 1024:
+            await enviar_mensaje_en_partes(update, respuesta)
         os.remove(audio_path)
     else:
         await enviar_mensaje_en_partes(update, respuesta)
@@ -485,6 +513,8 @@ async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TY
     if audio_path and os.path.exists(audio_path):
         with open(audio_path, "rb") as voice_file:
             await update.message.reply_voice(voice=voice_file, caption=f"🗣 {texto_transcrito[:200]}")
+        if len(respuesta) > 200:
+            await enviar_mensaje_en_partes(update, respuesta)
         os.remove(audio_path)
     else:
         await enviar_mensaje_en_partes(update, f"🗣 {texto_transcrito}\n\n{respuesta}")
