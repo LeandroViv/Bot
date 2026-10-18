@@ -33,21 +33,39 @@ from telegram.ext import (
 )
 
 async def cmd_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando Handler /logs: Devuelve las últimas 20 líneas de conversaciones.txt formateadas."""
+    """Comando Handler /logs: Devuelve las últimas líneas de conversaciones.txt con soporte de parámetro numérico y fallback seguro."""
     try:
+        n_lineas = 20
+        if context.args and context.args[0].isdigit():
+            n_lineas = max(1, min(int(context.args[0]), 100))
+
         if not os.path.exists(TXT_FILE):
             await update.message.reply_text("📋 El archivo conversaciones.txt aún no existe.")
             return
+
         with open(TXT_FILE, "r", encoding="utf-8") as f:
             lineas = f.readlines()
-        ultimas = "".join(lineas[-20:]).strip()
-        if not ultimas:
+
+        if not lineas:
             await update.message.reply_text("📋 El archivo conversaciones.txt está vacío.")
             return
-        respuesta = f"📋 *Últimas 20 líneas de conversaciones.txt:*\n\n```\n{ultimas}\n```"
-        if len(respuesta) > 4000:
-            respuesta = respuesta[-4000:]
-        await update.message.reply_text(respuesta, parse_mode="Markdown")
+
+        total_mostradas = min(len(lineas), n_lineas)
+        ultimas = "".join(lineas[-total_mostradas:]).strip()
+        if not ultimas:
+            await update.message.reply_text("📋 No se encontraron registros recientes.")
+            return
+
+        encabezado = f"📋 Últimas {total_mostradas} líneas de conversaciones.txt:\n\n"
+        max_cuerpo = 3900 - len(encabezado)
+        if len(ultimas) > max_cuerpo:
+            ultimas = ultimas[-max_cuerpo:]
+
+        respuesta_md = f"📋 *Últimas {total_mostradas} líneas de conversaciones.txt:*\n\n```\n{ultimas}\n```"
+        try:
+            await update.message.reply_text(respuesta_md, parse_mode="Markdown")
+        except Exception:
+            await update.message.reply_text(f"{encabezado}{ultimas}")
     except Exception as e:
         await update.message.reply_text(f"⚠️ Error al leer los logs: {e}")
 
