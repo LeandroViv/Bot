@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Atómico Universal sin hardcodeo
+# Script: procesar.py - LeandroBot / Vibe Coding Atómico Universal con Autoinstalación de Dependencias
 
 import asyncio
 import json as json_lib
@@ -12,8 +12,16 @@ import requests
 import time
 import ast
 import shutil
-import psutil
 from datetime import datetime
+
+# Importación defensiva y autogestionada de psutil para evitar fallos en el runner
+try:
+    import psutil
+except ImportError:
+    print("⚠️ [INIT]: psutil no detectado. Instalando automáticamente...", flush=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "psutil"], check=True)
+    import psutil
+
 from telegram import Update
 from telegram.request import HTTPXRequest
 from telegram.ext import (
@@ -413,7 +421,6 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         return
     registrar_conversacion("Leandro", texto_usuario)
 
-    # Interceptor inteligente delegando la decisión completa a la IA (Sin hardcodeo)
     prompt_intencion = (
         f"Analiza si el siguiente mensaje del usuario solicita modificar, corregir, ampliar o programar código en este bot de Telegram.\n"
         f"Mensaje: '{texto_usuario}'\n"
