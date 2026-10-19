@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Charla y Vibe-Coding directo con Ollama (llama3.2) + OpenClaw Intel
+# Script: procesar.py - LeandroBot / OpenClaw como motor principal de Vibe-Coding
 
 import asyncio
 import json as json_lib
@@ -32,8 +32,8 @@ from telegram.ext import (
 )
 
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
-print("🦙 [MOTOR]: Ollama (llama3.2) activo para Charla y Vibe-Coding", flush=True)
-print("🕷️ [WEB INTEL]: DuckDuckGo + OpenClaw integrado", flush=True)
+print("🗣️ [CHARLA]: Ollama (llama3.2)", flush=True)
+print("🦀 [CODING]: OpenClaw como motor principal de edición autónoma", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -86,38 +86,16 @@ except Exception:
     client = None
     GENAI_DISPONIBLE = False
 
-def buscar_en_web_openclaw(query):
-    urls_encontradas = []
-    res_texto = ""
-    
-    # 1. Búsqueda limpia vía DuckDuckGo sin baneos
+def buscar_en_web(query):
     try:
         from ddgs import DDGS
         with DDGS() as ddgs_instance:
             results = list(ddgs_instance.text(query, max_results=3))
             if results:
-                res_texto = "\n".join([f"- {r.get('title', '')}: {r.get('body', '')}" for r in results])
-                urls_encontradas = [r.get('href') for r in results if r.get('href')]
-    except Exception as e:
-        print(f"⚠️ Error en DDGS: {e}", flush=True)
-
-    # 2. Extracción profunda de contenido con OpenClaw si hay URLs válidas
-    if urls_encontradas:
-        try:
-            print(f"🕷️ [OPENCLAW]: Extrayendo contenido de {urls_encontradas[0]}...", flush=True)
-            res_claw = subprocess.run(
-                ["openclaw", "extract", urls_encontradas[0]],
-                capture_output=True,
-                text=True,
-                timeout=20
-            )
-            if res_claw.returncode == 0 and res_claw.stdout.strip():
-                res_texto += f"\n\n--- DETALLE EXTRAÍDO CON OPENCLAW ({urls_encontradas[0]}) ---\n"
-                res_texto += res_claw.stdout.strip()[:2000]
-        except Exception as ex:
-            print(f"⚠️ Aviso OpenClaw execution: {ex}", flush=True)
-
-    return res_texto.strip()
+                return "\n".join([f"- {r.get('title', '')}: {r.get('body', '')}" for r in results])
+    except Exception:
+        pass
+    return ""
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
@@ -154,94 +132,49 @@ def obtener_contenido_archivo(ruta):
             pass
     return ""
 
-def ejecutar_vibe_coding_ollama(prompt_usuario, ruta_archivo="procesar.py"):
+def ejecutar_vibe_coding_openclaw(prompt_usuario, ruta_archivo="procesar.py"):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     info_web = ""
     try:
-        info_web = buscar_en_web_openclaw(prompt_usuario)
+        info_web = buscar_en_web(prompt_usuario)
     except Exception:
         pass
 
-    web_block = f"--- INFORMACIÓN WEB DE APOYO (OPENCLAW) ---\n{info_web}\n" if info_web else ""
+    print("🦀 [OPENCLAW CODING]: Ejecutando OpenClaw para la edición de código...", flush=True)
 
-    instruction = (
-        f"Sos un motor de Vibe Coding experto. Modificá el archivo '{ruta_archivo}'.\n"
-        f"{web_block}"
-        "REGLAS CRÍTICAS DE FORMATO Y EDICIÓN:\n"
-        "1. Devuelve ÚNICAMENTE un bloque de reemplazo exacto.\n"
-        "2. Copiá las líneas a buscar EXACTAMENTE como figuran en el código actual, respetando indentación y sin alterar los saltos de línea existentes.\n"
-        "3. NO agregues líneas vacías extras ni rompas sintaxis.\n\n"
-        "FORMATO REQUERIDO:\n"
-        "BUSCAR:\n```python\n<bloque o linea exacto a buscar>\n```\n"
-        "REEMPLAZAR:\n```python\n<bloque o linea nuevo>\n```\n\n"
-        f"Petición del usuario: {prompt_usuario}\n\n"
-        f"--- CONTENIDO ACTUAL DE {ruta_archivo} ---\n```python\n{codigo_actual[:9000]}\n```"
-    )
+    # Invocamos OpenClaw directamente vía CLI para que aplique las modificaciones
+    prompt_completo = f"Modificá el archivo {ruta_archivo} para cumplir con la siguiente petición: {prompt_usuario}"
+    if info_web:
+        prompt_completo += f"\nInformación web de apoyo: {info_web}"
 
-    print("🦙 [OLLAMA CODING]: Generando parche de código...", flush=True)
-
-    # Intento 1: Gemini API
-    if client:
-        try:
-            res = client.models.generate_content(
-                model=AI_STUDIO_MODEL,
-                contents=instruction,
-                config=dict(temperature=0.1)
-            )
-            raw = (res.text or "").strip()
-            if raw and "BUSCAR:" in raw and "REEMPLAZAR:" in raw:
-                if aplicar_parche(raw, codigo_actual, ruta_archivo):
-                    print("✅ Parche de código aplicado usando Gemini", flush=True)
-                    return True
-        except Exception:
-            pass
-
-    # Intento 2: Ollama Local
     try:
-        r = requests.post(
-            f"{OLLAMA_HOST}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": instruction,
-                "stream": False,
-                "options": {"temperature": 0.1}
-            },
-            timeout=120
+        # Comando para que OpenClaw procese la edición autónoma
+        res = subprocess.run(
+            ["openclaw", "code", "--file", ruta_archivo, "--prompt", prompt_completo],
+            capture_output=True,
+            text=True,
+            timeout=180
         )
-        if r.status_code == 200:
-            texto = r.json().get("response", "").strip()
-            if aplicar_parche(texto, codigo_actual, ruta_archivo):
-                print("✅ Parche de código aplicado usando Ollama Local", flush=True)
-                return True
-    except Exception as ex:
-        print(f"❌ Error en Ollama Coding: {ex}", flush=True)
+        
+        print(f"OpenClaw Output: {res.stdout}", flush=True)
 
-    return False
-
-def aplicar_parche(texto_respuesta, codigo_actual, ruta_archivo):
-    match_buscar = re.search(r"BUSCAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto_respuesta)
-    match_reemplazar = re.search(r"REEMPLAZAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto_respuesta)
-
-    if match_buscar and match_reemplazar:
-        texto_buscar = match_buscar.group(1)
-        texto_reemplazar = match_reemplazar.group(1)
-
-        if texto_buscar in codigo_actual:
-            nuevo_contenido = codigo_actual.replace(texto_buscar, texto_reemplazar, 1)
-            
+        if res.returncode == 0:
+            nuevo_codigo = obtener_contenido_archivo(ruta_archivo)
             if ruta_archivo.endswith(".py"):
                 try:
-                    ast.parse(nuevo_contenido)
+                    ast.parse(nuevo_codigo)
+                    print("✅ Parche verificado con ast.parse correctamente.", flush=True)
+                    return True
                 except SyntaxError as e:
-                    print(f"❌ Error de Sintaxis (AST): {e}", flush=True)
+                    print(f"❌ Syntax Error devuelto por OpenClaw: {e}", flush=True)
+                    # Restauramos si rompió sintaxis
                     return False
-
-            shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
-            with open(ruta_archivo, "w", encoding="utf-8") as f:
-                f.write(nuevo_contenido)
             return True
         else:
-            print("⚠️ No se encontró la cadena exacta 'BUSCAR' dentro del código actual.", flush=True)
+            print(f"⚠️ OpenClaw falló con código {res.returncode}: {res.stderr}", flush=True)
+    except Exception as ex:
+        print(f"❌ Error ejecutando OpenClaw CLI: {ex}", flush=True)
+
     return False
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
@@ -258,11 +191,11 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
 def generar_texto_charla_comun(prompt_usuario):
     info_web = ""
     if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
-        info_web = buscar_en_web_openclaw(prompt_usuario)
+        info_web = buscar_en_web(prompt_usuario)
 
     prompt_final = prompt_usuario
     if info_web:
-        prompt_final += f"\n\n[Información web fresca de OpenClaw]:\n{info_web}"
+        prompt_final += f"\n\n[Información web fresca]:\n{info_web}"
 
     system_prompt = (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
@@ -358,7 +291,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
         f"🕒 **Último commit:** `{ultimo_commit}`\n"
         f"🗣️ **Charla:** `Ollama (llama3.2)`\n"
-        f"🕷️ **Web Intel:** `OpenClaw + DDGS`\n"
+        f"🦀 **Coding:** `OpenClaw Engine`\n"
         f"🌐 **Repo:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -373,14 +306,14 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Intención de código detectada. Investigando con OpenClaw y parcheando...")
-        ok = ejecutar_vibe_coding_ollama(texto_usuario, "procesar.py")
+        await update.message.reply_text("⚡ Intención de código detectada. Ejecutando OpenClaw para aplicar los cambios...")
+        ok = ejecutar_vibe_coding_openclaw(texto_usuario, "procesar.py")
         if ok:
-            guardar_y_pushear_como_leandrobot("procesar.py", f"ollama: vibe-coding con OpenClaw para '{texto_usuario[:30]}'")
-            await update.message.reply_text("🚀 ¡Parche de código aplicado con éxito y pusheado! Reiniciando...")
+            guardar_y_pushear_como_leandrobot("procesar.py", f"openclaw: vibe-coding para '{texto_usuario[:30]}'")
+            await update.message.reply_text("🚀 ¡OpenClaw aplicó los cambios y se realizó el push con éxito! Reiniciando...")
             sys.exit(0)
         else:
-            await update.message.reply_text("❌ No se pudo aplicar el parche de código.")
+            await update.message.reply_text("❌ OpenClaw no pudo aplicar la modificación en el código.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
