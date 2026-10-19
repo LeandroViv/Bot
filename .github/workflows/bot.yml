@@ -54,11 +54,20 @@ jobs:
             --network host \
             -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
             -e ENABLE_WEB_SEARCH=true \
+            -e PORT=5173 \
             --name bolt-diy \
             --restart always \
             ghcr.io/stackblitz-labs/bolt.diy:main || true
-          echo "Esperando que Bolt.diy esté listo..."
-          sleep 10
+
+          echo "Esperando que Bolt.diy inicialice en la red del runner..."
+          for i in {1..15}; do
+            if curl -s http://127.0.0.1:5173/ > /dev/null; then
+              echo "✅ Bolt.diy está respondiendo en el puerto 5173!"
+              break
+            fi
+            echo "Reintentando conexión con Bolt.diy ($i/15)..."
+            sleep 3
+          done
 
       # --- EJECUCIÓN PRINCIPAL DE LEANDROBOT ---
       - name: Ejecutar Bot de Telegram
