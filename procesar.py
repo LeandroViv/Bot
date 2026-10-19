@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Charla con Ollama + Vibe Coding con Bolt.diy + Web Search
+# Script: procesar.py - LeandroBot / Charla con Ollama + Vibe Coding con Aider CLI
 
 import asyncio
 import json as json_lib
@@ -10,8 +10,6 @@ import sys
 import subprocess
 import requests
 import time
-import ast
-import shutil
 from datetime import datetime
 
 try:
@@ -33,14 +31,13 @@ from telegram.ext import (
 
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 print("🗣️ [CHARLA]: Ollama (llama3.2)", flush=True)
-print("⚡ [CODING]: Bolt.diy con Web Search", flush=True)
+print("⚡ [CODING]: Aider CLI con acceso a Web Search", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
-CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
@@ -76,7 +73,6 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
-BOLT_API_URL = os.environ.get("BOLT_API_URL", "http://127.0.0.1:5173/api/build")
 
 CHAT_ID_ACTIVO = None
 
@@ -99,7 +95,7 @@ def buscar_en_web(query):
         pass
     return ""
 
-def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
+def guardar_y_pushear_como_leandrobot(mensaje_commit):
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
     try:
         subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=True)
@@ -108,7 +104,6 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
-        # Indexación completa para evitar errores de status 1 en commit
         subprocess.run(["git", "add", "-A"], check=True)
         
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
@@ -126,7 +121,7 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         print(f"⚠️ Aviso git push automático: {e}", flush=True)
         return False
 
-def ejecutar_vibe_coding_bolt(prompt_usuario, ruta_archivo="procesar.py"):
+def ejecutar_vibe_coding_aider(prompt_usuario):
     info_web = ""
     try:
         info_web = buscar_en_web(prompt_usuario)
@@ -135,31 +130,38 @@ def ejecutar_vibe_coding_bolt(prompt_usuario, ruta_archivo="procesar.py"):
 
     prompt_enriquecido = prompt_usuario
     if info_web:
-        prompt_enriquecido += f"\n\n--- INFORMACIÓN DE RESPALDO DE LA WEB ---\n{info_web}"
+        prompt_enriquecido += f"\n\n--- INFORMACIÓN DE RESPALDO WEB ---\n{info_web}"
 
-    print("⚡ [BOLT.DIY]: Procesando Vibe Coding con acceso web...", flush=True)
+    print("⚡ [AIDER CLI]: Ejecutando edición autónoma de código...", flush=True)
 
-    max_retries = 3
-    for intento in range(1, max_retries + 1):
-        try:
-            r = requests.post(
-                BOLT_API_URL,
-                json={"prompt": prompt_enriquecido, "target_file": ruta_archivo},
-                timeout=300
-            )
-            if r.status_code == 200:
-                print("✅ [BOLT.DIY]: Cambio / App generada con éxito.", flush=True)
-                return True
-            else:
-                print(f"⚠️ Bolt.diy devolvió HTTP Status: {r.status_code} (Intento {intento}/{max_retries})", flush=True)
-        except requests.exceptions.ConnectionError:
-            print(f"⏳ Esperando conexión con Bolt.diy (Intento {intento}/{max_retries})...", flush=True)
-            time.sleep(5)
-        except Exception as ex:
-            print(f"❌ Error conectando a Bolt.diy: {ex}", flush=True)
-            break
+    # Comando Aider usando Gemini o modelo disponible
+    env_cmd = os.environ.copy()
+    
+    cmd_aider = [
+        "aider",
+        "--message", prompt_enriquecido,
+        "--auto-commits",
+        "--no-analytics",
+        "--yes"
+    ]
 
-    return False
+    if GEMINI_API_KEY:
+        env_cmd["GEMINI_API_KEY"] = GEMINI_API_KEY
+        cmd_aider.extend(["--model", "gemini/gemini-2.0-flash"])
+    else:
+        cmd_aider.extend(["--model", f"ollama_chat/{OLLAMA_MODEL}", "--ollama-api-base", OLLAMA_HOST])
+
+    try:
+        res = subprocess.run(cmd_aider, env=env_cmd, capture_output=True, text=True, timeout=300)
+        if res.returncode == 0:
+            print("✅ [AIDER CLI]: Cambios generados con éxito.", flush=True)
+            return True, res.stdout
+        else:
+            print(f"⚠️ Aider salió con código {res.returncode}:\n{res.stderr}", flush=True)
+            return False, res.stderr
+    except Exception as ex:
+        print(f"❌ Error ejecutando Aider: {ex}", flush=True)
+        return False, str(ex)
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
     if texto_usuario.strip().startswith("/"):
@@ -275,7 +277,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
         f"🕒 **Último commit:** `{ultimo_commit}`\n"
         f"🗣️ **Charla:** `Ollama (llama3.2)`\n"
-        f"⚡ **Coding:** `Bolt.diy`\n"
+        f"⚡ **Coding:** `Aider CLI`\n"
         f"🌐 **Repo:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -290,14 +292,14 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Intención de código detectada. Construyendo con Bolt.diy...")
-        ok = ejecutar_vibe_coding_bolt(texto_usuario)
+        await update.message.reply_text("⚡ Intención de código detectada. Ejecutando Aider CLI...")
+        ok, detalle = ejecutar_vibe_coding_aider(texto_usuario)
         if ok:
-            guardar_y_pushear_como_leandrobot(".", f"bolt: vibe-coding para '{texto_usuario[:30]}'")
-            await update.message.reply_text("🚀 ¡Cambio/App construida con Bolt.diy y pusheada con éxito!")
+            guardar_y_pushear_como_leandrobot(f"aider: vibe-coding para '{texto_usuario[:30]}'")
+            await update.message.reply_text("🚀 ¡Cambios aplicados con Aider y pusheados con éxito!")
             sys.exit(0)
         else:
-            await update.message.reply_text("❌ No se pudo aplicar el cambio con Bolt.diy.")
+            await update.message.reply_text(f"❌ Error ejecutando Aider:\n`{detalle[:500]}`", parse_mode="markdown")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
