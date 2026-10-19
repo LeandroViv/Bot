@@ -47,10 +47,11 @@ jobs:
           ollama pull llama3.2
         shell: bash
 
-      # --- LEVANTAR OPEN WEBUI CON BÚSQUEDA WEB EN EL RUNNER ---
+      # --- LEVANTAR OPEN WEBUI CON BÚSQUEDA WEB Y NETWORK HOST ---
       - name: Levantar Open WebUI en la nube del Runner
         run: |
-          docker run -d -p 8080:8080 \
+          docker run -d \
+            --network host \
             -e OLLAMA_BASE_URL=http://127.0.0.1:11434 \
             -e ENABLE_WEB_SEARCH=true \
             -e WEB_SEARCH_ENGINE=duckduckgo \
@@ -58,8 +59,8 @@ jobs:
             --name open-webui \
             --restart always \
             ghcr.io/open-webui/open-webui:main
-          echo "Esperando que Open WebUI caliente motores en el puerto 8080..."
-          sleep 12
+          echo "Esperando que Open WebUI caliente motores en la red del runner..."
+          sleep 15
 
       # --- EJECUCIÓN PRINCIPAL DE LEANDROBOT ---
       - name: Ejecutar Bot de Telegram
