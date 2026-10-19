@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / OpenClaw como motor principal de Vibe-Coding
+# Script: procesar.py - LeandroBot Termux + Aider + Web Search Liviano + Git Sync
 
 import asyncio
 import json as json_lib
@@ -12,6 +12,7 @@ import requests
 import time
 import ast
 import shutil
+import urllib.parse
 from datetime import datetime
 
 try:
@@ -31,9 +32,10 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
-print("🗣️ [CHARLA]: Ollama (llama3.2)", flush=True)
-print("🦀 [CODING]: OpenClaw como motor principal de edición autónoma", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot Termux...", flush=True)
+print("🗣️ [CHARLA]: Ollama Local (llama3.2)", flush=True)
+print("🔍 [WEB]: Búsqueda nativa con HTTP Requests", flush=True)
+print("🤖 [CODING]: Aider CLI + Git Push", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -71,30 +73,33 @@ for f_path, default_val in [
                 json_lib.dump(default_val, f, indent=4, ensure_ascii=False)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 
 CHAT_ID_ACTIVO = None
 
-try:
-    from google import genai
-    client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
-    GENAI_DISPONIBLE = True if client else False
-except Exception:
-    client = None
-    GENAI_DISPONIBLE = False
-
 def buscar_en_web(query):
+    """Busca en DuckDuckGo vía HTTP directo sin compilación ni librerías externas."""
     try:
-        from ddgs import DDGS
-        with DDGS() as ddgs_instance:
-            results = list(ddgs_instance.text(query, max_results=3))
-            if results:
-                return "\n".join([f"- {r.get('title', '')}: {r.get('body', '')}" for r in results])
-    except Exception:
-        pass
+        url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            titulos = re.findall(r'<a class="result__url"[^>]*>(.*?)</a>', res.text)
+            snippets = re.findall(r'<a class="result__snippet"[^>]*>(.*?)</a>', res.text)
+            
+            resultados = []
+            for t, s in zip(titulos[:3], snippets[:3]):
+                t_limpio = re.sub(r'<[^>]+>', '', t).strip()
+                s_limpio = re.sub(r'<[^>]+>', '', s).strip()
+                if t_limpio and s_limpio:
+                    resultados.append(f"- {t_limpio}: {s_limpio}")
+            
+            return "\n".join(resultados)
+    except Exception as e:
+        print(f"⚠️ Error en búsqueda web liviana: {e}", flush=True)
     return ""
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
@@ -118,6 +123,7 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         if res_push.returncode != 0:
             subprocess.run(["git", "pull", "--rebase", "origin", "HEAD"], check=False)
             subprocess.run(["git", "push", "origin", "HEAD"], check=True)
+        print("✅ [GIT]: Cambios pusheados a GitHub correctamente.", flush=True)
         return True
     except Exception as e:
         print(f"⚠️ Aviso git push automático: {e}", flush=True)
@@ -132,49 +138,39 @@ def obtener_contenido_archivo(ruta):
             pass
     return ""
 
-def ejecutar_vibe_coding_openclaw(prompt_usuario, ruta_archivo="procesar.py"):
-    codigo_actual = obtener_contenido_archivo(ruta_archivo)
-    info_web = ""
+def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
     try:
-        info_web = buscar_en_web(prompt_usuario)
-    except Exception:
-        pass
+        env = os.environ.copy()
+        env["OLLAMA_API_BASE"] = OLLAMA_HOST
 
-    print("🦀 [OPENCLAW CODING]: Ejecutando OpenClaw para la edición de código...", flush=True)
+        cmd = [
+            "aider",
+            "--model", f"ollama/{OLLAMA_MODEL}",
+            "--message", prompt_usuario,
+            "--yes",
+            ruta_archivo
+        ]
 
-    # Invocamos OpenClaw directamente vía CLI para que aplique las modificaciones
-    prompt_completo = f"Modificá el archivo {ruta_archivo} para cumplir con la siguiente petición: {prompt_usuario}"
-    if info_web:
-        prompt_completo += f"\nInformación web de apoyo: {info_web}"
-
-    try:
-        # Comando para que OpenClaw procese la edición autónoma
-        res = subprocess.run(
-            ["openclaw", "code", "--file", ruta_archivo, "--prompt", prompt_completo],
-            capture_output=True,
-            text=True,
-            timeout=180
-        )
+        print(f"🤖 [AIDER TERMUX]: Ejecutando vibe coding sobre {ruta_archivo}...", flush=True)
+        res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=180)
         
-        print(f"OpenClaw Output: {res.stdout}", flush=True)
+        print(f"Aider Output:\n{res.stdout}", flush=True)
 
         if res.returncode == 0:
-            nuevo_codigo = obtener_contenido_archivo(ruta_archivo)
+            codigo_nuevo = obtener_contenido_archivo(ruta_archivo)
             if ruta_archivo.endswith(".py"):
                 try:
-                    ast.parse(nuevo_codigo)
-                    print("✅ Parche verificado con ast.parse correctamente.", flush=True)
-                    return True
+                    ast.parse(codigo_nuevo)
                 except SyntaxError as e:
-                    print(f"❌ Syntax Error devuelto por OpenClaw: {e}", flush=True)
-                    # Restauramos si rompió sintaxis
+                    print(f"❌ Error de Sintaxis (AST): {e}", flush=True)
                     return False
+            print("✅ ¡Aider aplicó los cambios correctamente!", flush=True)
             return True
         else:
-            print(f"⚠️ OpenClaw falló con código {res.returncode}: {res.stderr}", flush=True)
+            print(f"⚠️ Aider devolvió error: {res.stderr}", flush=True)
     except Exception as ex:
-        print(f"❌ Error ejecutando OpenClaw CLI: {ex}", flush=True)
-
+        print(f"❌ Error ejecutando Aider: {ex}", flush=True)
+    
     return False
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
@@ -189,32 +185,21 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
     return any(re.search(p, texto_usuario.lower()) for p in patrones_codigo)
 
 def generar_texto_charla_comun(prompt_usuario):
+    palabras_busqueda = ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio", "quién es", "cuándo", "resultado", "dólar", "merval"]
+    
     info_web = ""
-    if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
+    if any(k in prompt_usuario.lower() for k in palabras_busqueda):
+        print(f"🔍 [WEB]: El bot decidió buscar autónomamente sobre: '{prompt_usuario}'", flush=True)
         info_web = buscar_en_web(prompt_usuario)
 
     prompt_final = prompt_usuario
     if info_web:
-        prompt_final += f"\n\n[Información web fresca]:\n{info_web}"
+        prompt_final += f"\n\n[Información web fresca obtenida en tiempo real]:\n{info_web}"
 
     system_prompt = (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
-        "Mantené charlas fluidas y naturales. PROHIBIDO inventar links o URLs falsas."
+        "Mantené charlas fluidas y naturales. Si tenés información web fresca, usala para dar una respuesta certera. PROHIBIDO inventar links."
     )
-
-    if client:
-        try:
-            res = client.models.generate_content(
-                model=AI_STUDIO_MODEL,
-                contents=prompt_final,
-                config=dict(system_instruction=system_prompt, temperature=0.7)
-            )
-            raw = (res.text or "").strip()
-            if raw:
-                print("🤖 [CHARLA]: Gemini API", flush=True)
-                return raw
-        except Exception:
-            pass
 
     try:
         r = requests.post(
@@ -229,7 +214,6 @@ def generar_texto_charla_comun(prompt_usuario):
         if r.status_code == 200:
             respuesta_ollama = r.json().get("response", "").strip()
             if respuesta_ollama:
-                print("🦙 [CHARLA]: Ollama Local (llama3.2)", flush=True)
                 return respuesta_ollama
     except Exception as ex:
         print(f"❌ Error en Ollama Local: {ex}", flush=True)
@@ -268,7 +252,6 @@ async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
-    
     total_lineas = 0
     if os.path.exists("procesar.py"):
         try:
@@ -277,22 +260,12 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-    ultimo_commit = "Desconocido"
-    try:
-        res_git = subprocess.run(["git", "log", "-1", "--format=%cd", "--date=format:%Y-%m-%d %H:%M:%S"], capture_output=True, text=True, timeout=3)
-        if res_git.returncode == 0 and res_git.stdout.strip():
-            ultimo_commit = res_git.stdout.strip()
-    except Exception:
-        pass
-
     msg = (
-        f"🤖 **Estado de LeandroBot**\n\n"
+        f"🤖 **Estado de LeandroBot Termux**\n\n"
         f"⏱️ **Uptime:** `{uptime_min} min`\n"
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
-        f"🕒 **Último commit:** `{ultimo_commit}`\n"
-        f"🗣️ **Charla:** `Ollama (llama3.2)`\n"
-        f"🦀 **Coding:** `OpenClaw Engine`\n"
-        f"🌐 **Repo:** {URL_REPOSITORIO}"
+        f"🗣️ **Charla & Coding:** `Ollama + Aider`\n"
+        f"🌐 **Repo Git:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
 
@@ -306,14 +279,14 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Intención de código detectada. Ejecutando OpenClaw para aplicar los cambios...")
-        ok = ejecutar_vibe_coding_openclaw(texto_usuario, "procesar.py")
+        await update.message.reply_text("⚡ Intención de código detectada. Invocando a Aider localmente...")
+        ok = ejecutar_vibe_coding_aider(texto_usuario, "procesar.py")
         if ok:
-            guardar_y_pushear_como_leandrobot("procesar.py", f"openclaw: vibe-coding para '{texto_usuario[:30]}'")
-            await update.message.reply_text("🚀 ¡OpenClaw aplicó los cambios y se realizó el push con éxito! Reiniciando...")
-            sys.exit(0)
+            guardar_y_pushear_como_leandrobot("procesar.py", f"aider: vibe-coding local para '{texto_usuario[:30]}'")
+            await update.message.reply_text("🚀 ¡Aider aplicó los cambios, se sincronizó con GitHub y reiniciamos el bot!")
+            os.execv(sys.executable, ['python'] + sys.argv)
         else:
-            await update.message.reply_text("❌ OpenClaw no pudo aplicar la modificación en el código.")
+            await update.message.reply_text("❌ Aider no pudo aplicar la modificación.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
@@ -329,6 +302,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
 def main():
     if not TOKEN:
+        print("❌ Error: Variable TELEGRAM_BOT_TOKEN no configurada.", flush=True)
         return
     req = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
     app = Application.builder().token(TOKEN).request(req).build()
