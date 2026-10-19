@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Charla con Ollama + Vibe Coding con Aider CLI
+# Script: procesar.py - LeandroBot / Charla con Ollama + Vibe Coding con Open WebUI Native
 
 import asyncio
 import json as json_lib
@@ -10,6 +10,8 @@ import sys
 import subprocess
 import requests
 import time
+import ast
+import shutil
 from datetime import datetime
 
 try:
@@ -31,13 +33,14 @@ from telegram.ext import (
 
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 print("🗣️ [CHARLA]: Ollama (llama3.2)", flush=True)
-print("⚡ [CODING]: Aider CLI con acceso a Web Search", flush=True)
+print("🌐 [CODING]: Open WebUI Serve con Web Search", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
+CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
@@ -73,6 +76,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+OPEN_WEBUI_API_URL = os.environ.get("OPEN_WEBUI_API_URL", "http://127.0.0.1:8080/api/chat/completions")
 
 CHAT_ID_ACTIVO = None
 
@@ -95,7 +99,7 @@ def buscar_en_web(query):
         pass
     return ""
 
-def guardar_y_pushear_como_leandrobot(mensaje_commit):
+def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
     try:
         subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=True)
@@ -121,45 +125,77 @@ def guardar_y_pushear_como_leandrobot(mensaje_commit):
         print(f"⚠️ Aviso git push automático: {e}", flush=True)
         return False
 
-def ejecutar_vibe_coding_aider(prompt_usuario):
+def obtener_contenido_archivo(ruta):
+    if os.path.exists(ruta):
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return ""
+
+def ejecutar_vibe_coding_openwebui(prompt_usuario, ruta_archivo="procesar.py"):
+    codigo_actual = obtener_contenido_archivo(ruta_archivo)
     info_web = ""
     try:
         info_web = buscar_en_web(prompt_usuario)
     except Exception:
         pass
 
-    prompt_enriquecido = prompt_usuario
-    if info_web:
-        prompt_enriquecido += f"\n\n--- INFORMACIÓN DE RESPALDO WEB ---\n{info_web}"
+    web_block = f"--- WEB INTEL ---\n{info_web}\n" if info_web else ""
 
-    print("⚡ [AIDER CLI]: Ejecutando edición autónoma de código...", flush=True)
+    instruction = (
+        f"Sos un motor experto de Vibe Coding. Modificá el archivo '{ruta_archivo}'.\n"
+        f"{web_block}"
+        "INSTRUCCIÓN ESTRICTA:\n"
+        "Devuelve ÚNICAMENTE un bloque de reemplazo exacto con este formato:\n"
+        "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
+        "REEMPLAZAR:\n```python\n<linea o bloque nuevo>\n```\n\n"
+        f"Petición: {prompt_usuario}\n\n"
+        f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
+    )
 
-    env_cmd = os.environ.copy()
-    
-    cmd_aider = [
-        "aider",
-        "--message", prompt_enriquecido,
-        "--auto-commits",
-        "--yes"
-    ]
-
-    if GEMINI_API_KEY:
-        env_cmd["GEMINI_API_KEY"] = GEMINI_API_KEY
-        cmd_aider.extend(["--model", "gemini/gemini-2.0-flash"])
-    else:
-        cmd_aider.extend(["--model", f"ollama_chat/{OLLAMA_MODEL}", "--ollama-api-base", OLLAMA_HOST])
-
+    print("🌐 [OPEN WEBUI NATIVE]: Procesando auto-coding...", flush=True)
     try:
-        res = subprocess.run(cmd_aider, env=env_cmd, capture_output=True, text=True, timeout=300)
-        if res.returncode == 0:
-            print("✅ [AIDER CLI]: Cambios generados con éxito.", flush=True)
-            return True, res.stdout
+        r = requests.post(
+            OPEN_WEBUI_API_URL,
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": instruction}],
+                "stream": False
+            },
+            timeout=180
+        )
+        if r.status_code == 200:
+            texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            
+            match_buscar = re.search(r"BUSCAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
+            match_reemplazar = re.search(r"REEMPLAZAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
+
+            if match_buscar and match_reemplazar:
+                texto_buscar = match_buscar.group(1)
+                texto_reemplazar = match_reemplazar.group(1)
+
+                if texto_buscar in codigo_actual:
+                    nuevo_contenido = codigo_actual.replace(texto_buscar, texto_reemplazar, 1)
+                    
+                    if ruta_archivo.endswith(".py"):
+                        try:
+                            ast.parse(nuevo_contenido)
+                        except SyntaxError as e:
+                            print(f"❌ Syntax Error AST: {e}", flush=True)
+                            return False
+
+                    shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
+                    with open(ruta_archivo, "w", encoding="utf-8") as f:
+                        f.write(nuevo_contenido)
+                    return True
         else:
-            print(f"⚠️ Aider salió con código {res.returncode}:\n{res.stderr}", flush=True)
-            return False, res.stderr
+            print(f"⚠️ Open WebUI HTTP Status: {r.status_code}", flush=True)
     except Exception as ex:
-        print(f"❌ Error ejecutando Aider: {ex}", flush=True)
-        return False, str(ex)
+        print(f"❌ Error conectando a Open WebUI: {ex}", flush=True)
+
+    return False
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
     if texto_usuario.strip().startswith("/"):
@@ -275,7 +311,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
         f"🕒 **Último commit:** `{ultimo_commit}`\n"
         f"🗣️ **Charla:** `Ollama (llama3.2)`\n"
-        f"⚡ **Coding:** `Aider CLI`\n"
+        f"🌐 **Coding:** `Open WebUI Native`\n"
         f"🌐 **Repo:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -290,14 +326,14 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Intención de código detectada. Ejecutando Aider CLI...")
-        ok, detalle = ejecutar_vibe_coding_aider(texto_usuario)
+        await update.message.reply_text("⚡ Intención de código detectada. Procesando con Open WebUI...")
+        ok = ejecutar_vibe_coding_openwebui(texto_usuario, "procesar.py")
         if ok:
-            guardar_y_pushear_como_leandrobot(f"aider: vibe-coding para '{texto_usuario[:30]}'")
-            await update.message.reply_text("🚀 ¡Cambios aplicados con Aider y pusheados con éxito!")
+            guardar_y_pushear_como_leandrobot("procesar.py", f"open-webui: vibe-coding para '{texto_usuario[:30]}'")
+            await update.message.reply_text("🚀 ¡Cambio aplicado por Open WebUI y pusheado con éxito! Reiniciando...")
             sys.exit(0)
         else:
-            await update.message.reply_text(f"❌ Error ejecutando Aider:\n`{detalle[:500]}`", parse_mode="markdown")
+            await update.message.reply_text("❌ No se pudo aplicar el parche de código con Open WebUI.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
