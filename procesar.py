@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding con CLI de Fabric Nativo por Binario
+# Script: procesar.py - LeandroBot / Vibe Coding con Multi-Engine (Fabric, Ollama, Open WebUI)
 
 import asyncio
 import json as json_lib
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Fabric CLI Oficial", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Multi-Engine Selector", flush=True)
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
@@ -79,6 +79,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+OPEN_WEBUI_API_URL = os.environ.get("OPEN_WEBUI_API_URL", "http://127.0.0.1:8080/api/chat/completions")
 
 CHAT_ID_ACTIVO = None
 
@@ -148,15 +149,11 @@ def asegurar_fabric_en_runner():
         pass
     try:
         print("🛠️ [FABRIC CLI]: Descargando e instalando binario oficial...", flush=True)
-        # Instalador oficial de fabric por script de shell directo
         cmd_install = "curl -s https://raw.githubusercontent.com/danielmiessler/fabric/main/install.sh | bash"
         subprocess.run(cmd_install, shell=True, check=True, capture_output=True)
-        
-        # Asegurar que el binario quede en el PATH accesible o copiarlo a bin local
         os.environ["PATH"] += os.pathsep + os.path.expanduser("~/.local/bin")
         os.environ["DEFAULT_MODEL"] = OLLAMA_MODEL
         os.environ["DEFAULT_PROVIDER"] = "ollama"
-        
         res_chk = subprocess.run(["fabric", "--version"], capture_output=True, text=True, timeout=5)
         if res_chk.returncode == 0:
             return True
@@ -295,6 +292,16 @@ def buscar_en_web(query):
         pass
     return ""
 
+def detectar_motor_por_prompt(prompt_usuario):
+    p_lc = prompt_usuario.lower()
+    if "usar fabric" in p_lc or "motor fabric" in p_lc:
+        return "fabric"
+    elif "usar openwebui" in p_lc or "motor webui" in p_lc or "openwebui" in p_lc:
+        return "openwebui"
+    elif "usar ollama" in p_lc or "motor ollama" in p_lc:
+        return "ollama"
+    return "auto" # Selección automática inteligente
+
 def evaluar_intencion_codigo_hibrida(texto_usuario):
     if texto_usuario.strip().startswith("/"):
         return False
@@ -312,17 +319,19 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
 
 def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py"):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
+    motor_elegido = detectar_motor_por_prompt(prompt_usuario)
     
-    # Inteligencia web extraída al vuelo para enriquecer el prompt
     info_tecnica = ""
     try:
         info_tecnica = buscar_en_web(f"python documentation example {prompt_usuario[:50]}")
     except Exception:
         pass
 
+    web_intel_block = f"--- WEB SEARCH INTEL ---\n{info_tecnica}\n" if info_tecnica else ""
+
     instruction = (
-        f"Sos un motor CLI experto de Vibe Coding. Modifica el archivo '{ruta_archivo}'.\n"
-        f"{f'--- WEB SEARCH INTEL ---\n{info_tecnica}\n' if info_tecnica else ''}"
+        f"Sos un motor experto de Vibe Coding. Modifica el archivo '{ruta_archivo}'.\n"
+        f"{web_intel_block}"
         "INSTRUCCIÓN ESTRICTA:\n"
         "Devuelve ÚNICAMENTE un bloque con este formato exacto:\n"
         "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
@@ -330,12 +339,33 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
         f"Petición: {prompt_usuario}\n\n"
         f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
     )
-    
-    # Intentar correr Fabric CLI
-    if asegurar_fabric_en_runner():
-        for intento in range(3):
+
+    # 1. Si eligió o cayó en OPEN WEBUI
+    if motor_elegido == "openwebui":
+        try:
+            print("🌐 [OPEN WEBUI API]: Procesando auto-coding...", flush=True)
+            r = requests.post(
+                OPEN_WEBUI_API_URL,
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": [{"role": "user", "content": instruction}],
+                    "stream": False
+                },
+                timeout=180
+            )
+            if r.status_code == 200:
+                res_json = r.json()
+                texto = res_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
+                    return texto
+        except Exception as ex:
+            print(f"⚠️ Aviso Open WebUI API: {ex}", flush=True)
+
+    # 2. Si eligió o cayó en FABRIC CLI
+    if motor_elegido in ["fabric", "auto"] and asegurar_fabric_en_runner():
+        for intento in range(2):
             try:
-                print(f"🛠️ [FABRIC CLI RUNNER]: Ejecutando con binario oficial (Intento {intento+1}/3)...", flush=True)
+                print(f"🛠️ [FABRIC CLI]: Ejecutando engine (Intento {intento+1}/2)...", flush=True)
                 res_fab = subprocess.run(
                     ["fabric", "--stream=false", "--model", OLLAMA_MODEL],
                     input=instruction,
@@ -348,14 +378,14 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
                     if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
                         return texto
             except Exception as ex:
-                print(f"⚠️ Aviso ejecución Fabric CLI (intento {intento+1}/3): {ex}", flush=True)
-                time.sleep(3)
+                print(f"⚠️ Aviso Fabric CLI: {ex}", flush=True)
+                time.sleep(2)
 
-    # Fallback robusto a Ollama directo si el binario tuviera problemas
+    # 3. Fallback a OLLAMA directo
     if asegurar_ollama_en_runner():
         for intento in range(3):
             try:
-                print(f"🦙 [OLLAMA RUNNER FALLBACK]: Ejecutando auto-coding local (Intento {intento+1}/3)...", flush=True)
+                print(f"🦙 [OLLAMA RUNNER]: Ejecutando auto-coding (Intento {intento+1}/3)...", flush=True)
                 r = requests.post(
                     f"{OLLAMA_HOST.rstrip('/')}/api/generate",
                     json={
@@ -371,20 +401,21 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
                     if texto:
                         return texto
             except Exception as ex:
-                print(f"⚠️ Aviso timeout/error Ollama (intento {intento+1}/3): {ex}", flush=True)
-                time.sleep(3)
+                print(f"⚠️ Aviso Ollama local: {ex}", flush=True)
+                time.sleep(2)
             
     return ""
 
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
+    motor_elegido = detectar_motor_por_prompt(prompt_usuario)
     
     if es_clasificador:
         system_prompt = "Sos un clasificador binario estricto. Responde ÚNICAMENTE con la palabra 'SI' o 'NO'."
         temp_target = 0.0
     elif es_modo_codigo:
         system_prompt = (
-            f"Sos un motor CLI de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
+            f"Sos un motor de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
             "INSTRUCCIÓN ESTRICTA:\n"
             "Devuelve ÚNICAMENTE un bloque de reemplazo exacto con este formato:\n"
             "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
@@ -410,11 +441,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
 
     if client:
         modelos_a_probar = [AI_STUDIO_MODEL, "gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-        modelos_unicos = []
-        for m in modelos_a_probar:
-            if m not in modelos_unicos:
-                modelos_unicos.append(m)
-
+        modelos_unicos = [m for m in modelos_a_probar if m not in locals().get('seen', [])]
         for modelo in modelos_unicos:
             try:
                 res = client.models.generate_content(
@@ -427,15 +454,34 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
                 )
                 raw = (res.text or "").strip()
                 if raw:
-                    print(f"🤖 [IA USADA]: AI Studio / Gemini ({modelo}) | Modo: {'Clasificador' if es_clasificador else ('Código' if es_modo_codigo else 'Chat')}", flush=True)
+                    print(f"🤖 [IA USADA]: AI Studio / Gemini ({modelo})", flush=True)
                     return raw
             except Exception:
                 continue
 
+    if motor_elegido == "openwebui":
+        try:
+            r = requests.post(
+                OPEN_WEBUI_API_URL,
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}],
+                    "stream": False
+                },
+                timeout=60
+            )
+            if r.status_code == 200:
+                texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                if texto:
+                    print("🌐 [IA USADA]: Open WebUI API", flush=True)
+                    return texto
+        except Exception:
+            pass
+
     if es_modo_codigo:
         res_runner = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
         if res_runner:
-            print("🛠️ [IA USADA]: Engine Fabric CLI / Ollama en Runner", flush=True)
+            print("🛠️ [IA USADA]: Multi-Engine Local en Runner", flush=True)
             return res_runner
 
     return "¡Qué hacés che! Las IAs están sin cuota o apagadas un toque. Probá de nuevo en breve."
@@ -525,7 +571,7 @@ async def comando_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Fabric CLI oficial.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Multi-Engine (Fabric, Ollama, Open WebUI).")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -618,7 +664,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando Fabric CLI...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando motor de auto-coding...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
@@ -631,7 +677,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
                 sys.exit(0)
             return
         else:
-            await update.message.reply_text(f"❌ Validación AST ou Git fallida para '{ruta_archivo}'. Cambio cancelado.")
+            await update.message.reply_text(f"❌ Validación AST o Git fallida para '{ruta_archivo}'. Cambio cancelado.")
             return
 
     respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
@@ -658,4 +704,37 @@ async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TY
     texto_transcrito = transcribir_audio_local(ruta_temp)
     if os.path.exists(ruta_temp):
         os.remove(ruta_temp)
-    texto_transcrito = texto
+    texto_transcrito = texto_transcrito or "(Audio ininteligible)"
+    registrar_conversacion("Leandro (Audio)", texto_transcrito)
+
+    respuesta = generar_texto_ia(texto_transcrito, es_modo_codigo=False)
+    registrar_conversacion("LeandroBot", respuesta)
+    audio_path = await sintetizar_audio_dsp(respuesta)
+    if audio_path and os.path.exists(audio_path):
+        with open(audio_path, "rb") as voice_file:
+            await update.message.reply_voice(voice=voice_file, caption=f"🗣 {texto_transcrito[:200]}")
+        if len(respuesta) > 200:
+            await enviar_mensaje_en_partes(update, respuesta)
+        os.remove(audio_path)
+    else:
+        await enviar_mensaje_en_partes(update, f"🗣 {texto_transcrito}\n\n{respuesta}")
+
+def main():
+    if not TOKEN:
+        return
+    asegurar_ollama_en_runner()
+    req = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
+    app = Application.builder().token(TOKEN).request(req).build()
+    app.add_handler(CommandHandler("start", comando_start))
+    app.add_handler(CommandHandler("status", comando_status))
+    app.add_handler(CommandHandler("health", comando_health))
+    app.add_handler(CommandHandler("run", comando_run))
+    app.add_handler(CommandHandler("codigo", comando_codigo))
+    app.add_handler(CommandHandler("aplicar", comando_aplicar))
+    app.add_handler(CommandHandler("logs", comando_logs))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
