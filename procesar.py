@@ -11,16 +11,10 @@ import subprocess
 import requests
 import time
 import ast
-import shutil
 import urllib.parse
 from datetime import datetime
 
-try:
-    import psutil
-except ImportError:
-    print("⚠️ [INIT]: psutil no detectado. Instalando automáticamente...", flush=True)
-    subprocess.run([sys.executable, "-m", "pip", "install", "psutil"], check=True)
-    import psutil
+import psutil
 
 from telegram import Update
 from telegram.request import HTTPXRequest
