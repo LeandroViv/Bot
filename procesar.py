@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding con Runner Robusto (Timeouts elevados y reintentos)
+# Script: procesar.py - LeandroBot / Vibe Coding con CLI de Fabric Nativo por Binario
 
 import asyncio
 import json as json_lib
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Auto-Coding blindado", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Fabric CLI Oficial", flush=True)
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
@@ -147,12 +147,22 @@ def asegurar_fabric_en_runner():
     except Exception:
         pass
     try:
-        print("🛠️ [FABRIC]: Instalando fabric-ai de forma segura...", flush=True)
-        subprocess.run([sys.executable, "-m", "pip", "install", "--no-deps", "fabric-ai"], check=True, capture_output=True)
-        return True
+        print("🛠️ [FABRIC CLI]: Descargando e instalando binario oficial...", flush=True)
+        # Instalador oficial de fabric por script de shell directo
+        cmd_install = "curl -s https://raw.githubusercontent.com/danielmiessler/fabric/main/install.sh | bash"
+        subprocess.run(cmd_install, shell=True, check=True, capture_output=True)
+        
+        # Asegurar que el binario quede en el PATH accesible o copiarlo a bin local
+        os.environ["PATH"] += os.pathsep + os.path.expanduser("~/.local/bin")
+        os.environ["DEFAULT_MODEL"] = OLLAMA_MODEL
+        os.environ["DEFAULT_PROVIDER"] = "ollama"
+        
+        res_chk = subprocess.run(["fabric", "--version"], capture_output=True, text=True, timeout=5)
+        if res_chk.returncode == 0:
+            return True
     except Exception as e:
-        print(f"⚠️ Aviso instalación fabric (se usará fallback Ollama directo): {e}", flush=True)
-        return False
+        print(f"⚠️ Aviso instalación binario Fabric: {e}", flush=True)
+    return False
 
 def ejecutar_comando_runner_en_vivo(cmd_str):
     try:
@@ -196,7 +206,6 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
-        # Limpieza previa de estado para evitar bloqueos por archivos untracked/modificados extra
         subprocess.run(["git", "add", archivo_modificado], check=True)
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not status.stdout.strip():
@@ -303,8 +312,17 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
 
 def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py"):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
+    
+    # Inteligencia web extraída al vuelo para enriquecer el prompt
+    info_tecnica = ""
+    try:
+        info_tecnica = buscar_en_web(f"python documentation example {prompt_usuario[:50]}")
+    except Exception:
+        pass
+
     instruction = (
-        f"Sos un motor experto de Auto-Coding Python. Modifica el archivo '{ruta_archivo}'.\n"
+        f"Sos un motor CLI experto de Vibe Coding. Modifica el archivo '{ruta_archivo}'.\n"
+        f"{f'--- WEB SEARCH INTEL ---\n{info_tecnica}\n' if info_tecnica else ''}"
         "INSTRUCCIÓN ESTRICTA:\n"
         "Devuelve ÚNICAMENTE un bloque con este formato exacto:\n"
         "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
@@ -313,26 +331,31 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
         f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
     )
     
+    # Intentar correr Fabric CLI
     if asegurar_fabric_en_runner():
-        try:
-            print("🛠️ [FABRIC RUNNER]: Ejecutando engine con fabric...", flush=True)
-            res_fab = subprocess.run(
-                ["fabric", "--stream=false"],
-                input=instruction,
-                capture_output=True,
-                text=True,
-                timeout=180
-            )
-            if res_fab.returncode == 0 and res_fab.stdout.strip():
-                return res_fab.stdout.strip()
-        except Exception as ex:
-            print(f"⚠️ Aviso ejecución Fabric: {ex}", flush=True)
-
-    if asegurar_ollama_en_runner():
-        # Reintentos con timeout extendido a 180s para evitar cortes
         for intento in range(3):
             try:
-                print(f"🦙 [OLLAMA RUNNER]: Ejecutando auto-coding local (Intento {intento+1}/3)...", flush=True)
+                print(f"🛠️ [FABRIC CLI RUNNER]: Ejecutando con binario oficial (Intento {intento+1}/3)...", flush=True)
+                res_fab = subprocess.run(
+                    ["fabric", "--stream=false", "--model", OLLAMA_MODEL],
+                    input=instruction,
+                    capture_output=True,
+                    text=True,
+                    timeout=180
+                )
+                if res_fab.returncode == 0 and res_fab.stdout.strip():
+                    texto = res_fab.stdout.strip()
+                    if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
+                        return texto
+            except Exception as ex:
+                print(f"⚠️ Aviso ejecución Fabric CLI (intento {intento+1}/3): {ex}", flush=True)
+                time.sleep(3)
+
+    # Fallback robusto a Ollama directo si el binario tuviera problemas
+    if asegurar_ollama_en_runner():
+        for intento in range(3):
+            try:
+                print(f"🦙 [OLLAMA RUNNER FALLBACK]: Ejecutando auto-coding local (Intento {intento+1}/3)...", flush=True)
                 r = requests.post(
                     f"{OLLAMA_HOST.rstrip('/')}/api/generate",
                     json={
@@ -348,7 +371,7 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
                     if texto:
                         return texto
             except Exception as ex:
-                print(f"⚠️ Aviso timeout/error Ollama local (intento {intento+1}/3): {ex}", flush=True)
+                print(f"⚠️ Aviso timeout/error Ollama (intento {intento+1}/3): {ex}", flush=True)
                 time.sleep(3)
             
     return ""
@@ -360,18 +383,8 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
         system_prompt = "Sos un clasificador binario estricto. Responde ÚNICAMENTE con la palabra 'SI' o 'NO'."
         temp_target = 0.0
     elif es_modo_codigo:
-        info_tecnica = ""
-        try:
-            query_tecnica = f"python documentation example {prompt_usuario[:60]}"
-            info_tecnica = buscar_en_web(query_tecnica)
-        except Exception:
-            pass
-
-        bloque_referencia = f"--- REFERENCIAS TÉCNICAS EXTRAÍDAS DE LA WEB ---\n{info_tecnica}\n" if info_tecnica else ""
-
         system_prompt = (
-            f"Sos un motor de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
-            f"{bloque_referencia}"
+            f"Sos un motor CLI de Vibe Coding experto en Python. Modifica el archivo '{ruta_archivo}'.\n"
             "INSTRUCCIÓN ESTRICTA:\n"
             "Devuelve ÚNICAMENTE un bloque de reemplazo exacto con este formato:\n"
             "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
@@ -422,7 +435,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
     if es_modo_codigo:
         res_runner = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
         if res_runner:
-            print("🛠️ [IA USADA]: Engine Local Fabric/Ollama en Runner", flush=True)
+            print("🛠️ [IA USADA]: Engine Fabric CLI / Ollama en Runner", flush=True)
             return res_runner
 
     return "¡Qué hacés che! Las IAs están sin cuota o apagadas un toque. Probá de nuevo en breve."
@@ -512,7 +525,7 @@ async def comando_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo y blindado.")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Fabric CLI oficial.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -605,7 +618,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando motor de auto-coding blindado...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando Fabric CLI...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
@@ -618,7 +631,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
                 sys.exit(0)
             return
         else:
-            await update.message.reply_text(f"❌ Validación AST o Git fallida para '{ruta_archivo}'. Cambio cancelado.")
+            await update.message.reply_text(f"❌ Validación AST ou Git fallida para '{ruta_archivo}'. Cambio cancelado.")
             return
 
     respuesta = generar_texto_ia(texto_usuario, es_modo_codigo=False)
@@ -645,37 +658,4 @@ async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TY
     texto_transcrito = transcribir_audio_local(ruta_temp)
     if os.path.exists(ruta_temp):
         os.remove(ruta_temp)
-    texto_transcrito = texto_transcrito or "(Audio ininteligible)"
-    registrar_conversacion("Leandro (Audio)", texto_transcrito)
-
-    respuesta = generar_texto_ia(texto_transcrito, es_modo_codigo=False)
-    registrar_conversacion("LeandroBot", respuesta)
-    audio_path = await sintetizar_audio_dsp(respuesta)
-    if audio_path and os.path.exists(audio_path):
-        with open(audio_path, "rb") as voice_file:
-            await update.message.reply_voice(voice=voice_file, caption=f"🗣 {texto_transcrito[:200]}")
-        if len(respuesta) > 200:
-            await enviar_mensaje_en_partes(update, respuesta)
-        os.remove(audio_path)
-    else:
-        await enviar_mensaje_en_partes(update, f"🗣 {texto_transcrito}\n\n{respuesta}")
-
-def main():
-    if not TOKEN:
-        return
-    asegurar_ollama_en_runner()
-    req = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
-    app = Application.builder().token(TOKEN).request(req).build()
-    app.add_handler(CommandHandler("start", comando_start))
-    app.add_handler(CommandHandler("status", comando_status))
-    app.add_handler(CommandHandler("health", comando_health))
-    app.add_handler(CommandHandler("run", comando_run))
-    app.add_handler(CommandHandler("codigo", comando_codigo))
-    app.add_handler(CommandHandler("aplicar", comando_aplicar))
-    app.add_handler(CommandHandler("logs", comando_logs))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje_texto))
-    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, manejar_mensaje_audio))
-    app.run_polling(drop_pending_updates=True)
-
-if __name__ == "__main__":
-    main()
+    texto_transcrito = texto
