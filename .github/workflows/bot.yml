@@ -19,10 +19,10 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           persist-credentials: true
 
-      - name: Configurar Python
+      - name: Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: Instalar dependencias del sistema (FFmpeg, libsndfile)
@@ -48,7 +48,7 @@ jobs:
           ollama pull llama3.2
         shell: bash
 
-      # --- LEVANTAR OPEN WEBUI DIRECTO EN EL RUNNER ---
+      # --- LEVANTAR OPEN WEBUI NATIVO ---
       - name: Iniciar Open WebUI Serve
         run: |
           open-webui serve &
