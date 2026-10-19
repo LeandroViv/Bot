@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Charla con Ollama + Coding con Bolt.diy + Web Search
+# Script: procesar.py - LeandroBot / Charla con Ollama + Vibe Coding con Bolt.diy + Web Search
 
 import asyncio
 import json as json_lib
@@ -108,7 +108,7 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
-        # Indexación completa para prevenir errores de commit
+        # Indexación completa para evitar errores de status 1 en commit
         subprocess.run(["git", "add", "-A"], check=True)
         
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
@@ -138,19 +138,26 @@ def ejecutar_vibe_coding_bolt(prompt_usuario, ruta_archivo="procesar.py"):
         prompt_enriquecido += f"\n\n--- INFORMACIÓN DE RESPALDO DE LA WEB ---\n{info_web}"
 
     print("⚡ [BOLT.DIY]: Procesando Vibe Coding con acceso web...", flush=True)
-    try:
-        r = requests.post(
-            BOLT_API_URL,
-            json={"prompt": prompt_enriquecido, "target_file": ruta_archivo},
-            timeout=300
-        )
-        if r.status_code == 200:
-            print("✅ [BOLT.DIY]: Cambio / App generada con éxito.", flush=True)
-            return True
-        else:
-            print(f"⚠️ Bolt.diy devolvió HTTP Status: {r.status_code}", flush=True)
-    except Exception as ex:
-        print(f"❌ Error conectando a Bolt.diy: {ex}", flush=True)
+
+    max_retries = 3
+    for intento in range(1, max_retries + 1):
+        try:
+            r = requests.post(
+                BOLT_API_URL,
+                json={"prompt": prompt_enriquecido, "target_file": ruta_archivo},
+                timeout=300
+            )
+            if r.status_code == 200:
+                print("✅ [BOLT.DIY]: Cambio / App generada con éxito.", flush=True)
+                return True
+            else:
+                print(f"⚠️ Bolt.diy devolvió HTTP Status: {r.status_code} (Intento {intento}/{max_retries})", flush=True)
+        except requests.exceptions.ConnectionError:
+            print(f"⏳ Esperando conexión con Bolt.diy (Intento {intento}/{max_retries})...", flush=True)
+            time.sleep(5)
+        except Exception as ex:
+            print(f"❌ Error conectando a Bolt.diy: {ex}", flush=True)
+            break
 
     return False
 
@@ -166,7 +173,6 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
     return any(re.search(p, texto_usuario.lower()) for p in patrones_codigo)
 
 def generar_texto_charla_comun(prompt_usuario):
-    """Genera la charla común usando Ollama local (o Gemini si está disponible)."""
     info_web = ""
     if any(k in prompt_usuario.lower() for k in ["noticia", "busca", "qué pasó", "hoy", "clima", "partido", "precio"]):
         info_web = buscar_en_web(prompt_usuario)
@@ -180,7 +186,6 @@ def generar_texto_charla_comun(prompt_usuario):
         "Mantené charlas fluidas y naturales. PROHIBIDO inventar links o URLs falsas."
     )
 
-    # 1. Intento por Gemini API
     if client:
         try:
             res = client.models.generate_content(
@@ -195,7 +200,6 @@ def generar_texto_charla_comun(prompt_usuario):
         except Exception:
             pass
 
-    # 2. Intento por Ollama Local
     try:
         r = requests.post(
             f"{OLLAMA_HOST}/api/generate",
@@ -296,7 +300,6 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
             await update.message.reply_text("❌ No se pudo aplicar el cambio con Bolt.diy.")
             return
 
-    # Charla común con Ollama Local / Gemini
     respuesta = generar_texto_charla_comun(texto_usuario)
     audio_path = await sintetizar_audio_dsp(respuesta)
     if audio_path and os.path.exists(audio_path):
