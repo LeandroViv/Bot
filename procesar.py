@@ -156,44 +156,51 @@ def ejecutar_vibe_coding_openwebui(prompt_usuario, ruta_archivo="procesar.py"):
     )
 
     print("🌐 [OPEN WEBUI NATIVE]: Procesando auto-coding...", flush=True)
-    try:
-        r = requests.post(
-            OPEN_WEBUI_API_URL,
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [{"role": "user", "content": instruction}],
-                "stream": False
-            },
-            timeout=180
-        )
-        if r.status_code == 200:
-            texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            
-            match_buscar = re.search(r"BUSCAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
-            match_reemplazar = re.search(r"REEMPLAZAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
+    
+    max_retries = 3
+    for intento in range(1, max_retries + 1):
+        try:
+            r = requests.post(
+                OPEN_WEBUI_API_URL,
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": [{"role": "user", "content": instruction}],
+                    "stream": False
+                },
+                timeout=180
+            )
+            if r.status_code == 200:
+                texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                
+                match_buscar = re.search(r"BUSCAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
+                match_reemplazar = re.search(r"REEMPLAZAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
 
-            if match_buscar and match_reemplazar:
-                texto_buscar = match_buscar.group(1)
-                texto_reemplazar = match_reemplazar.group(1)
+                if match_buscar and match_reemplazar:
+                    texto_buscar = match_buscar.group(1)
+                    texto_reemplazar = match_reemplazar.group(1)
 
-                if texto_buscar in codigo_actual:
-                    nuevo_contenido = codigo_actual.replace(texto_buscar, texto_reemplazar, 1)
-                    
-                    if ruta_archivo.endswith(".py"):
-                        try:
-                            ast.parse(nuevo_contenido)
-                        except SyntaxError as e:
-                            print(f"❌ Syntax Error AST: {e}", flush=True)
-                            return False
+                    if texto_buscar in codigo_actual:
+                        nuevo_contenido = codigo_actual.replace(texto_buscar, texto_reemplazar, 1)
+                        
+                        if ruta_archivo.endswith(".py"):
+                            try:
+                                ast.parse(nuevo_contenido)
+                            except SyntaxError as e:
+                                print(f"❌ Syntax Error AST: {e}", flush=True)
+                                return False
 
-                    shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
-                    with open(ruta_archivo, "w", encoding="utf-8") as f:
-                        f.write(nuevo_contenido)
-                    return True
-        else:
-            print(f"⚠️ Open WebUI HTTP Status: {r.status_code}", flush=True)
-    except Exception as ex:
-        print(f"❌ Error conectando a Open WebUI: {ex}", flush=True)
+                        shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
+                        with open(ruta_archivo, "w", encoding="utf-8") as f:
+                            f.write(nuevo_contenido)
+                        return True
+            else:
+                print(f"⚠️ Open WebUI HTTP Status: {r.status_code} (Intento {intento}/{max_retries})", flush=True)
+        except requests.exceptions.ConnectionError:
+            print(f"⏳ Aguardando inicio de Open WebUI (Intento {intento}/{max_retries})...", flush=True)
+            time.sleep(5)
+        except Exception as ex:
+            print(f"❌ Error conectando a Open WebUI: {ex}", flush=True)
+            break
 
     return False
 
