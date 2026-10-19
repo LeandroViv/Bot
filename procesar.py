@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding Multi-Engine con Fabric y Open WebUI con Web Search
+# Script: procesar.py - LeandroBot / Vibe Coding con Open WebUI como Motor Predeterminado
 
 import asyncio
 import json as json_lib
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Multi-Engine y Fabric/Open WebUI Web Config", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Open WebUI por Defecto", flush=True)
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
@@ -143,36 +143,6 @@ def asegurar_ollama_en_runner():
         except Exception as ex:
             print(f"⚠️ Aviso conexión Ollama: {ex}", flush=True)
             time.sleep(2)
-    return False
-
-def asegurar_fabric_en_runner():
-    try:
-        res = subprocess.run(["fabric", "--version"], capture_output=True, text=True, timeout=5)
-        if res.returncode == 0:
-            return True
-    except Exception:
-        pass
-    try:
-        print("🛠️ [FABRIC CLI]: Descargando instalador oficial con Python y ejecutando...", flush=True)
-        import urllib.request
-        script_url = "https://raw.githubusercontent.com/danielmiessler/fabric/main/install.sh"
-        script_path = "install_fabric.sh"
-        
-        urllib.request.urlretrieve(script_url, script_path)
-        subprocess.run(["bash", script_path], check=True, capture_output=True)
-        
-        if os.path.exists(script_path):
-            os.remove(script_path)
-
-        os.environ["PATH"] += os.pathsep + os.path.expanduser("~/.local/bin")
-        os.environ["DEFAULT_MODEL"] = OLLAMA_MODEL
-        os.environ["DEFAULT_PROVIDER"] = "ollama"
-        
-        res_chk = subprocess.run(["fabric", "--version"], capture_output=True, text=True, timeout=5)
-        if res_chk.returncode == 0:
-            return True
-    except Exception as e:
-        print(f"⚠️ Aviso instalación binario Fabric: {e}", flush=True)
     return False
 
 def ejecutar_comando_runner_en_vivo(cmd_str):
@@ -308,13 +278,13 @@ def buscar_en_web(query):
 
 def detectar_motor_por_prompt(prompt_usuario):
     p_lc = prompt_usuario.lower()
-    if "usar fabric" in p_lc or "motor fabric" in p_lc or "fabric" in p_lc:
+    if "usar fabric" in p_lc or "motor fabric" in p_lc:
         return "fabric"
-    elif "usar openwebui" in p_lc or "motor webui" in p_lc or "openwebui" in p_lc:
-        return "openwebui"
-    elif "usar ollama" in p_lc or "motor ollama" in p_lc or "ollama" in p_lc:
+    elif "usar ollama" in p_lc or "motor ollama" in p_lc:
         return "ollama"
-    return "auto"
+    elif "usar openwebui" in p_lc or "motor webui" in p_lc:
+        return "openwebui"
+    return "openwebui"  # <--- Open WebUI por defecto absoluto
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
     if texto_usuario.strip().startswith("/"):
@@ -333,7 +303,6 @@ def evaluar_intencion_codigo_hibrida(texto_usuario):
 
 def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py"):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
-    motor_elegido = detectar_motor_por_prompt(prompt_usuario)
     
     info_tecnica = ""
     try:
@@ -354,48 +323,27 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
         f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
     )
 
-    # 1. Si eligió Open WebUI
-    if motor_elegido == "openwebui":
-        try:
-            print("🌐 [OPEN WEBUI API]: Procesando auto-coding con web search activada...", flush=True)
-            r = requests.post(
-                OPEN_WEBUI_API_URL,
-                json={
-                    "model": OLLAMA_MODEL,
-                    "messages": [{"role": "user", "content": instruction}],
-                    "stream": False
-                },
-                timeout=180
-            )
-            if r.status_code == 200:
-                res_json = r.json()
-                texto = res_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
-                    return texto
-        except Exception as ex:
-            print(f"⚠️ Aviso Open WebUI API: {ex}", flush=True)
+    # 1. Open WebUI API (Motor por defecto con web search)
+    try:
+        print("🌐 [OPEN WEBUI API]: Procesando auto-coding...", flush=True)
+        r = requests.post(
+            OPEN_WEBUI_API_URL,
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": instruction}],
+                "stream": False
+            },
+            timeout=180
+        )
+        if r.status_code == 200:
+            res_json = r.json()
+            texto = res_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
+                return texto
+    except Exception as ex:
+        print(f"⚠️ Aviso Open WebUI API: {ex}", flush=True)
 
-    # 2. Si eligió Fabric CLI (o por defecto automático)
-    if motor_elegido in ["fabric", "auto"] and asegurar_fabric_en_runner():
-        for intento in range(2):
-            try:
-                print(f"🛠️ [FABRIC CLI]: Ejecutando engine oficial (Intento {intento+1}/2)...", flush=True)
-                res_fab = subprocess.run(
-                    ["fabric", "--stream=false", "--model", OLLAMA_MODEL],
-                    input=instruction,
-                    capture_output=True,
-                    text=True,
-                    timeout=180
-                )
-                if res_fab.returncode == 0 and res_fab.stdout.strip():
-                    texto = res_fab.stdout.strip()
-                    if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
-                        return texto
-            except Exception as ex:
-                print(f"⚠️ Aviso Fabric CLI: {ex}", flush=True)
-                time.sleep(2)
-
-    # 3. Fallback a Ollama directo
+    # 2. Fallback a Ollama directo por si OpenWebUI no responde
     if asegurar_ollama_en_runner():
         for intento in range(3):
             try:
@@ -422,7 +370,6 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
 
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
-    motor_elegido = detectar_motor_por_prompt(prompt_usuario)
     
     if es_clasificador:
         system_prompt = "Sos un clasificador binario estricto. Responde ÚNICAMENTE con la palabra 'SI' o 'NO'."
@@ -476,29 +423,29 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
             except Exception:
                 continue
 
-    if motor_elegido == "openwebui":
-        try:
-            r = requests.post(
-                OPEN_WEBUI_API_URL,
-                json={
-                    "model": OLLAMA_MODEL,
-                    "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}],
-                    "stream": False
-                },
-                timeout=60
-            )
-            if r.status_code == 200:
-                texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                if texto:
-                    print("🌐 [IA USADA]: Open WebUI API con Web Search", flush=True)
-                    return texto
-        except Exception:
-            pass
+    # Intentar Open WebUI API por defecto
+    try:
+        r = requests.post(
+            OPEN_WEBUI_API_URL,
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": p}],
+                "stream": False
+            },
+            timeout=60
+        )
+        if r.status_code == 200:
+            texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            if texto:
+                print("🌐 [IA USADA]: Open WebUI API por Defecto con Web Search", flush=True)
+                return texto
+    except Exception:
+        pass
 
     if es_modo_codigo:
         res_runner = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
         if res_runner:
-            print("🛠️ [IA USADA]: Multi-Engine Local en Runner", flush=True)
+            print("🛠️ [IA USADA]: Motor Local en Runner", flush=True)
             return res_runner
 
     return "¡Qué hacés che! Las IAs están sin cuota o apagadas un toque. Probá de nuevo en breve."
@@ -588,7 +535,7 @@ async def comando_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID_ACTIVO
     CHAT_ID_ACTIVO = update.effective_chat.id
-    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Multi-Engine (Fabric CLI y Open WebUI con Web Search).")
+    await update.message.reply_text("¡Qué hacés Leandro! LeandroBot activo con Open WebUI por defecto y Web Search.")
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
@@ -681,7 +628,7 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
 
     if es_solicitud_codigo:
         ruta_archivo = detectar_archivo_objetivo(texto_usuario)
-        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando motor con selector...")
+        await update.message.reply_text(f"🧠 Intención detectada sobre '{ruta_archivo}'. Ejecutando Open WebUI...")
         
         contenido_compuesto = aplicar_parche_search_replace(texto_usuario, ruta_archivo)
         
