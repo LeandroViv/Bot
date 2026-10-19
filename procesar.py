@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Vibe Coding con Open WebUI como Motor Predeterminado
+# Script: procesar.py - LeandroBot / Vibe Coding con Open WebUI Exclusivo
 
 import asyncio
 import json as json_lib
@@ -32,7 +32,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Open WebUI por Defecto", flush=True)
+print("🚀 [MOTO-VIBE CODING]: Sistema en línea con Open WebUI Exclusivo", flush=True)
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
@@ -77,7 +77,6 @@ for f_path, default_val in [
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 OPEN_WEBUI_API_URL = os.environ.get("OPEN_WEBUI_API_URL", "http://127.0.0.1:8080/api/chat/completions")
 
@@ -125,26 +124,6 @@ def registrar_metrica_voz(cfg, texto_limpio):
     except Exception as e:
         print(f"⚠️ Error registrando métrica de voz: {e}", flush=True)
 
-def asegurar_ollama_en_runner():
-    try:
-        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
-        if r.status_code == 200:
-            return True
-    except Exception:
-        pass
-    for intento in range(3):
-        try:
-            print(f"🦙 [OLLAMA]: Levantando servicio local (Intento {intento+1}/3)...", flush=True)
-            subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-            time.sleep(3)
-            r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=3.0)
-            if r.status_code == 200:
-                return True
-        except Exception as ex:
-            print(f"⚠️ Aviso conexión Ollama: {ex}", flush=True)
-            time.sleep(2)
-    return False
-
 def ejecutar_comando_runner_en_vivo(cmd_str):
     try:
         res = subprocess.run(cmd_str, shell=True, capture_output=True, text=True, timeout=120)
@@ -187,7 +166,9 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
-        subprocess.run(["git", "add", archivo_modificado], check=True)
+        # Indexar TODOS los cambios y untracked files para evitar error status 1
+        subprocess.run(["git", "add", "-A"], check=True)
+        
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not status.stdout.strip():
             print("⚠️ [GIT]: No se detectaron cambios reales para commitear.", flush=True)
@@ -215,7 +196,7 @@ def aplicar_cambio_universal(ruta_destino, nuevo_contenido):
             print(f"❌ [ERROR SINTAXIS AST Python]: {e}", flush=True)
             return False
         if len(nuevo_contenido.splitlines()) < 40 and "procesar.py" in ruta_destino:
-            print("❌ [CANCELADO]: Código sospechosamente enano para procesar.py.", flush=True)
+            print("❌ [CANCELADO]: Código sospechosamente corto para procesar.py.", flush=True)
             return False
 
     elif ruta_destino.endswith(".json"):
@@ -276,16 +257,6 @@ def buscar_en_web(query):
         pass
     return ""
 
-def detectar_motor_por_prompt(prompt_usuario):
-    p_lc = prompt_usuario.lower()
-    if "usar fabric" in p_lc or "motor fabric" in p_lc:
-        return "fabric"
-    elif "usar ollama" in p_lc or "motor ollama" in p_lc:
-        return "ollama"
-    elif "usar openwebui" in p_lc or "motor webui" in p_lc:
-        return "openwebui"
-    return "openwebui"  # <--- Open WebUI por defecto absoluto
-
 def evaluar_intencion_codigo_hibrida(texto_usuario):
     if texto_usuario.strip().startswith("/"):
         return False
@@ -323,9 +294,9 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
         f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
     )
 
-    # 1. Open WebUI API (Motor por defecto con web search)
+    # Canalización DIRECTA Y EXCLUSIVA a Open WebUI
     try:
-        print("🌐 [OPEN WEBUI API]: Procesando auto-coding...", flush=True)
+        print("🌐 [OPEN WEBUI DIRECTO]: Procesando auto-coding...", flush=True)
         r = requests.post(
             OPEN_WEBUI_API_URL,
             json={
@@ -340,32 +311,13 @@ def ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo="procesar.py")
             texto = res_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             if "BUSCAR:" in texto and "REEMPLAZAR:" in texto:
                 return texto
+            else:
+                print("⚠️ Open WebUI respondió pero sin bloque BUSCAR/REEMPLAZAR válido.", flush=True)
+        else:
+            print(f"⚠️ Open WebUI devolvió HTTP Status: {r.status_code}", flush=True)
     except Exception as ex:
-        print(f"⚠️ Aviso Open WebUI API: {ex}", flush=True)
+        print(f"❌ Error conectando a Open WebUI: {ex}", flush=True)
 
-    # 2. Fallback a Ollama directo por si OpenWebUI no responde
-    if asegurar_ollama_en_runner():
-        for intento in range(3):
-            try:
-                print(f"🦙 [OLLAMA RUNNER]: Ejecutando auto-coding (Intento {intento+1}/3)...", flush=True)
-                r = requests.post(
-                    f"{OLLAMA_HOST.rstrip('/')}/api/generate",
-                    json={
-                        "model": OLLAMA_MODEL,
-                        "prompt": instruction,
-                        "stream": False,
-                        "options": {"num_ctx": 4096, "temperature": 0.0}
-                    },
-                    timeout=180
-                )
-                if r.status_code == 200:
-                    texto = r.json().get("response", "").strip()
-                    if texto:
-                        return texto
-            except Exception as ex:
-                print(f"⚠️ Aviso Ollama local: {ex}", flush=True)
-                time.sleep(2)
-            
     return ""
 
 def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesar.py", es_clasificador=False):
@@ -423,7 +375,7 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
             except Exception:
                 continue
 
-    # Intentar Open WebUI API por defecto
+    # Petición a Open WebUI API por defecto
     try:
         r = requests.post(
             OPEN_WEBUI_API_URL,
@@ -437,16 +389,16 @@ def generar_texto_ia(prompt_usuario, es_modo_codigo=False, ruta_archivo="procesa
         if r.status_code == 200:
             texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             if texto:
-                print("🌐 [IA USADA]: Open WebUI API por Defecto con Web Search", flush=True)
+                print("🌐 [IA USADA]: Open WebUI API Exclusivo", flush=True)
                 return texto
     except Exception:
         pass
 
     if es_modo_codigo:
-        res_runner = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
-        if res_runner:
-            print("🛠️ [IA USADA]: Motor Local en Runner", flush=True)
-            return res_runner
+        res_webui = ejecutar_autocoding_runner_local(prompt_usuario, ruta_archivo)
+        if res_webui:
+            print("🛠️ [IA USADA]: Open WebUI Auto-Coding", flush=True)
+            return res_webui
 
     return "¡Qué hacés che! Las IAs están sin cuota o apagadas un toque. Probá de nuevo en breve."
 
@@ -539,7 +491,33 @@ async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_min = round((time.time() - TIEMPO_INICIO) / 60, 1)
-    await enviar_mensaje_en_partes(update, f"🤖 Uptime: {uptime_min} min\nRepo: {URL_REPOSITORIO}")
+    
+    # Cantidad total de líneas de procesar.py
+    total_lineas = 0
+    if os.path.exists("procesar.py"):
+        try:
+            with open("procesar.py", "r", encoding="utf-8") as f:
+                total_lineas = len(f.readlines())
+        except Exception:
+            pass
+
+    # Fecha/hora del último commit
+    ultimo_commit = "Desconocido"
+    try:
+        res_git = subprocess.run(["git", "log", "-1", "--format=%cd", "--date=format:%Y-%m-%d %H:%M:%S"], capture_output=True, text=True, timeout=3)
+        if res_git.returncode == 0 and res_git.stdout.strip():
+            ultimo_commit = res_git.stdout.strip()
+    except Exception:
+        pass
+
+    msg = (
+        f"🤖 **Estado de LeandroBot**\n\n"
+        f"⏱️ **Uptime:** `{uptime_min} min`\n"
+        f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
+        f"🕒 **Último commit:** `{ultimo_commit}`\n"
+        f"🌐 **Repo:** {URL_REPOSITORIO}"
+    )
+    await enviar_mensaje_en_partes(update, msg)
 
 async def comando_health(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -554,23 +532,13 @@ async def comando_health(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_str = f"{horas}h {minutos}m {segundos}s" if horas else f"{minutos}m {segundos}s"
 
     gemini_status = "Operativo 🟢" if GENAI_DISPONIBLE else "Inactivo 🔴"
-    
-    ollama_ok = False
-    try:
-        r = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=2.0)
-        if r.status_code == 200:
-            ollama_ok = True
-    except Exception:
-        pass
-    ollama_status = "Operativo 🟢" if ollama_ok else "Desconectado 🔴"
 
     msg = (
         "¡Acá andamos vivitos y coleando, che! 🚀\n\n"
         f"🧠 *RAM consumida:* `{ram_mb:.1f} MB`\n"
         f"⏱️ *Uptime:* `{uptime_str}`\n"
-        f"⚡ *Gemini API:* `{gemini_status}`\n"
-        f"🦙 *Ollama Local:* `{ollama_status}`\n\n"
-        "¡El runner está como piña, maestro! 🟢"
+        f"⚡ *Gemini API:* `{gemini_status}`\n\n"
+        "¡El runner está activo con Open WebUI! 🟢"
     )
     await update.message.reply_text(msg, parse_mode="markdown")
 
@@ -686,7 +654,6 @@ async def manejar_mensaje_audio(update: Update, context: ContextTypes.DEFAULT_TY
 def main():
     if not TOKEN:
         return
-    asegurar_ollama_en_runner()
     req = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0)
     app = Application.builder().token(TOKEN).request(req).build()
     app.add_handler(CommandHandler("start", comando_start))
