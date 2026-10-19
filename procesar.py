@@ -134,14 +134,12 @@ def ejecutar_vibe_coding_aider(prompt_usuario):
 
     print("⚡ [AIDER CLI]: Ejecutando edición autónoma de código...", flush=True)
 
-    # Comando Aider usando Gemini o modelo disponible
     env_cmd = os.environ.copy()
     
     cmd_aider = [
         "aider",
         "--message", prompt_enriquecido,
         "--auto-commits",
-        "--no-analytics",
         "--yes"
     ]
 
