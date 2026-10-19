@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot / Charla con Ollama + Vibe Coding con Open WebUI Native
+# Script: procesar.py - LeandroBot / Charla y Vibe-Coding directo con Ollama (llama3.2)
 
 import asyncio
 import json as json_lib
@@ -32,15 +32,13 @@ from telegram.ext import (
 )
 
 print("🚀 [INIT]: Inicializando LeandroBot Adaptativo...", flush=True)
-print("🗣️ [CHARLA]: Ollama (llama3.2)", flush=True)
-print("🌐 [CODING]: Open WebUI Serve con Web Search", flush=True)
+print("🦙 [MOTOR]: Ollama (llama3.2) activo para Charla y Vibe-Coding", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
 DATASET_ENTRENAMIENTO = "dataset_entrenamiento_chat.json"
 CONFIG_TIMBRE = "config_timbre.json"
 PERFIL_DINAMICO = "perfil_personaje.json"
-CAMBIO_PROPUESTO_FILE = "cambio_propuesto.txt"
 HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
@@ -76,7 +74,6 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 AI_STUDIO_MODEL = os.environ.get("AI_STUDIO_MODEL", "gemini-3.8-flash")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
-OPEN_WEBUI_API_URL = os.environ.get("OPEN_WEBUI_API_URL", "http://127.0.0.1:8080/api/chat/completions")
 
 CHAT_ID_ACTIVO = None
 
@@ -134,7 +131,7 @@ def obtener_contenido_archivo(ruta):
             pass
     return ""
 
-def ejecutar_vibe_coding_openwebui(prompt_usuario, ruta_archivo="procesar.py"):
+def ejecutar_vibe_coding_ollama(prompt_usuario, ruta_archivo="procesar.py"):
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     info_web = ""
     try:
@@ -142,66 +139,86 @@ def ejecutar_vibe_coding_openwebui(prompt_usuario, ruta_archivo="procesar.py"):
     except Exception:
         pass
 
-    web_block = f"--- WEB INTEL ---\n{info_web}\n" if info_web else ""
+    web_block = f"--- INFORMACIÓN WEB DE APOYO ---\n{info_web}\n" if info_web else ""
 
     instruction = (
-        f"Sos un motor experto de Vibe Coding. Modificá el archivo '{ruta_archivo}'.\n"
+        f"Sos un motor de Vibe Coding experto. Modificá el archivo '{ruta_archivo}'.\n"
         f"{web_block}"
-        "INSTRUCCIÓN ESTRICTA:\n"
-        "Devuelve ÚNICAMENTE un bloque de reemplazo exacto con este formato:\n"
-        "BUSCAR:\n```python\n<linea o bloque exacto a reemplazar>\n```\n"
-        "REEMPLAZAR:\n```python\n<linea o bloque nuevo>\n```\n\n"
-        f"Petición: {prompt_usuario}\n\n"
-        f"--- CONTENIDO ACTUAL ({ruta_archivo}) ---\n```python\n{codigo_actual[:9000]}\n```"
+        "REGLAS CRÍTICAS DE FORMATO Y EDICIÓN:\n"
+        "1. Devuelve ÚNICAMENTE un bloque de reemplazo exacto.\n"
+        "2. Copiá las líneas a buscar EXACTAMENTE como figuran en el código actual, respetando indentación y sin alterar los saltos de línea existentes.\n"
+        "3. NO agregues líneas vacías extras ni rompas sintaxis.\n\n"
+        "FORMATO REQUERIDO:\n"
+        "BUSCAR:\n```python\n<bloque o linea exacto a buscar>\n```\n"
+        "REEMPLAZAR:\n```python\n<bloque o linea nuevo>\n```\n\n"
+        f"Petición del usuario: {prompt_usuario}\n\n"
+        f"--- CONTENIDO ACTUAL DE {ruta_archivo} ---\n```python\n{codigo_actual[:9000]}\n```"
     )
 
-    print("🌐 [OPEN WEBUI NATIVE]: Procesando auto-coding...", flush=True)
-    
-    max_retries = 3
-    for intento in range(1, max_retries + 1):
+    print("🦙 [OLLAMA CODING]: Generando parche de código...", flush=True)
+
+    # Intento 1: Gemini API
+    if client:
         try:
-            r = requests.post(
-                OPEN_WEBUI_API_URL,
-                json={
-                    "model": OLLAMA_MODEL,
-                    "messages": [{"role": "user", "content": instruction}],
-                    "stream": False
-                },
-                timeout=180
+            res = client.models.generate_content(
+                model=AI_STUDIO_MODEL,
+                contents=instruction,
+                config=dict(temperature=0.1)
             )
-            if r.status_code == 200:
-                texto = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                
-                match_buscar = re.search(r"BUSCAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
-                match_reemplazar = re.search(r"REEMPLAZAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto)
+            raw = (res.text or "").strip()
+            if raw and "BUSCAR:" in raw and "REEMPLAZAR:" in raw:
+                if aplicar_parche(raw, codigo_actual, ruta_archivo):
+                    print("✅ Parche de código aplicado usando Gemini", flush=True)
+                    return True
+        except Exception:
+            pass
 
-                if match_buscar and match_reemplazar:
-                    texto_buscar = match_buscar.group(1)
-                    texto_reemplazar = match_reemplazar.group(1)
+    # Intento 2: Ollama Local
+    try:
+        r = requests.post(
+            f"{OLLAMA_HOST}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": instruction,
+                "stream": False,
+                "options": {"temperature": 0.1}
+            },
+            timeout=120
+        )
+        if r.status_code == 200:
+            texto = r.json().get("response", "").strip()
+            if aplicar_parche(texto, codigo_actual, ruta_archivo):
+                print("✅ Parche de código aplicado usando Ollama Local", flush=True)
+                return True
+    except Exception as ex:
+        print(f"❌ Error en Ollama Coding: {ex}", flush=True)
 
-                    if texto_buscar in codigo_actual:
-                        nuevo_contenido = codigo_actual.replace(texto_buscar, texto_reemplazar, 1)
-                        
-                        if ruta_archivo.endswith(".py"):
-                            try:
-                                ast.parse(nuevo_contenido)
-                            except SyntaxError as e:
-                                print(f"❌ Syntax Error AST: {e}", flush=True)
-                                return False
+    return False
 
-                        shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
-                        with open(ruta_archivo, "w", encoding="utf-8") as f:
-                            f.write(nuevo_contenido)
-                        return True
-            else:
-                print(f"⚠️ Open WebUI HTTP Status: {r.status_code} (Intento {intento}/{max_retries})", flush=True)
-        except requests.exceptions.ConnectionError:
-            print(f"⏳ Aguardando inicio de Open WebUI (Intento {intento}/{max_retries})...", flush=True)
-            time.sleep(5)
-        except Exception as ex:
-            print(f"❌ Error conectando a Open WebUI: {ex}", flush=True)
-            break
+def aplicar_parche(texto_respuesta, codigo_actual, ruta_archivo):
+    match_buscar = re.search(r"BUSCAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto_respuesta)
+    match_reemplazar = re.search(r"REEMPLAZAR:\s*```(?:\w+)?\n([\s\S]*?)\n```", texto_respuesta)
 
+    if match_buscar and match_reemplazar:
+        texto_buscar = match_buscar.group(1)
+        texto_reemplazar = match_reemplazar.group(1)
+
+        if texto_buscar in codigo_actual:
+            nuevo_contenido = codigo_actual.replace(texto_buscar, texto_reemplazar, 1)
+            
+            if ruta_archivo.endswith(".py"):
+                try:
+                    ast.parse(nuevo_contenido)
+                except SyntaxError as e:
+                    print(f"❌ Error de Sintaxis (AST): {e}", flush=True)
+                    return False
+
+            shutil.copy2(ruta_archivo, f"{ruta_archivo}.bak")
+            with open(ruta_archivo, "w", encoding="utf-8") as f:
+                f.write(nuevo_contenido)
+            return True
+        else:
+            print("⚠️ No se encontró la cadena exacta 'BUSCAR' dentro del código actual.", flush=True)
     return False
 
 def evaluar_intencion_codigo_hibrida(texto_usuario):
@@ -318,7 +335,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
         f"🕒 **Último commit:** `{ultimo_commit}`\n"
         f"🗣️ **Charla:** `Ollama (llama3.2)`\n"
-        f"🌐 **Coding:** `Open WebUI Native`\n"
+        f"⚡ **Coding:** `Ollama Vibe-Coding`\n"
         f"🌐 **Repo:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -333,14 +350,14 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Intención de código detectada. Procesando con Open WebUI...")
-        ok = ejecutar_vibe_coding_openwebui(texto_usuario, "procesar.py")
+        await update.message.reply_text("⚡ Intención de código detectada. Generando parche con Ollama...")
+        ok = ejecutar_vibe_coding_ollama(texto_usuario, "procesar.py")
         if ok:
-            guardar_y_pushear_como_leandrobot("procesar.py", f"open-webui: vibe-coding para '{texto_usuario[:30]}'")
-            await update.message.reply_text("🚀 ¡Cambio aplicado por Open WebUI y pusheado con éxito! Reiniciando...")
+            guardar_y_pushear_como_leandrobot("procesar.py", f"ollama: vibe-coding para '{texto_usuario[:30]}'")
+            await update.message.reply_text("🚀 ¡Parche de código aplicado con éxito y pusheado! Reiniciando...")
             sys.exit(0)
         else:
-            await update.message.reply_text("❌ No se pudo aplicar el parche de código con Open WebUI.")
+            await update.message.reply_text("❌ No se pudo aplicar el parche de código con Ollama.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
