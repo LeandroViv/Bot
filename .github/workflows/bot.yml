@@ -30,13 +30,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1 rubberband-cli git
 
-      - name: Instalar dependencias de Python y Open WebUI
+      - name: Instalar dependencias de Python
         run: |
           pip install --upgrade pip
-          pip install open-webui
           pip install -r requirements.txt
 
-      # --- OLLAMA LOCAL EN RUNNER (MOTOR Y CHARLA) ---
+      # --- OLLAMA LOCAL EN RUNNER ---
       - name: Configurar Ollama CLI
         uses: ai-action/setup-ollama@v2
 
@@ -48,21 +47,6 @@ jobs:
           ollama pull llama3.2
         shell: bash
 
-      # --- LEVANTAR OPEN WEBUI NATIVO SIN AUTENTICACIÓN LOCAL ---
-      - name: Iniciar Open WebUI Serve
-        run: |
-          export WEBUI_AUTH=False
-          open-webui serve &
-          echo "Esperando que Open WebUI esté listo en el puerto 8080..."
-          for i in {1..30}; do
-            if curl -s http://127.0.0.1:8080/ > /dev/null; then
-              echo "✅ Open WebUI está respondiendo nativamente!"
-              break
-            fi
-            echo "Reintentando conexión con Open WebUI ($i/30)..."
-            sleep 3
-          done
-
       # --- EJECUCIÓN PRINCIPAL DE LEANDROBOT ---
       - name: Ejecutar Bot de Telegram
         env:
@@ -72,7 +56,5 @@ jobs:
           GH_BOT_TOKEN: ${{ secrets.GH_PAT }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
           OLLAMA_MODEL: "llama3.2"
-          OPEN_WEBUI_API_URL: "http://127.0.0.1:8080/api/chat/completions"
-          WEBUI_AUTH: "False"
         run: |
           python procesar.py
