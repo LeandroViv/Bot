@@ -35,7 +35,7 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- CONFIGURACIÓN Y SERVICIO DE OLLAMA LOCAL ---
+      # --- OLLAMA LOCAL EN RUNNER (CHARLA COMÚN) ---
       - name: Configurar Ollama CLI
         uses: ai-action/setup-ollama@v2
 
@@ -47,20 +47,18 @@ jobs:
           ollama pull llama3.2
         shell: bash
 
-      # --- LEVANTAR OPEN WEBUI CON BÚSQUEDA WEB Y NETWORK HOST ---
-      - name: Levantar Open WebUI en la nube del Runner
+      # --- BOLT.DIY APP BUILDER CON BÚSQUEDA WEB (CODING) ---
+      - name: Levantar Bolt.diy App Builder
         run: |
           docker run -d \
             --network host \
-            -e OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+            -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
             -e ENABLE_WEB_SEARCH=true \
-            -e WEB_SEARCH_ENGINE=duckduckgo \
-            -e WEB_SEARCH_RESULT_COUNT=3 \
-            --name open-webui \
+            --name bolt-diy \
             --restart always \
-            ghcr.io/open-webui/open-webui:main
-          echo "Esperando que Open WebUI caliente motores en la red del runner..."
-          sleep 15
+            ghcr.io/stackblitz-labs/bolt.diy:main || true
+          echo "Esperando que Bolt.diy esté listo..."
+          sleep 10
 
       # --- EJECUCIÓN PRINCIPAL DE LEANDROBOT ---
       - name: Ejecutar Bot de Telegram
@@ -71,6 +69,6 @@ jobs:
           GH_BOT_TOKEN: ${{ secrets.GH_PAT }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
           OLLAMA_MODEL: "llama3.2"
-          OPEN_WEBUI_API_URL: "http://127.0.0.1:8080/api/chat/completions"
+          BOLT_API_URL: "http://127.0.0.1:5173/api/build"
         run: |
           python procesar.py
