@@ -138,6 +138,8 @@ def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
             "--message", prompt_usuario,
             "--yes",
             "--no-auto-commits",
+            "--no-pretty",
+            "--map-tokens", "512",
             ruta_archivo
         ]
 
@@ -281,7 +283,6 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
             guardar_y_pushear_como_leandrobot("procesar.py", f"aider: vibe-coding runner para '{texto_usuario[:30]}'")
             await update.message.reply_text("🚀 Cambios subidos a GitHub. El workflow se reiniciará automáticamente con el nuevo código.")
             
-            # Detenemos la aplicación de Telegram limpiamente antes de salir para liberar la sesión del bot
             await context.application.stop()
             sys.exit(0)
         else:
