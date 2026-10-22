@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Termux + Aider + Web Search Liviano + Git Sync
+# Script: procesar.py - LeandroBot Runner GitHub Actions + Aider
 
 import asyncio
 import json as json_lib
@@ -12,7 +12,6 @@ import requests
 import time
 import ast
 import urllib.parse
-from datetime import datetime
 
 import psutil
 
@@ -26,10 +25,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot Termux...", flush=True)
-print("🗣️ [CHARLA]: Ollama Local (llama3.2)", flush=True)
-print("🔍 [WEB]: Búsqueda nativa con HTTP Requests", flush=True)
-print("🤖 [CODING]: Aider CLI + Git Push", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot en GitHub Actions Runner...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -53,9 +49,7 @@ for f_path, default_val in [
         "voice": "es-AR-TomasNeural",
         "pitch": "-4Hz",
         "rate": "-5%",
-        "volume": "+10%",
-        "f0Hz": 125,
-        "harmonics": []
+        "volume": "+10%"
     })
 ]:
     if not os.path.exists(f_path):
@@ -70,10 +64,8 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 
-CHAT_ID_ACTIVO = None
-
 def buscar_en_web(query):
-    """Busca en DuckDuckGo vía HTTP directo sin compilación ni librerías externas."""
+    """Busca en DuckDuckGo vía HTTP directo."""
     try:
         url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
         headers = {
@@ -93,14 +85,15 @@ def buscar_en_web(query):
             
             return "\n".join(resultados)
     except Exception as e:
-        print(f"⚠️ Error en búsqueda web liviana: {e}", flush=True)
+        print(f"⚠️ Error en búsqueda web: {e}", flush=True)
     return ""
 
 def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
-    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_BOT_TOKEN")
+    gh_token = os.environ.get("GH_BOT_TOKEN") or os.environ.get("GITHUB_TOKEN")
     try:
         subprocess.run(["git", "config", "user.name", "LeandroBot[bot]"], check=True)
         subprocess.run(["git", "config", "user.email", "leandrobot@users.noreply.github.com"], check=True)
+        
         if gh_token:
             remote_url = f"https://x-access-token:{gh_token}@github.com/LeandroViv/Bot.git"
             subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
@@ -109,18 +102,20 @@ def guardar_y_pushear_como_leandrobot(archivo_modificado, mensaje_commit):
         
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not status.stdout.strip():
-            print("⚠️ [GIT]: No se detectaron cambios reales para commitear.", flush=True)
+            print("⚠️ [GIT]: No se detectaron cambios para commitear.", flush=True)
             return False
 
         subprocess.run(["git", "commit", "-m", mensaje_commit], check=True)
         res_push = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
+        
         if res_push.returncode != 0:
             subprocess.run(["git", "pull", "--rebase", "origin", "HEAD"], check=False)
             subprocess.run(["git", "push", "origin", "HEAD"], check=True)
+            
         print("✅ [GIT]: Cambios pusheados a GitHub correctamente.", flush=True)
         return True
     except Exception as e:
-        print(f"⚠️ Aviso git push automático: {e}", flush=True)
+        print(f"⚠️ Error en git push automático: {e}", flush=True)
         return False
 
 def obtener_contenido_archivo(ruta):
@@ -145,10 +140,8 @@ def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
             ruta_archivo
         ]
 
-        print(f"🤖 [AIDER TERMUX]: Ejecutando vibe coding sobre {ruta_archivo}...", flush=True)
+        print(f"🤖 [AIDER RUNNER]: Modificando {ruta_archivo}...", flush=True)
         res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=180)
-        
-        print(f"Aider Output:\n{res.stdout}", flush=True)
 
         if res.returncode == 0:
             codigo_nuevo = obtener_contenido_archivo(ruta_archivo)
@@ -183,7 +176,6 @@ def generar_texto_charla_comun(prompt_usuario):
     
     info_web = ""
     if any(k in prompt_usuario.lower() for k in palabras_busqueda):
-        print(f"🔍 [WEB]: El bot decidió buscar autónomamente sobre: '{prompt_usuario}'", flush=True)
         info_web = buscar_en_web(prompt_usuario)
 
     prompt_final = prompt_usuario
@@ -192,7 +184,7 @@ def generar_texto_charla_comun(prompt_usuario):
 
     system_prompt = (
         "Sos Leandro: colega de confianza, compañero de vibe coding y locutor rioplatense. Hablale de vos o che a Leandro.\n"
-        "Mantené charlas fluidas y naturales. Si tenés información web fresca, usala para dar una respuesta certera. PROHIBIDO inventar links."
+        "Mantené charlas fluidas y naturales."
     )
 
     try:
@@ -210,30 +202,30 @@ def generar_texto_charla_comun(prompt_usuario):
             if respuesta_ollama:
                 return respuesta_ollama
     except Exception as ex:
-        print(f"❌ Error en Ollama Local: {ex}", flush=True)
+        print(f"❌ Error en Ollama: {ex}", flush=True)
 
-    return "¡Qué hacés che! Acá andamos, todo en orden. ¿Qué contamos?"
+    return "¡Qué hacés che! Acá andamos, todo en orden desde el runner. ¿En qué andamos?"
 
 def preparar_texto_para_voz(texto):
     t = re.sub(r"https?://\S+", "", texto)
     t = re.sub(r"[*_`~#\[\]<>]", " ", t)
     return re.sub(r"\s+", " ", t).strip()
 
-async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.ogg"):
+async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.mp3"):
     cfg = {"voice": "es-AR-TomasNeural", "pitch": "-4Hz", "rate": "-5%", "volume": "+10%"}
     texto_limpio = preparar_texto_para_voz(texto) or "Dale, te escucho."
-    archivo_raw = "temp_raw.mp3"
-    cmd_tts = ["edge-tts", f"--voice={cfg.get('voice')}", f"--pitch={cfg.get('pitch')}", f"--rate={cfg.get('rate')}", f"--volume={cfg.get('volume')}", f"--text={texto_limpio}", f"--write-media={archivo_raw}"]
+    cmd_tts = [
+        "edge-tts",
+        f"--voice={cfg.get('voice')}",
+        f"--pitch={cfg.get('pitch')}",
+        f"--rate={cfg.get('rate')}",
+        f"--volume={cfg.get('volume')}",
+        f"--text={texto_limpio}",
+        f"--write-media={archivo_salida}"
+    ]
     try:
         proc = await asyncio.create_subprocess_exec(*cmd_tts, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         await proc.communicate()
-        if not os.path.exists(archivo_raw) or os.path.getsize(archivo_raw) == 0:
-            return None
-        cmd_ffmpeg = ["ffmpeg", "-y", "-i", archivo_raw, "-c:a", "libopus", "-b:a", "32k", "-vn", archivo_salida]
-        proc_ff = await asyncio.create_subprocess_exec(*cmd_ffmpeg, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-        await proc_ff.communicate()
-        if os.path.exists(archivo_raw):
-            os.remove(archivo_raw)
         if os.path.exists(archivo_salida) and os.path.getsize(archivo_salida) > 0:
             return archivo_salida
     except Exception:
@@ -255,17 +247,15 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     msg = (
-        f"🤖 **Estado de LeandroBot Termux**\n\n"
+        f"🤖 **Estado de LeandroBot (GitHub Actions)**\n\n"
         f"⏱️ **Uptime:** `{uptime_min} min`\n"
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
-        f"🗣️ **Charla & Coding:** `Ollama + Aider`\n"
+        f"☁️ **Entorno:** `GitHub Actions Runner`\n"
         f"🌐 **Repo Git:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
 
 async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID_ACTIVO
-    CHAT_ID_ACTIVO = update.effective_chat.id
     texto_usuario = update.message.text
     if not texto_usuario:
         return
@@ -273,23 +263,22 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Intención de código detectada. Invocando a Aider localmente...")
+        await update.message.reply_text("⚡ Intención de código detectada. Invocando Aider en el runner...")
         ok = ejecutar_vibe_coding_aider(texto_usuario, "procesar.py")
         if ok:
-            # Enviar el archivo procesar.py modificado directamente adjunto al chat de Telegram
             if os.path.exists("procesar.py"):
                 with open("procesar.py", "rb") as py_doc:
                     await update.message.reply_document(
                         document=py_doc,
                         filename="procesar.py",
-                        caption="📄 ¡Acá tenés el código fuente completo actualizado en archivo!"
+                        caption="📄 Código fuente modificado en el runner."
                     )
             
-            guardar_y_pushear_como_leandrobot("procesar.py", f"aider: vibe-coding local para '{texto_usuario[:30]}'")
-            await update.message.reply_text("🚀 ¡Aider aplicó los cambios, se sincronizó con GitHub y reiniciamos el bot!")
-            os.execv(sys.executable, ['python'] + sys.argv)
+            guardar_y_pushear_como_leandrobot("procesar.py", f"aider: vibe-coding runner para '{texto_usuario[:30]}'")
+            await update.message.reply_text("🚀 Cambios subidos a GitHub. El workflow se reiniciará automáticamente con el nuevo código.")
+            sys.exit(0)
         else:
-            await update.message.reply_text("❌ Aider no pudo aplicar la modificación o falló la validación sintáctica.")
+            await update.message.reply_text("❌ No se pudo aplicar la modificación o falló la validación sintáctica.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
