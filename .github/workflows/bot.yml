@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Permite cancelar la corrida previa si entra un push nuevo desde el bot
+concurrency:
+  group: leandrobot-runner
+  cancel-in-progress: true
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -30,10 +35,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1 rubberband-cli git
 
-      - name: Instalar dependencias de Python
+      - name: Instalar dependencias de Python y Aider
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
+          pip install aider-chat
 
       # --- OLLAMA LOCAL EN RUNNER ---
       - name: Configurar Ollama CLI
