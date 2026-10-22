@@ -276,11 +276,20 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("⚡ Intención de código detectada. Invocando a Aider localmente...")
         ok = ejecutar_vibe_coding_aider(texto_usuario, "procesar.py")
         if ok:
+            # Enviar el archivo procesar.py modificado directamente adjunto al chat de Telegram
+            if os.path.exists("procesar.py"):
+                with open("procesar.py", "rb") as py_doc:
+                    await update.message.reply_document(
+                        document=py_doc,
+                        filename="procesar.py",
+                        caption="📄 ¡Acá tenés el código fuente completo actualizado en archivo!"
+                    )
+            
             guardar_y_pushear_como_leandrobot("procesar.py", f"aider: vibe-coding local para '{texto_usuario[:30]}'")
             await update.message.reply_text("🚀 ¡Aider aplicó los cambios, se sincronizó con GitHub y reiniciamos el bot!")
             os.execv(sys.executable, ['python'] + sys.argv)
         else:
-            await update.message.reply_text("❌ Aider no pudo aplicar la modificación.")
+            await update.message.reply_text("❌ Aider no pudo aplicar la modificación o falló la validación sintáctica.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
