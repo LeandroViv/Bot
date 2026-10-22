@@ -137,11 +137,13 @@ def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
             "--model", f"ollama/{OLLAMA_MODEL}",
             "--message", prompt_usuario,
             "--yes",
+            "--no-auto-commits",
             ruta_archivo
         ]
 
         print(f"🤖 [AIDER RUNNER]: Modificando {ruta_archivo}...", flush=True)
-        res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=180)
+        # Timeout extendido a 600s (10 minutos) para prevenir cortes en la CPU del runner
+        res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=600)
 
         if res.returncode == 0:
             codigo_nuevo = obtener_contenido_archivo(ruta_archivo)
@@ -155,6 +157,8 @@ def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
             return True
         else:
             print(f"⚠️ Aider devolvió error: {res.stderr}", flush=True)
+    except subprocess.TimeoutExpired:
+        print("❌ Error: Aider superó el tiempo límite de ejecución (Timeout).", flush=True)
     except Exception as ex:
         print(f"❌ Error ejecutando Aider: {ex}", flush=True)
     
@@ -276,6 +280,9 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
             
             guardar_y_pushear_como_leandrobot("procesar.py", f"aider: vibe-coding runner para '{texto_usuario[:30]}'")
             await update.message.reply_text("🚀 Cambios subidos a GitHub. El workflow se reiniciará automáticamente con el nuevo código.")
+            
+            # Detenemos la aplicación de Telegram limpiamente antes de salir para liberar la sesión del bot
+            await context.application.stop()
             sys.exit(0)
         else:
             await update.message.reply_text("❌ No se pudo aplicar la modificación o falló la validación sintáctica.")
