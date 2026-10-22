@@ -8,9 +8,9 @@ on:
 permissions:
   contents: write
 
-# Permite cancelar la corrida previa si entra un push nuevo desde el bot
+# Permite cancelar la corrida previa de forma limpia si entra un push nuevo desde el bot
 concurrency:
-  group: leandrobot-runner
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
