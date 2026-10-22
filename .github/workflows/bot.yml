@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
 
-# Permite cancelar la corrida previa de forma limpia si entra un push nuevo desde el bot
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,7 +29,7 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Instalar dependencias del sistema (FFmpeg, libsndfile)
+      - name: Instalar dependencias del sistema
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1 rubberband-cli git
@@ -41,19 +40,17 @@ jobs:
           pip install -r requirements.txt
           pip install aider-chat
 
-      # --- OLLAMA LOCAL EN RUNNER ---
       - name: Configurar Ollama CLI
         uses: ai-action/setup-ollama@v2
 
-      - name: Iniciar servidor Ollama y descargar modelo llama3.2
+      - name: Iniciar servidor Ollama y descargar modelo phi3
         run: |
           ollama serve &
           echo "Esperando a que Ollama esté listo..."
           sleep 5
-          ollama pull llama3.2
+          ollama pull phi3
         shell: bash
 
-      # --- EJECUCIÓN PRINCIPAL DE LEANDROBOT ---
       - name: Ejecutar Bot de Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -61,6 +58,6 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GH_BOT_TOKEN: ${{ secrets.GH_PAT }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
-          OLLAMA_MODEL: "llama3.2"
+          OLLAMA_MODEL: "phi3"
         run: |
           python procesar.py
