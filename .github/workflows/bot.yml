@@ -1,9 +1,11 @@
-name: Bot Telegram Leandro
+name: Bot Telegram Leandro Ollama
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *' # Auto-reinicio periódico para mantener el bot activo
 
 permissions:
   contents: write
@@ -15,6 +17,8 @@ concurrency:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 360 # Máximo tiempo permitido por job en GitHub Actions
+
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
@@ -34,7 +38,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1 rubberband-cli git
 
-      - name: Instalar dependencias de Python (Sin Aider)
+      - name: Instalar dependencias de Python
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
@@ -42,7 +46,7 @@ jobs:
       - name: Configurar Ollama CLI
         uses: ai-action/setup-ollama@v2
 
-      - name: Iniciar servidor Ollama y descargar modelo phi3
+      - name: Iniciar servidor Ollama y descargar modelo
         run: |
           ollama serve &
           echo "Esperando a que Ollama esté listo..."
@@ -53,8 +57,6 @@ jobs:
       - name: Ejecutar Bot de Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GH_BOT_TOKEN: ${{ secrets.GH_PAT }}
           OLLAMA_HOST: "http://127.0.0.1:11434"
           OLLAMA_MODEL: "phi3"
