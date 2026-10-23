@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - GitHub Actions Runner + Ollama Vibe Coding Directo
+# Script: procesar.py - LeandroBot Runner GitHub Actions + Aider Rápido
 
 import asyncio
-import json as json_lib
+import json
 import os
 import re
 import sys
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot en GitHub Actions con Ollama...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Aider optimizado...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -34,6 +34,7 @@ HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
 
+# Inicialización de archivos locales con json nativo
 for f_path, default_val in [
     (TXT_FILE, ""),
     (DATASET_ENTRENAMIENTO, []),
@@ -56,7 +57,7 @@ for f_path, default_val in [
                 f.write(default_val)
         else:
             with open(f_path, "w", encoding="utf-8") as f:
-                json_lib.dump(default_val, f, indent=4, ensure_ascii=False)
+                json.dump(default_val, f, indent=4, ensure_ascii=False)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
@@ -124,53 +125,42 @@ def obtener_contenido_archivo(ruta):
             pass
     return ""
 
-def ejecutar_vibe_coding_directo(prompt_usuario, ruta_archivo="procesar.py"):
-    codigo_actual = obtener_contenido_archivo(ruta_archivo)
-    
-    system_prompt = (
-        "Sos un experto desarrollador Python y asistente de vibe coding. "
-        "Tu tarea es modificar el código actual basándote en la solicitud del usuario. "
-        "Devolvé ÚNICAMENTE el código Python completo actualizado dentro de bloques markdown ```python ... ```."
-    )
-    
-    prompt_completo = f"{system_prompt}\n\n--- CÓDIGO ACTUAL ---\n{codigo_actual}\n\n--- SOLICITUD DEL USUARIO ---\n{prompt_usuario}\n\n--- CÓDIGO NUEVO COMPLETO ---"
-
+def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
+    """Usa Aider para aplicar parches quirúrgicos rápidos sin reescribir todo el archivo."""
     try:
-        print(f"🤖 [VIBE CODING DIRECTO]: Solicitando cambios a Ollama ({OLLAMA_MODEL})...", flush=True)
-        r = requests.post(
-            f"{OLLAMA_HOST}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt_completo,
-                "stream": False,
-                "options": {"num_predict": 4096, "temperature": 0.2}
-            },
-            timeout=180
-        )
-        
-        if r.status_code == 200:
-            respuesta = r.json().get("response", "").strip()
-            match_codigo = re.search(r"```(?:python)?\s*([\s\S]*?)```", respuesta)
-            if match_codigo:
-                codigo_nuevo = match_codigo.group(1).strip()
-            else:
-                codigo_nuevo = respuesta
+        env = os.environ.copy()
+        env["OLLAMA_API_BASE"] = OLLAMA_HOST
 
-            try:
-                ast.parse(codigo_nuevo)
-            except SyntaxError as e:
-                print(f"❌ Error de Sintaxis (AST) generado por el modelo: {e}", flush=True)
-                return False
+        cmd = [
+            "aider",
+            "--model", f"ollama/{OLLAMA_MODEL}",
+            "--message", prompt_usuario,
+            "--yes",
+            "--no-auto-commits",
+            "--no-pretty",
+            "--map-tokens", "256",
+            ruta_archivo
+        ]
 
-            with open(ruta_archivo, "w", encoding="utf-8") as f:
-                f.write(codigo_nuevo)
+        print(f"🤖 [AIDER RÁPIDO]: Modificando {ruta_archivo}...", flush=True)
+        res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=300)
 
-            print("✅ ¡Código modificado y validado correctamente!", flush=True)
+        if res.returncode == 0:
+            codigo_nuevo = obtener_contenido_archivo(ruta_archivo)
+            if ruta_archivo.endswith(".py"):
+                try:
+                    ast.parse(codigo_nuevo)
+                except SyntaxError as e:
+                    print(f"❌ Error de Sintaxis (AST): {e}", flush=True)
+                    return False
+            print("✅ ¡Aider aplicó los cambios correctamente!", flush=True)
             return True
         else:
-            print(f"⚠️ Ollama devolvió error HTTP {r.status_code}", flush=True)
+            print(f"⚠️ Aider devolvió error: {res.stderr}", flush=True)
+    except subprocess.TimeoutExpired:
+        print("❌ Error: Aider superó el tiempo límite.", flush=True)
     except Exception as ex:
-        print(f"❌ Error en vibe coding directo: {ex}", flush=True)
+        print(f"❌ Error ejecutando Aider: {ex}", flush=True)
     
     return False
 
@@ -208,7 +198,7 @@ def generar_texto_charla_comun(prompt_usuario):
                 "model": OLLAMA_MODEL,
                 "prompt": f"{system_prompt}\n\nUsuario: {prompt_final}\nLeandro:",
                 "stream": False,
-                "options": {"num_predict": 512, "temperature": 0.7}
+                "options": {"num_predict": 256, "temperature": 0.7}
             },
             timeout=30
         )
@@ -228,13 +218,20 @@ def preparar_texto_para_voz(texto):
 
 async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.mp3"):
     cfg = {"voice": "es-AR-TomasNeural", "pitch": "-4Hz", "rate": "-5%", "volume": "+10%"}
+    if os.path.exists(CONFIG_TIMBRE):
+        try:
+            with open(CONFIG_TIMBRE, "r", encoding="utf-8") as f:
+                cfg.update(json.load(f))
+        except Exception:
+            pass
+
     texto_limpio = preparar_texto_para_voz(texto) or "Dale, te escucho."
     cmd_tts = [
         "edge-tts",
-        f"--voice={cfg.get('voice')}",
-        f"--pitch={cfg.get('pitch')}",
-        f"--rate={cfg.get('rate')}",
-        f"--volume={cfg.get('volume')}",
+        f"--voice={cfg.get('voice', 'es-AR-TomasNeural')}",
+        f"--pitch={cfg.get('pitch', '-4Hz')}",
+        f"--rate={cfg.get('rate', '-5%')}",
+        f"--volume={cfg.get('volume', '+10%')}",
         f"--text={texto_limpio}",
         f"--write-media={archivo_salida}"
     ]
@@ -243,8 +240,8 @@ async def sintetizar_audio_dsp(texto, archivo_salida="respuesta_dsp.mp3"):
         await proc.communicate()
         if os.path.exists(archivo_salida) and os.path.getsize(archivo_salida) > 0:
             return archivo_salida
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ Error en sintetizar_audio_dsp: {e}", flush=True)
     return None
 
 async def enviar_mensaje_en_partes(update: Update, texto: str, max_chunk=4000):
@@ -262,10 +259,10 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     msg = (
-        f"🤖 **Estado de LeandroBot (GitHub Actions + Ollama)**\n\n"
+        f"🤖 **Estado de LeandroBot (GitHub Actions)**\n\n"
         f"⏱️ **Uptime:** `{uptime_min} min`\n"
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
-        f"☁️ **Modelo local:** `{OLLAMA_MODEL}`\n"
+        f"☁️ **Entorno:** `GitHub Actions Runner + Aider`\n"
         f"🌐 **Repo Git:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -281,24 +278,24 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Aplicando cambios con Vibe Coding Directo...")
-        ok = ejecutar_vibe_coding_directo(texto_usuario, "procesar.py")
+        await update.message.reply_text("⚡ Modificando código con Aider...")
+        ok = ejecutar_vibe_coding_aider(texto_usuario, "procesar.py")
         if ok:
             if os.path.exists("procesar.py"):
                 with open("procesar.py", "rb") as py_doc:
                     await update.message.reply_document(
                         document=py_doc,
                         filename="procesar.py",
-                        caption="📄 Código modificado y validado."
+                        caption="📄 Código modificado por Aider."
                     )
             
-            guardar_y_pushear_como_leandrobot("procesar.py", f"vibe-coding: {texto_usuario[:30]}")
+            guardar_y_pushear_como_leandrobot("procesar.py", f"aider: cambio rápido para '{texto_usuario[:30]}'")
             await update.message.reply_text("🚀 Cambios subidos. Reiniciando runner...")
             
             await context.application.stop()
             sys.exit(0)
         else:
-            await update.message.reply_text("❌ No se pudo aplicar la modificación o falló la validación sintáctica.")
+            await update.message.reply_text("❌ No se pudo aplicar la modificación.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
