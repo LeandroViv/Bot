@@ -54,6 +54,11 @@ jobs:
           ollama pull phi3
         shell: bash
 
+      - name: Configurar Git Global para Aider
+        run: |
+          git config --global user.name "LeandroBot[bot]"
+          git config --global user.email "leandrobot@users.noreply.github.com"
+
       - name: Ejecutar Bot de Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
