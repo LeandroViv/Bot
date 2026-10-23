@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Runner GitHub Actions + Aider Rápido
+# Script: procesar.py - LeandroBot Runner GitHub Actions + Aider + Busabase Cloud
 
 import asyncio
 import json
@@ -23,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot con Aider optimizado...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Aider y Busabase...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -62,6 +62,36 @@ for f_path, default_val in [
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "phi3")
+
+# Credenciales Busabase Cloud
+BUSABASE_URL = os.environ.get("BUSABASE_URL", "https://busabase.com/api/v1")
+BUSABASE_TOKEN = os.environ.get("BUSABASE_TOKEN")
+BUSABASE_SPACE_ID = os.environ.get("BUSABASE_SPACE_ID")
+
+def guardar_en_busabase(tabla, data):
+    """Guarda un registro en la base de datos de Busabase."""
+    if not BUSABASE_TOKEN or not BUSABASE_SPACE_ID:
+        print("⚠️ Credenciales de Busabase incompletas.", flush=True)
+        return False
+        
+    headers = {
+        "Authorization": f"Bearer {BUSABASE_TOKEN}",
+        "Content-Type": "application/json",
+        "x-busabase-space": BUSABASE_SPACE_ID
+    }
+    
+    try:
+        url = f"{BUSABASE_URL}/tables/{tabla}/records"
+        response = requests.post(url, json=data, headers=headers, timeout=10)
+        if response.status_code in [200, 201]:
+            print("✅ Registro guardado en Busabase exitosamente.", flush=True)
+            return True
+        else:
+            print(f"⚠️ Error en Busabase ({response.status_code}): {response.text}", flush=True)
+    except Exception as e:
+        print(f"❌ Excepción conectando con Busabase: {e}", flush=True)
+        
+    return False
 
 def buscar_en_web(query):
     try:
@@ -133,7 +163,7 @@ def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
 
         env = os.environ.copy()
         env["OLLAMA_API_BASE"] = OLLAMA_HOST
-        env["OPENAI_API_KEY"] = "sk-dummy"  # Inyección de clave ficticia para bypass de OpenAI
+        env["OPENAI_API_KEY"] = "sk-dummy"
 
         cmd = [
             "aider",
@@ -267,7 +297,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🤖 **Estado de LeandroBot (GitHub Actions)**\n\n"
         f"⏱️ **Uptime:** `{uptime_min} min`\n"
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
-        f"☁️ **Entorno:** `GitHub Actions Runner + Aider`\n"
+        f"☁️ **Entorno:** `GitHub Actions Runner + Aider + Busabase`\n"
         f"🌐 **Repo Git:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -279,6 +309,13 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     texto_usuario = update.message.text
     if not texto_usuario:
         return
+
+    # Registrar en Busabase Cloud
+    guardar_en_busabase("conversaciones", {
+        "usuario": update.effective_user.username or "Leandro",
+        "mensaje": texto_usuario,
+        "timestamp": time.time()
+    })
 
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
