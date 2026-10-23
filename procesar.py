@@ -128,12 +128,12 @@ def obtener_contenido_archivo(ruta):
 def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
     """Usa Aider para aplicar parches quirúrgicos rápidos sin reescribir todo el archivo."""
     try:
-        # Configuración global de git requerida por Aider
         subprocess.run(["git", "config", "--global", "user.name", "LeandroBot[bot]"], check=False)
         subprocess.run(["git", "config", "--global", "user.email", "leandrobot@users.noreply.github.com"], check=False)
 
         env = os.environ.copy()
         env["OLLAMA_API_BASE"] = OLLAMA_HOST
+        env["OPENAI_API_KEY"] = "sk-dummy"  # Inyección de clave ficticia para bypass de OpenAI
 
         cmd = [
             "aider",
