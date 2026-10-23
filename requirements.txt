@@ -9,4 +9,5 @@ requests>=2.31.0
 faster-whisper>=1.0.0
 psutil
 ddgs
-aider-chat
+aider-chat>=0.86.0
+
