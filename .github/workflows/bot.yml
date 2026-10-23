@@ -34,11 +34,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1 rubberband-cli git
 
-      - name: Instalar dependencias de Python y Aider
+      - name: Instalar dependencias de Python (Sin Aider)
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install aider-chat
 
       - name: Configurar Ollama CLI
         uses: ai-action/setup-ollama@v2
