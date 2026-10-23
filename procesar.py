@@ -34,7 +34,7 @@ HISTORIAL_METRICAS = "historial_metricas_voz.json"
 
 TIEMPO_INICIO = time.time()
 
-# Inicialización de archivos locales con json nativo
+# Inicialización de archivos JSON nativos
 for f_path, default_val in [
     (TXT_FILE, ""),
     (DATASET_ENTRENAMIENTO, []),
@@ -128,6 +128,10 @@ def obtener_contenido_archivo(ruta):
 def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
     """Usa Aider para aplicar parches quirúrgicos rápidos sin reescribir todo el archivo."""
     try:
+        # Configuración global de git requerida por Aider
+        subprocess.run(["git", "config", "--global", "user.name", "LeandroBot[bot]"], check=False)
+        subprocess.run(["git", "config", "--global", "user.email", "leandrobot@users.noreply.github.com"], check=False)
+
         env = os.environ.copy()
         env["OLLAMA_API_BASE"] = OLLAMA_HOST
 
@@ -156,7 +160,8 @@ def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
             print("✅ ¡Aider aplicó los cambios correctamente!", flush=True)
             return True
         else:
-            print(f"⚠️ Aider devolvió error: {res.stderr}", flush=True)
+            print(f"⚠️ Aider devolvió error (stderr):\n{res.stderr}", flush=True)
+            print(f"⚠️ Aider stdout:\n{res.stdout}", flush=True)
     except subprocess.TimeoutExpired:
         print("❌ Error: Aider superó el tiempo límite.", flush=True)
     except Exception as ex:
