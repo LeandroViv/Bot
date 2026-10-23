@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Runner GitHub Actions + Vibe Coding Directo
+# Script: procesar.py - GitHub Actions Runner + Ollama Vibe Coding Directo
 
 import asyncio
 import json as json_lib
@@ -13,8 +13,6 @@ import time
 import ast
 import urllib.parse
 
-import psutil
-
 from telegram import Update
 from telegram.request import HTTPXRequest
 from telegram.ext import (
@@ -25,7 +23,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot con Vibe Coding Directo...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot en GitHub Actions con Ollama...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -127,14 +125,12 @@ def obtener_contenido_archivo(ruta):
     return ""
 
 def ejecutar_vibe_coding_directo(prompt_usuario, ruta_archivo="procesar.py"):
-    """Modifica el código directamente usando Ollama vía API REST, sin dependencias externas como Aider."""
     codigo_actual = obtener_contenido_archivo(ruta_archivo)
     
     system_prompt = (
         "Sos un experto desarrollador Python y asistente de vibe coding. "
         "Tu tarea es modificar el código actual basándote en la solicitud del usuario. "
-        "Devolvé ÚNICAMENTE el código Python completo actualizado. "
-        "Podés encerrar el código en bloques markdown ```python ... ``` o enviarlo directo, pero asegurate de que sea funcional, completo y sin truncamientos."
+        "Devolvé ÚNICAMENTE el código Python completo actualizado dentro de bloques markdown ```python ... ```."
     )
     
     prompt_completo = f"{system_prompt}\n\n--- CÓDIGO ACTUAL ---\n{codigo_actual}\n\n--- SOLICITUD DEL USUARIO ---\n{prompt_usuario}\n\n--- CÓDIGO NUEVO COMPLETO ---"
@@ -154,15 +150,12 @@ def ejecutar_vibe_coding_directo(prompt_usuario, ruta_archivo="procesar.py"):
         
         if r.status_code == 200:
             respuesta = r.json().get("response", "").strip()
-            
-            # Limpiar bloques markdown si el modelo los incluye
             match_codigo = re.search(r"```(?:python)?\s*([\s\S]*?)```", respuesta)
             if match_codigo:
                 codigo_nuevo = match_codigo.group(1).strip()
             else:
                 codigo_nuevo = respuesta
 
-            # Validar sintaxis AST antes de pisar el archivo
             try:
                 ast.parse(codigo_nuevo)
             except SyntaxError as e:
@@ -269,10 +262,10 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     msg = (
-        f"🤖 **Estado de LeandroBot (GitHub Actions)**\n\n"
+        f"🤖 **Estado de LeandroBot (GitHub Actions + Ollama)**\n\n"
         f"⏱️ **Uptime:** `{uptime_min} min`\n"
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
-        f"☁️ **Entorno:** `GitHub Actions + Vibe Coding Directo`\n"
+        f"☁️ **Modelo local:** `{OLLAMA_MODEL}`\n"
         f"🌐 **Repo Git:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
