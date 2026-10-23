@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Repositorio: https://github.com/LeandroViv/Bot
-# Script: procesar.py - LeandroBot Runner GitHub Actions + Aider Rápido
+# Script: procesar.py - LeandroBot Runner GitHub Actions + Vibe Coding Directo
 
 import asyncio
 import json as json_lib
@@ -25,7 +25,7 @@ from telegram.ext import (
     filters,
 )
 
-print("🚀 [INIT]: Inicializando LeandroBot con Aider optimizado...", flush=True)
+print("🚀 [INIT]: Inicializando LeandroBot con Vibe Coding Directo...", flush=True)
 
 URL_REPOSITORIO = "https://github.com/LeandroViv/Bot"
 TXT_FILE = "conversaciones.txt"
@@ -126,42 +126,58 @@ def obtener_contenido_archivo(ruta):
             pass
     return ""
 
-def ejecutar_vibe_coding_aider(prompt_usuario, ruta_archivo="procesar.py"):
-    """Usa Aider para aplicar parches quirúrgicos rápidos sin reescribir todo el archivo."""
+def ejecutar_vibe_coding_directo(prompt_usuario, ruta_archivo="procesar.py"):
+    """Modifica el código directamente usando Ollama vía API REST, sin dependencias externas como Aider."""
+    codigo_actual = obtener_contenido_archivo(ruta_archivo)
+    
+    system_prompt = (
+        "Sos un experto desarrollador Python y asistente de vibe coding. "
+        "Tu tarea es modificar el código actual basándote en la solicitud del usuario. "
+        "Devolvé ÚNICAMENTE el código Python completo actualizado. "
+        "Podés encerrar el código en bloques markdown ```python ... ``` o enviarlo directo, pero asegurate de que sea funcional, completo y sin truncamientos."
+    )
+    
+    prompt_completo = f"{system_prompt}\n\n--- CÓDIGO ACTUAL ---\n{codigo_actual}\n\n--- SOLICITUD DEL USUARIO ---\n{prompt_usuario}\n\n--- CÓDIGO NUEVO COMPLETO ---"
+
     try:
-        env = os.environ.copy()
-        env["OLLAMA_API_BASE"] = OLLAMA_HOST
+        print(f"🤖 [VIBE CODING DIRECTO]: Solicitando cambios a Ollama ({OLLAMA_MODEL})...", flush=True)
+        r = requests.post(
+            f"{OLLAMA_HOST}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": prompt_completo,
+                "stream": False,
+                "options": {"num_predict": 4096, "temperature": 0.2}
+            },
+            timeout=180
+        )
+        
+        if r.status_code == 200:
+            respuesta = r.json().get("response", "").strip()
+            
+            # Limpiar bloques markdown si el modelo los incluye
+            match_codigo = re.search(r"```(?:python)?\s*([\s\S]*?)```", respuesta)
+            if match_codigo:
+                codigo_nuevo = match_codigo.group(1).strip()
+            else:
+                codigo_nuevo = respuesta
 
-        cmd = [
-            "aider",
-            "--model", f"ollama/{OLLAMA_MODEL}",
-            "--message", prompt_usuario,
-            "--yes",
-            "--no-auto-commits",
-            "--no-pretty",
-            "--map-tokens", "256",
-            ruta_archivo
-        ]
+            # Validar sintaxis AST antes de pisar el archivo
+            try:
+                ast.parse(codigo_nuevo)
+            except SyntaxError as e:
+                print(f"❌ Error de Sintaxis (AST) generado por el modelo: {e}", flush=True)
+                return False
 
-        print(f"🤖 [AIDER RÁPIDO]: Modificando {ruta_archivo}...", flush=True)
-        res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=300)
+            with open(ruta_archivo, "w", encoding="utf-8") as f:
+                f.write(codigo_nuevo)
 
-        if res.returncode == 0:
-            codigo_nuevo = obtener_contenido_archivo(ruta_archivo)
-            if ruta_archivo.endswith(".py"):
-                try:
-                    ast.parse(codigo_nuevo)
-                except SyntaxError as e:
-                    print(f"❌ Error de Sintaxis (AST): {e}", flush=True)
-                    return False
-            print("✅ ¡Aider aplicó los cambios correctamente!", flush=True)
+            print("✅ ¡Código modificado y validado correctamente!", flush=True)
             return True
         else:
-            print(f"⚠️ Aider devolvió error: {res.stderr}", flush=True)
-    except subprocess.TimeoutExpired:
-        print("❌ Error: Aider superó el tiempo límite.", flush=True)
+            print(f"⚠️ Ollama devolvió error HTTP {r.status_code}", flush=True)
     except Exception as ex:
-        print(f"❌ Error ejecutando Aider: {ex}", flush=True)
+        print(f"❌ Error en vibe coding directo: {ex}", flush=True)
     
     return False
 
@@ -196,10 +212,10 @@ def generar_texto_charla_comun(prompt_usuario):
         r = requests.post(
             f"{OLLAMA_HOST}/api/generate",
             json={
-                "model": OLLAMO_MODEL if 'OLLAMO_MODEL' in globals() else OLLAMA_MODEL,
+                "model": OLLAMA_MODEL,
                 "prompt": f"{system_prompt}\n\nUsuario: {prompt_final}\nLeandro:",
                 "stream": False,
-                "options": {"num_predict": 256, "temperature": 0.7}
+                "options": {"num_predict": 512, "temperature": 0.7}
             },
             timeout=30
         )
@@ -256,7 +272,7 @@ async def comando_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🤖 **Estado de LeandroBot (GitHub Actions)**\n\n"
         f"⏱️ **Uptime:** `{uptime_min} min`\n"
         f"📄 **Líneas en procesar.py:** `{total_lineas}`\n"
-        f"☁️ **Entorno:** `GitHub Actions Runner + Aider`\n"
+        f"☁️ **Entorno:** `GitHub Actions + Vibe Coding Directo`\n"
         f"🌐 **Repo Git:** {URL_REPOSITORIO}"
     )
     await enviar_mensaje_en_partes(update, msg)
@@ -272,24 +288,24 @@ async def manejar_mensaje_texto(update: Update, context: ContextTypes.DEFAULT_TY
     es_solicitud_codigo = evaluar_intencion_codigo_hibrida(texto_usuario)
 
     if es_solicitud_codigo:
-        await update.message.reply_text("⚡ Modificando código con Aider...")
-        ok = ejecutar_vibe_coding_aider(texto_usuario, "procesar.py")
+        await update.message.reply_text("⚡ Aplicando cambios con Vibe Coding Directo...")
+        ok = ejecutar_vibe_coding_directo(texto_usuario, "procesar.py")
         if ok:
             if os.path.exists("procesar.py"):
                 with open("procesar.py", "rb") as py_doc:
                     await update.message.reply_document(
                         document=py_doc,
                         filename="procesar.py",
-                        caption="📄 Código modificado por Aider."
+                        caption="📄 Código modificado y validado."
                     )
             
-            guardar_y_pushear_como_leandrobot("procesar.py", f"aider: cambio rápido para '{texto_usuario[:30]}'")
+            guardar_y_pushear_como_leandrobot("procesar.py", f"vibe-coding: {texto_usuario[:30]}")
             await update.message.reply_text("🚀 Cambios subidos. Reiniciando runner...")
             
             await context.application.stop()
             sys.exit(0)
         else:
-            await update.message.reply_text("❌ No se pudo aplicar la modificación.")
+            await update.message.reply_text("❌ No se pudo aplicar la modificación o falló la validación sintáctica.")
             return
 
     respuesta = generar_texto_charla_comun(texto_usuario)
