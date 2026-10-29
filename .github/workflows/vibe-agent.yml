@@ -1,0 +1,88 @@
+name: Vibe Agent
+
+# Se dispara cuando abrís un issue nuevo o comentás en uno.
+# El bot NUNCA escribe en main: abre una rama y un PR.
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+# Sin esto el GITHUB_TOKEN es read-only y el push falla con 403.
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  VIBE_MODEL: qwen2.5-coder:3b
+
+# Un solo run por issue: si comentás de nuevo, cancela el anterior.
+concurrency:
+  group: vibe-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Ignora comentarios del propio bot (evita el bucle) y los que no
+    # son pedidos.
+    if: |
+      github.event.sender.type != 'Bot' &&
+      github.event.comment.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache de Ollama
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama
+          key: ollama-${{ runner.os }}-${{ env.VIBE_MODEL }}
+
+      - name: Instalar y levantar Ollama
+        run: |
+          if ! command -v ollama >/dev/null; then
+            curl -fsSL https://ollama.com/install.sh | sh
+          fi
+          ollama serve &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
+            sleep 2
+          done
+          ollama pull "$VIBE_MODEL"
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Correr el agente
+        id: agente
+        env:
+          PROMPT_CHAT: ${{ github.event.comment.body || github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/vibe_agent.py
+        continue-on-error: true
+
+      - name: Comentar el resultado en el issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const cuerpo = fs.existsSync('vibe_report.txt')
+              ? fs.readFileSync('vibe_report.txt', 'utf8')
+              : '⚠️ El agente no dejó reporte. Revisá los logs del run.';
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: cuerpo
+            });
