@@ -1,0 +1,804 @@
+From 4917dcf13cb883f4c0b361d23934c5b17c985900 Mon Sep 17 00:00:00 2001
+From: openhands <openhands@all-hands.dev>
+Date: Thu, 29 Oct 2026 03:18:30 +0000
+Subject: [PATCH 1/3] Aplicar el vibe agent + arreglar el YAML roto de bot.yml
+
+bot.yml tenia un 'blabla' suelto en la linea 2, que rompia el YAML entero:
+el ultimo run fallo en 0 segundos sin ejecutar nada. Lo saco.
+
+Agrego el builder (vibe-agent.yml + .github/scripts/vibe_agent.py):
+le pedis codigo en un issue y devuelve un PR. Corre Ollama en el runner,
+no necesita API keys.
+
+Se renombro a vibe-agent.yml para no pisar bot.yml (que es el bot de
+Telegram de siempre). Los dos conviven: uno arma codigo, el otro chatea.
+
+.gitignore: agrego __pycache__/, *.pyc, .ollama/, vibe_report.txt.
+Conserva la linea .aider* que ya estaba.
+---
+ .github/scripts/vibe_agent.py    | 322 +++++++++++++++++++++++++++++++
+ .github/workflows/bot.yml        |   1 -
+ .github/workflows/vibe-agent.yml |  88 +++++++++
+ .gitignore                       |   5 +
+ 4 files changed, 415 insertions(+), 1 deletion(-)
+ create mode 100644 .github/scripts/vibe_agent.py
+ create mode 100644 .github/workflows/vibe-agent.yml
+
+diff --git a/.github/scripts/vibe_agent.py b/.github/scripts/vibe_agent.py
+new file mode 100644
+index 0000000..77a1745
+--- /dev/null
++++ b/.github/scripts/vibe_agent.py
+@@ -0,0 +1,322 @@
++#!/usr/bin/env python3
++# -*- coding: utf-8 -*-
++"""vibe_agent.py - builder que corre Ollama en el propio runner de Actions.
++
++Flujo:
++  1. Escanea el repo (con tope de contexto, para no reventar la ventana).
++  2. Le pide al modelo un JSON {ruta: contenido}.
++  3. Aplica los archivos y valida que compilen.
++  4. Si falla, reintenta pasandole el error.
++  5. Pushea a una rama y abre un PR.
++
++NUNCA toca main: todo va a una rama `vibe/issue-N` y sale como PR.
++"""
++
++import json
++import os
++import re
++import subprocess
++import sys
++import urllib.error
++import urllib.request
++
++OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
++MODELO = os.environ.get("VIBE_MODEL", "qwen2.5-coder:3b")
++MAX_CONTEXT_CHARS = int(os.environ.get("VIBE_MAX_CONTEXT", "60000"))
++MAX_INTENTOS = int(os.environ.get("VIBE_MAX_TRIES", "3"))
++PROMPT = os.environ.get("PROMPT_CHAT", "").strip()
++NRO_ISSUE = os.environ.get("ISSUE_NUMBER", "").strip()
++REPO = os.environ.get("REPO", "").strip()
++TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
++API = "https://api.github.com"
++
++# Carpetas que no se escanean: dependencias, caches y basura de build.
++CARPETAS_SALTADAS = {
++    ".git", "node_modules", "__pycache__", ".venv", "venv", "vendor",
++    ".ollama", ".hf_cache", "dist", "build", ".pytest_cache", ".mypy_cache",
++}
++EXTENSIONES = (
++    ".py", ".js", ".ts", ".tsx", ".jsx", ".json", ".txt", ".md",
++    ".yml", ".yaml", ".toml", ".cfg", ".ini", ".html", ".css", ".sh",
++)
++# Archivos enormes que no aportan y ocupan todo el contexto.
++NOMBRES_SALTADOS = {
++    "package-lock.json", "yarn.lock", "poetry.lock", "uv.lock",
++    "conversaciones.txt", "historial_metricas_voz.json",
++}
++
++
++def log(msg):
++    print(msg, flush=True)
++
++
++# --------------------------------------------------------------------------
++# Escaneo del repositorio
++# --------------------------------------------------------------------------
++
++def escanear_repositorio():
++    """Devuelve un mapa textual del repo, recortado al tope de contexto.
++
++    Ordena por tamaño ascendente antes de llenar el presupuesto. Sin esto, un
++    solo archivo de datos enorme (un historial, un dataset) se come el
++    presupuesto entero y deja afuera el código fuente real.
++    """
++    candidatos = []
++    for raiz, directorios, archivos in os.walk("."):
++        directorios[:] = [d for d in directorios if d not in CARPETAS_SALTADAS]
++        for archivo in archivos:
++            if archivo in NOMBRES_SALTADOS or not archivo.endswith(EXTENSIONES):
++                continue
++            ruta = os.path.relpath(os.path.join(raiz, archivo), ".")
++            try:
++                with open(ruta, encoding="utf-8") as fh:
++                    contenido = fh.read()
++            except (OSError, UnicodeDecodeError):
++                continue
++            candidatos.append((len(contenido), ruta, contenido))
++
++    candidatos.sort(key=lambda c: c[0])
++    partes, total, recortado = [], 0, []
++    for tamano, ruta, contenido in candidatos:
++        if total + tamano > MAX_CONTEXT_CHARS:
++            recortado.append(ruta)
++            continue
++        partes.append(f"\n--- ARCHIVO: {ruta} ---\n{contenido}\n")
++        total += tamano
++    if not partes:
++        return "[El repositorio está vacío o no tiene archivos de texto]"
++    mapa = "".join(partes)
++    if recortado:
++        mapa += ("\n[AVISO: estos archivos no entraron por el tope de contexto: "
++                 + ", ".join(recortado) + "]")
++    return mapa
++
++
++# --------------------------------------------------------------------------
++# Ollama
++# --------------------------------------------------------------------------
++
++SISTEMA = (
++    "Sos un agente que construye software. Se te da el estado COMPLETO del "
++    "repositorio y un pedido. AUDITA lo que ya existe: si algo ya se puede "
++    "resolver con archivos o funciones que ya están, reutilizalo en vez de "
++    "duplicar.\n"
++    "Responde EXCLUSIVAMENTE con un JSON válido, sin markdown ni texto extra, "
++    "con esta forma: {\"ruta/archivo.py\": \"contenido completo del archivo\"}.\n"
++    "Incluí el contenido COMPLETO de cada archivo que crees o modifiques, no "
++    "parches ni fragmentos."
++)
++
++
++def consultar_ollama(mapa_repo, error_previo=""):
++    instruccion = SISTEMA
++    if error_previo:
++        instruccion += (
++            "\n\nATENCION: el intento anterior falló con este error. "
++            f"Corregilo:\n{error_previo}"
++        )
++    prompt = (
++        f"{instruccion}\n\nESTADO DEL REPOSITORIO:\n{mapa_repo}\n\n"
++        f"PEDIDO:\n{PROMPT}\n\nJSON:"
++    )
++    payload = json.dumps({
++        "model": MODELO,
++        "prompt": prompt,
++        "stream": False,
++        "options": {"temperature": 0.1, "num_ctx": 16384},
++    }).encode()
++    req = urllib.request.Request(
++        f"{OLLAMA_HOST}/api/generate", data=payload, method="POST",
++        headers={"Content-Type": "application/json"})
++    try:
++        with urllib.request.urlopen(req, timeout=600) as resp:
++            return json.load(resp).get("response", "").strip()
++    except Exception as exc:  # noqa: BLE001 - cualquier falla cae al reporte
++        return f"__ERROR_OLLAMA__ {exc!r}"
++
++
++# --------------------------------------------------------------------------
++# Parseo de la respuesta
++# --------------------------------------------------------------------------
++
++def extraer_json(texto):
++    """Saca el JSON de la respuesta del modelo, tolerando lo que ensucia.
++
++    Los modelos chicos suelen envolver en ```json o agregar texto antes y
++    despues. Buscamos el primer objeto balanceado en vez de confiar en que
++    el texto sea JSON puro.
++    """
++    if not texto or texto.startswith("__ERROR_OLLAMA__"):
++        return None
++    limpio = re.sub(r"```(?:json)?", "", texto).strip()
++    inicio = limpio.find("{")
++    if inicio == -1:
++        return None
++    profundidad, en_string, escape = 0, False, False
++    for i, ch in enumerate(limpio[inicio:], start=inicio):
++        if en_string:
++            if escape:
++                escape = False
++            elif ch == "\\":
++                escape = True
++            elif ch == '"':
++                en_string = False
++            continue
++        if ch == '"':
++            en_string = True
++        elif ch == "{":
++            profundidad += 1
++        elif ch == "}":
++            profundidad -= 1
++            if profundidad == 0:
++                try:
++                    datos = json.loads(limpio[inicio:i + 1])
++                    return datos if isinstance(datos, dict) else None
++                except json.JSONDecodeError:
++                    return None
++    return None
++
++
++def aplicar_archivos(estructura):
++    """Escribe los archivos pedidos. Devuelve la lista de rutas escritas."""
++    escritas = []
++    for ruta, contenido in estructura.items():
++        if not isinstance(contenido, str) or not ruta.strip():
++            continue
++        # Sin esto un modelo puede escribir fuera del repo (../../etc).
++        normalizada = os.path.normpath(ruta).lstrip("/")
++        if normalizada.startswith("..") or os.path.isabs(normalizada):
++            log(f"⚠️  Ruta rechazada por insegura: {ruta}")
++            continue
++        padre = os.path.dirname(normalizada)
++        if padre:
++            os.makedirs(padre, exist_ok=True)
++        with open(normalizada, "w", encoding="utf-8") as fh:
++            fh.write(contenido)
++        escritas.append(normalizada)
++    return escritas
++
++
++# --------------------------------------------------------------------------
++# Verificacion
++# --------------------------------------------------------------------------
++
++def validar(escritas):
++    """Devuelve (ok, detalle). Chequea sintaxis de lo que se tocó.
++
++    Es a proposito conservador: si no hay nada que correr, da ok y lo dice.
++    """
++    if not escritas:
++        return False, "El modelo no devolvió ningún archivo para escribir."
++    py = [r for r in escritas if r.endswith(".py")]
++    if py:
++        res = subprocess.run(
++            [sys.executable, "-m", "py_compile", *py],
++            capture_output=True, text=True)
++        if res.returncode != 0:
++            return False, (res.stderr or res.stdout).strip()[-2000:]
++    return True, f"Sintaxis OK en {len(escritas)} archivo(s)."
++
++
++# --------------------------------------------------------------------------
++# Git + PR
++# --------------------------------------------------------------------------
++
++def git(*args, check=True):
++    return subprocess.run(["git", *args], capture_output=True, text=True,
++                          check=check)
++
++
++def api(method, path, payload=None):
++    data = json.dumps(payload).encode() if payload is not None else None
++    req = urllib.request.Request(
++        f"{API}{path}", data=data, method=method,
++        headers={"Authorization": f"Bearer {TOKEN}",
++                 "Accept": "application/vnd.github+json",
++                 "X-GitHub-Api-Version": "2022-11-28"})
++    with urllib.request.urlopen(req, timeout=30) as resp:
++        return json.load(resp)
++
++
++def publicar(escritas, resumen):
++    """Commitea en una rama nueva y abre el PR. Devuelve (numero, url)."""
++    rama = f"vibe/issue-{NRO_ISSUE}" if NRO_ISSUE else "vibe/cambio"
++    git("config", "user.name", "vibe-agent[bot]")
++    git("config", "user.email", "vibe-agent@users.noreply.github.com")
++    git("checkout", "-B", rama)
++    git("add", "-A")
++    git("commit", "-m", f"vibe: {resumen}")
++    git("push", "--force", "origin", rama)
++
++    cuerpo = (
++        f"Generado por el vibe agent (Ollama `{MODELO}`) a partir del "
++        f"{'issue #' + NRO_ISSUE if NRO_ISSUE else 'pedido'}.\n\n"
++        f"**Archivos:** {', '.join(f'`{r}`' for r in escritas)}\n\n"
++        f"**Verificación:** {resumen}\n\n"
++        "Revisá el diff antes de mergear: el modelo es chico y puede "
++        "equivocarse.\n\n"
++        "_Este PR fue creado por un agente de IA (vibe agent)._\n"
++    )
++    pr = api("POST", f"/repos/{REPO}/pulls", {
++        "title": f"vibe: {resumen}",
++        "head": rama,
++        "base": os.environ.get("BASE_BRANCH", "main"),
++        "body": cuerpo,
++    })
++    return pr.get("number"), pr.get("html_url")
++
++
++# --------------------------------------------------------------------------
++
++def main():
++    if not PROMPT:
++        log("Sin pedido (PROMPT_CHAT vacío): no hay nada que hacer.")
++        return 0
++    log(f"🔍 Escaneando repositorio (tope {MAX_CONTEXT_CHARS} chars)...")
++    mapa = escanear_repositorio()
++    log(f"   contexto: {len(mapa)} chars")
++
++    error, escritas, resumen = "", [], ""
++    for intento in range(1, MAX_INTENTOS + 1):
++        log(f"🔄 Intento {intento}/{MAX_INTENTOS}")
++        estructura = extraer_json(consultar_ollama(mapa, error))
++        if estructura is None:
++            error = ("Tu respuesta anterior no era un JSON válido. Responde "
++                     "SOLO con el objeto JSON {ruta: contenido}.")
++            continue
++        escritas = aplicar_archivos(estructura)
++        ok, resumen = validar(escritas)
++        if ok:
++            break
++        error = resumen
++    else:
++        _reporte(False, error, escritas)
++        return 1
++
++    try:
++        nro, url = publicar(escritas, resumen)
++        _reporte(True, f"PR #{nro}: {url}", escritas)
++    except (urllib.error.HTTPError, subprocess.CalledProcessError) as exc:
++        detalle = (exc.read().decode()
++                   if isinstance(exc, urllib.error.HTTPError) else str(exc))
++        _reporte(False, f"No pude publicar: {detalle[:500]}", escritas)
++        return 1
++    return 0
++
++
++def _reporte(ok, detalle, escritas):
++    lineas = ["### 🤖 Vibe Agent\n"]
++    if ok:
++        lineas.append(f"✅ Listo. {detalle}\n")
++    else:
++        lineas.append(f"⚠️ No pude cerrar el cambio.\n\n```text\n{detalle}\n```\n")
++    if escritas:
++        lineas.append("**Archivos tocados:**\n")
++        lineas += [f"- `{r}`\n" for r in escritas]
++    lineas.append("\n_Generado por un agente de IA (vibe agent)._\n")
++    with open("vibe_report.txt", "w", encoding="utf-8") as fh:
++        fh.write("".join(lineas))
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/.github/workflows/bot.yml b/.github/workflows/bot.yml
+index 425b555..f3bd569 100644
+--- a/.github/workflows/bot.yml
++++ b/.github/workflows/bot.yml
+@@ -1,5 +1,4 @@
+ name: Bot Telegram Leandro Ollama
+-blabla
+ on:
+   push:
+     branches: [ main ]
+diff --git a/.github/workflows/vibe-agent.yml b/.github/workflows/vibe-agent.yml
+new file mode 100644
+index 0000000..5d1e69e
+--- /dev/null
++++ b/.github/workflows/vibe-agent.yml
+@@ -0,0 +1,88 @@
++name: Vibe Agent
++
++# Se dispara cuando abrís un issue nuevo o comentás en uno.
++# El bot NUNCA escribe en main: abre una rama y un PR.
++on:
++  issues:
++    types: [opened]
++  issue_comment:
++    types: [created]
++
++# Sin esto el GITHUB_TOKEN es read-only y el push falla con 403.
++permissions:
++  contents: write
++  pull-requests: write
++
++env:
++  VIBE_MODEL: qwen2.5-coder:3b
++
++# Un solo run por issue: si comentás de nuevo, cancela el anterior.
++concurrency:
++  group: vibe-${{ github.event.issue.number }}
++  cancel-in-progress: true
++
++jobs:
++  build:
++    # Ignora comentarios del propio bot (evita el bucle) y los que no
++    # son pedidos.
++    if: |
++      github.event.sender.type != 'Bot' &&
++      github.event.comment.user.login != 'github-actions[bot]'
++    runs-on: ubuntu-latest
++    timeout-minutes: 30
++
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++
++      - name: Cache de Ollama
++        uses: actions/cache@v4
++        with:
++          path: ~/.ollama
++          key: ollama-${{ runner.os }}-${{ env.VIBE_MODEL }}
++
++      - name: Instalar y levantar Ollama
++        run: |
++          if ! command -v ollama >/dev/null; then
++            curl -fsSL https://ollama.com/install.sh | sh
++          fi
++          ollama serve &
++          for i in $(seq 1 30); do
++            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
++            sleep 2
++          done
++          ollama pull "$VIBE_MODEL"
++
++      - name: Configurar Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: '3.11'
++
++      - name: Correr el agente
++        id: agente
++        env:
++          PROMPT_CHAT: ${{ github.event.comment.body || github.event.issue.body }}
++          ISSUE_NUMBER: ${{ github.event.issue.number }}
++          REPO: ${{ github.repository }}
++          BASE_BRANCH: ${{ github.event.repository.default_branch }}
++          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++        run: python .github/scripts/vibe_agent.py
++        continue-on-error: true
++
++      - name: Comentar el resultado en el issue
++        if: always()
++        uses: actions/github-script@v7
++        with:
++          script: |
++            const fs = require('fs');
++            const cuerpo = fs.existsSync('vibe_report.txt')
++              ? fs.readFileSync('vibe_report.txt', 'utf8')
++              : '⚠️ El agente no dejó reporte. Revisá los logs del run.';
++            await github.rest.issues.createComment({
++              issue_number: context.issue.number,
++              owner: context.repo.owner,
++              repo: context.repo.repo,
++              body: cuerpo
++            });
+diff --git a/.gitignore b/.gitignore
+index b0ac3ed..e8c4d3e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1 +1,6 @@
+ .aider*
++__pycache__/
++*.pyc
++.ollama/
++vibe_report.txt
++respuesta_dsp.mp3
+-- 
+2.47.3
+
+
+From 566b9feb4227d4b194ef35bf8c9b5bac30114251 Mon Sep 17 00:00:00 2001
+From: openhands <openhands@all-hands.dev>
+Date: Thu, 29 Oct 2026 03:49:43 +0000
+Subject: [PATCH 2/3] Bot alternativo @lv_vibebot para el runner
+
+Un bot de Telegram aparte, para probar sin pisar a @locura_agente_bot
+(mismo token = error 409 y se pelean los dos pollers).
+
+Corre con Ollama local en el runner: sin API keys y sin tope de mensajes.
+
+Diferencias con procesar.py (el bot de siempre):
+- NO toca el repo, NO hace push, NO usa aider. Solo chatea.
+- Historial en memoria por chat, recortado a 12 turnos.
+- Allowlist: solo el chat_id de Leandro.
+
+Rotacion del runner:
+- GitHub corta los jobs a las 6h, asi que el bot se apaga solo a las 5h30m
+  y el cron (*/5) lo revive. drop_pending_updates=False para no perder los
+  mensajes que lleguen en el hueco.
+
+Modelo: qwen2.5:3b. Lo medi contra phi3 con el mismo prompt: phi3 divaga y
+se sale del personaje, qwen responde corto y natural ("Claro che, no te
+cortes nunca").
+
+Dos bugs que encontre probando:
+- El historial crecia sin control: se recortaba al ENVIAR pero se guardaba
+  entero. En un proceso de horas se comia la RAM. Ahora recorta al guardar.
+- (os.environ.get(X) or default) en la allowlist: si el secret no existe,
+  GitHub manda "" y get() NO usa el default, dejando la allowlist vacia y
+  al bot mudo. Verificado en los 4 casos.
+---
+ .github/workflows/bot-vibe.yml |  71 +++++++++++++++
+ bot_vibe.py                    | 161 +++++++++++++++++++++++++++++++++
+ 2 files changed, 232 insertions(+)
+ create mode 100644 .github/workflows/bot-vibe.yml
+ create mode 100644 bot_vibe.py
+
+diff --git a/.github/workflows/bot-vibe.yml b/.github/workflows/bot-vibe.yml
+new file mode 100644
+index 0000000..78cb147
+--- /dev/null
++++ b/.github/workflows/bot-vibe.yml
+@@ -0,0 +1,71 @@
++name: Bot Vibe (alternativo)
++
++# Bot de Telegram de pruebas: corre en el runner con Ollama local.
++# NO toca el repo, NO hace push. Solo chatea.
++#
++# OJO: GitHub corta los jobs a las 6h. Por eso el bot se apaga solo a las
++# 5h30m y el cron lo revive. Hay un hueco de hasta 5 min entre rotaciones:
++# los mensajes que lleguen ahi se procesan al volver (drop_pending_updates
++# esta en False a proposito).
++on:
++  workflow_dispatch:
++  schedule:
++    - cron: '*/5 * * * *'
++
++permissions:
++  contents: read
++
++env:
++  # qwen2.5:3b le gana a phi3 en charla rioplatense: respuestas cortas y
++  # naturales en vez de vueltas. Medido en el sandbox, mismo prompt.
++  OLLAMA_MODEL: qwen2.5:3b
++
++concurrency:
++  group: bot-vibe
++  cancel-in-progress: false
++
++jobs:
++  chat:
++    runs-on: ubuntu-latest
++    timeout-minutes: 355  # 5h55m, con margen bajo el tope de 6h
++
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Cache de Ollama
++        uses: actions/cache@v4
++        with:
++          path: ~/.ollama
++          key: ollama-vibe-${{ runner.os }}-${{ env.OLLAMA_MODEL }}
++
++      - name: Instalar y levantar Ollama
++        run: |
++          if ! command -v ollama >/dev/null; then
++            curl -fsSL https://ollama.com/install.sh | sh
++          fi
++          ollama serve &
++          for i in $(seq 1 30); do
++            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
++            sleep 2
++          done
++          ollama pull "$OLLAMA_MODEL"
++
++      - name: Configurar Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: '3.11'
++          cache: 'pip'
++
++      - name: Instalar dependencias
++        run: |
++          pip install --upgrade pip
++          pip install "python-telegram-bot>=21.0" httpx
++
++      - name: Arrancar el bot
++        env:
++          TELEGRAM_BOT_TOKEN_VIBE: ${{ secrets.TELEGRAM_BOT_TOKEN_VIBE }}
++          ALLOWED_CHAT_IDS: ${{ secrets.ALLOWED_CHAT_IDS }}
++          OLLAMA_HOST: "http://127.0.0.1:11434"
++          MAX_RUNTIME_SECONDS: "19800"  # 5h30m, para que cierre antes del tope
++        run: python bot_vibe.py
+diff --git a/bot_vibe.py b/bot_vibe.py
+new file mode 100644
+index 0000000..39766b1
+--- /dev/null
++++ b/bot_vibe.py
+@@ -0,0 +1,161 @@
++# -*- coding: utf-8 -*-
++"""bot_vibe.py - bot de Telegram alternativo que corre en el runner de Actions.
++
++Es el hermano chico de procesar.py: no toca el repo, no hace push, no usa
++aider. Solo chatea. La idea es tener un bot aparte para probar sin pisar a
++@locura_agente_bot (mismo token = error 409 y se pelean).
++
++Modelo: Ollama local en el runner. Sin API keys y sin tope de mensajes,
++porque no hay costo por token.
++"""
++
++import asyncio
++import json
++import os
++import time
++import urllib.error
++import urllib.request
++
++from telegram import Update
++from telegram.constants import ChatAction
++from telegram.ext import (
++    Application,
++    CommandHandler,
++    ContextTypes,
++    MessageHandler,
++    filters,
++)
++
++TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN_VIBE", "").strip()
++OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
++MODELO = os.environ.get("OLLAMA_MODEL", "phi3")
++# El runner de Actions tiene tope de 6h. Salimos un rato antes para que el
++# job cierre limpio y el proximo cron tome la posta sin cortar a lo bruto.
++MAX_SEGUNDOS = int(os.environ.get("MAX_RUNTIME_SECONDS", str(5 * 3600 + 1800)))
++MAX_HISTORIAL = 12  # turnos que se mandan como contexto
++
++# Allowlist: en un repo publico el bot es descubrible. Solo Leandro.
++# Ojo con el `or`: si el secret no existe, GitHub manda "", y get() con
++# default NO lo reemplaza (la variable existe, vacia). Sin el `or` la
++# allowlist queda vacia y el bot no le contesta a nadie.
++PERMITIDOS = {
++    int(x) for x in (os.environ.get("ALLOWED_CHAT_IDS") or "7043094764").split(",")
++    if x.strip().lstrip("-").isdigit()
++}
++
++SISTEMA = (
++    "Sos el bot de Leandro, un compañero de vibe coding rioplatense. Hablás "
++    "en español de Argentina, con voseo, 'che', 'boludo' ocasional, y ritmo "
++    "de barrio. Sos directo, ingenioso y no te la das de asistente formal. "
++    "Respondés corto: 1 a 3 oraciones, salvo que te pidan algo técnico largo. "
++    "Nunca digas que sos una IA generica ni pidas disculpas de más."
++)
++
++historiales = {}
++INICIO = time.time()
++
++
++def log(msg):
++    print(msg, flush=True)
++
++
++def consultar_ollama(chat_id, texto):
++    """Devuelve la respuesta del modelo, con el historial del chat."""
++    historial = historiales.setdefault(chat_id, [])
++    historial.append({"role": "user", "content": texto})
++    # Recortamos al guardar, no solo al enviar: si no, en un proceso de
++    # horas el historial crece sin control y se come la RAM del runner.
++    del historial[:-MAX_HISTORIAL]
++    mensajes = [{"role": "system", "content": SISTEMA}] + historial
++    payload = json.dumps({
++        "model": MODELO,
++        "messages": mensajes,
++        "stream": False,
++        "options": {"temperature": 0.7, "num_predict": 400},
++    }).encode()
++    req = urllib.request.Request(
++        f"{OLLAMA_HOST}/api/chat", data=payload, method="POST",
++        headers={"Content-Type": "application/json"})
++    try:
++        with urllib.request.urlopen(req, timeout=180) as resp:
++            respuesta = json.load(resp).get("message", {}).get("content", "").strip()
++    except Exception as exc:  # noqa: BLE001
++        log(f"❌ Ollama: {exc!r}")
++        historial.pop()
++        return "Uy, se me trabó el modelo. Probá de nuevo en un toque."
++    if respuesta:
++        historial.append({"role": "assistant", "content": respuesta})
++        return respuesta
++    return "Me quedé en blanco, che. Repetime eso."
++
++
++async def partir_y_enviar(update, texto, max_chunk=4000):
++    """Telegram corta a 4096 chars: partimos sin cortar palabras."""
++    for i in range(0, len(texto), max_chunk):
++        await update.message.reply_text(texto[i:i + max_chunk])
++
++
++async def cmd_start(update, context):
++    if update.effective_chat.id not in PERMITIDOS:
++        return
++    await update.message.reply_text(
++        "¡Qué hacés che! Soy @lv_vibebot, el bot de pruebas de Leandro.\n"
++        "Escribime lo que quieras. Ando con un modelo local en el runner, "
++        "así que no hay tope de mensajes.")
++
++
++async def cmd_status(update, context):
++    if update.effective_chat.id not in PERMITIDOS:
++        return
++    minutos = int((time.time() - INICIO) // 60)
++    await update.message.reply_text(
++        f"Vivo hace {minutos} min en este runner.\n"
++        f"Modelo: {MODELO}\n"
++        f"Cortes: cada {MAX_SEGUNDOS // 3600}h aprox, cuando rota el cron.")
++
++
++async def cmd_reset(update, context):
++    if update.effective_chat.id not in PERMITIDOS:
++        return
++    historiales.pop(update.effective_chat.id, None)
++    await update.message.reply_text("Listo, borrón y cuenta nueva.")
++
++
++async def manejar_texto(update, context):
++    if update.effective_chat.id not in PERMITIDOS:
++        return
++    texto = (update.message.text or "").strip()
++    if not texto:
++        return
++    await context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
++    respuesta = await asyncio.to_thread(consultar_ollama, update.effective_chat.id, texto)
++    await partir_y_enviar(update, respuesta)
++
++
++async def main():
++    if not TOKEN:
++        log("❌ Falta TELEGRAM_BOT_TOKEN_VIBE.")
++        return
++    app = Application.builder().token(TOKEN).build()
++    app.add_handler(CommandHandler("start", cmd_start))
++    app.add_handler(CommandHandler("status", cmd_status))
++    app.add_handler(CommandHandler("reset", cmd_reset))
++    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_texto))
++
++    log(f"🤖 @lv_vibebot arriba | modelo {MODELO} | permitidos {PERMITIDOS}")
++    async with app:
++        await app.start()
++        # drop_pending_updates=False: si el bot estuvo caído entre rotaciones,
++        # los mensajes que llegaron en el medio se procesan al volver.
++        await app.updater.start_polling(drop_pending_updates=False)
++        try:
++            while time.time() - INICIO < MAX_SEGUNDOS:
++                await asyncio.sleep(30)
++            log("⏰ Tiempo máximo alcanzado, cerrando para que rote el cron.")
++        finally:
++            await app.updater.stop()
++            await app.stop()
++
++
++if __name__ == "__main__":
++    asyncio.run(main())
+-- 
+2.47.3
+
+
+From ef5c090af5158e61fe10acf96747e4d35be0c330 Mon Sep 17 00:00:00 2001
+From: openhands <openhands@all-hands.dev>
+Date: Thu, 29 Oct 2026 03:53:18 +0000
+Subject: [PATCH 3/3] Instalar Ollama de forma determinista en el runner
+
+El install.sh oficial usa curl|sh y aborta si falta zstd (que no siempre
+esta en ubuntu-latest). Ahora fijamos la version, verificamos el sha256
+oficial y extraemos con zstd.
+
+Verificado en el sandbox: el bloque entero corre tal cual, hash OK,
+extraccion OK, binario arranca.
+---
+ .github/workflows/bot-vibe.yml | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/.github/workflows/bot-vibe.yml b/.github/workflows/bot-vibe.yml
+index 78cb147..7d4a074 100644
+--- a/.github/workflows/bot-vibe.yml
++++ b/.github/workflows/bot-vibe.yml
+@@ -41,8 +41,22 @@ jobs:
+ 
+       - name: Instalar y levantar Ollama
+         run: |
++          # Instalacion determinista en vez del install.sh oficial: ese usa
++          # curl|sh y aborta si falta zstd. Aca fijamos version y verificamos
++          # el sha256 oficial, asi el runner no se rompe si cambia el ultimo
++          # release a mitad de camino.
++          OLLAMA_VER="v0.40.13"
++          OLLAMA_SHA="c9490e0f520be21271d969e6703f012268b1d39f8b70dd58854e5bfef7a75bb6"
+           if ! command -v ollama >/dev/null; then
+-            curl -fsSL https://ollama.com/install.sh | sh
++            if ! command -v zstd >/dev/null; then
++              sudo apt-get update -q && sudo apt-get install -y -q zstd
++            fi
++            curl -fsSL -o /tmp/ollama.tar.zst \
++              "https://github.com/ollama/ollama/releases/download/${OLLAMA_VER}/ollama-linux-amd64.tar.zst"
++            echo "${OLLAMA_SHA}  /tmp/ollama.tar.zst" | sha256sum -c -
++            # tar solo no descomprime .zst: hace falta pasarlo por zstd.
++            zstd -d -c /tmp/ollama.tar.zst | sudo tar -xf - -C /usr/local
++            rm -f /tmp/ollama.tar.zst
+           fi
+           ollama serve &
+           for i in $(seq 1 30); do
+-- 
+2.47.3
+

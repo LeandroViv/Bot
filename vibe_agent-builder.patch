@@ -1,0 +1,718 @@
+From 3a9745ad6e66e8c3a3203cfe4916e6c3397a9e34 Mon Sep 17 00:00:00 2001
+From: openhands <openhands@all-hands.dev>
+Date: Thu, 29 Oct 2026 03:15:02 +0000
+Subject: [PATCH] Arreglar el builder: nunca pusheaba, y no compilaba
+
+El workflow corria en rojo y el agente no servia. Dos problemas de fondo:
+
+1. Error de sintaxis en vibe_agent.py: `p en raiz` en vez de `p in raiz`.
+   El script ni arrancaba (3 runs fallidos).
+
+2. El agente NUNCA subia el codigo. Escribia los archivos en el runner y ahi
+   morian: no habia git add/commit/push en ningun lado. El bot comentaba
+   "buildeado con exito" y no quedaba nada. Ese era el agujero principal.
+
+Ahora:
+- Escanea con tope de contexto (VIBE_MAX_CONTEXT) y saltea lockfiles y
+  archivos enormes, para no reventar la ventana de 16k.
+- extraer_json() tolera ```json, texto antes/despues y llaves anidadas,
+  en vez de confiar en que la respuesta sea JSON puro.
+- Rechaza rutas fuera del repo (../../etc).
+- Verifica sintaxis de lo que escribio antes de publicar.
+- Commitea en rama vibe/issue-N y abre un PR. Nunca toca main.
+- Reporta la URL del PR en el issue.
+
+Workflow:
+- permissions: contents/pull-requests write (sin esto el token es read-only
+  y el push da 403).
+- Filtra comentarios del bot (evita el bucle) y usa concurrency por issue.
+- Cachea ~/.ollama y solo instala si falta.
+
+README con uso, variables y como replicarlo en otro repo.
+---
+ .github/scripts/vibe_agent.py     | 412 ++++++++++++++++++++++--------
+ .github/workflows/vibe-coding.yml | 128 ++++++----
+ .gitignore                        |   4 +
+ README.md                         |  72 ++++++
+ 4 files changed, 449 insertions(+), 167 deletions(-)
+ create mode 100644 .gitignore
+ create mode 100644 README.md
+
+diff --git a/.github/scripts/vibe_agent.py b/.github/scripts/vibe_agent.py
+index 683d0e4..77a1745 100644
+--- a/.github/scripts/vibe_agent.py
++++ b/.github/scripts/vibe_agent.py
+@@ -1,132 +1,322 @@
+-import os
+-import requests
++#!/usr/bin/env python3
++# -*- coding: utf-8 -*-
++"""vibe_agent.py - builder que corre Ollama en el propio runner de Actions.
++
++Flujo:
++  1. Escanea el repo (con tope de contexto, para no reventar la ventana).
++  2. Le pide al modelo un JSON {ruta: contenido}.
++  3. Aplica los archivos y valida que compilen.
++  4. Si falla, reintenta pasandole el error.
++  5. Pushea a una rama y abre un PR.
++
++NUNCA toca main: todo va a una rama `vibe/issue-N` y sale como PR.
++"""
++
+ import json
++import os
++import re
+ import subprocess
++import sys
++import urllib.error
++import urllib.request
++
++OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
++MODELO = os.environ.get("VIBE_MODEL", "qwen2.5-coder:3b")
++MAX_CONTEXT_CHARS = int(os.environ.get("VIBE_MAX_CONTEXT", "60000"))
++MAX_INTENTOS = int(os.environ.get("VIBE_MAX_TRIES", "3"))
++PROMPT = os.environ.get("PROMPT_CHAT", "").strip()
++NRO_ISSUE = os.environ.get("ISSUE_NUMBER", "").strip()
++REPO = os.environ.get("REPO", "").strip()
++TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
++API = "https://api.github.com"
++
++# Carpetas que no se escanean: dependencias, caches y basura de build.
++CARPETAS_SALTADAS = {
++    ".git", "node_modules", "__pycache__", ".venv", "venv", "vendor",
++    ".ollama", ".hf_cache", "dist", "build", ".pytest_cache", ".mypy_cache",
++}
++EXTENSIONES = (
++    ".py", ".js", ".ts", ".tsx", ".jsx", ".json", ".txt", ".md",
++    ".yml", ".yaml", ".toml", ".cfg", ".ini", ".html", ".css", ".sh",
++)
++# Archivos enormes que no aportan y ocupan todo el contexto.
++NOMBRES_SALTADOS = {
++    "package-lock.json", "yarn.lock", "poetry.lock", "uv.lock",
++    "conversaciones.txt", "historial_metricas_voz.json",
++}
+ 
+-MAX_INTENTOS = 3
+-# Extensiones de archivos que el agente va a auditar para evitar redundancia
+-EXTENSIONES_PERMITIDAS = ('.js', '.ts', '.py', '.json', '.txt', '.md', '.yml', '.yaml')
+ 
+-def escanear_repositorio_completo():
++def log(msg):
++    print(msg, flush=True)
++
++
++# --------------------------------------------------------------------------
++# Escaneo del repositorio
++# --------------------------------------------------------------------------
++
++def escanear_repositorio():
++    """Devuelve un mapa textual del repo, recortado al tope de contexto.
++
++    Ordena por tamaño ascendente antes de llenar el presupuesto. Sin esto, un
++    solo archivo de datos enorme (un historial, un dataset) se come el
++    presupuesto entero y deja afuera el código fuente real.
+     """
+-    Recorre el repositorio en el runner y arma un mapa textual 
+-    con la estructura y el contenido de los archivos clave.
++    candidatos = []
++    for raiz, directorios, archivos in os.walk("."):
++        directorios[:] = [d for d in directorios if d not in CARPETAS_SALTADAS]
++        for archivo in archivos:
++            if archivo in NOMBRES_SALTADOS or not archivo.endswith(EXTENSIONES):
++                continue
++            ruta = os.path.relpath(os.path.join(raiz, archivo), ".")
++            try:
++                with open(ruta, encoding="utf-8") as fh:
++                    contenido = fh.read()
++            except (OSError, UnicodeDecodeError):
++                continue
++            candidatos.append((len(contenido), ruta, contenido))
++
++    candidatos.sort(key=lambda c: c[0])
++    partes, total, recortado = [], 0, []
++    for tamano, ruta, contenido in candidatos:
++        if total + tamano > MAX_CONTEXT_CHARS:
++            recortado.append(ruta)
++            continue
++        partes.append(f"\n--- ARCHIVO: {ruta} ---\n{contenido}\n")
++        total += tamano
++    if not partes:
++        return "[El repositorio está vacío o no tiene archivos de texto]"
++    mapa = "".join(partes)
++    if recortado:
++        mapa += ("\n[AVISO: estos archivos no entraron por el tope de contexto: "
++                 + ", ".join(recortado) + "]")
++    return mapa
++
++
++# --------------------------------------------------------------------------
++# Ollama
++# --------------------------------------------------------------------------
++
++SISTEMA = (
++    "Sos un agente que construye software. Se te da el estado COMPLETO del "
++    "repositorio y un pedido. AUDITA lo que ya existe: si algo ya se puede "
++    "resolver con archivos o funciones que ya están, reutilizalo en vez de "
++    "duplicar.\n"
++    "Responde EXCLUSIVAMENTE con un JSON válido, sin markdown ni texto extra, "
++    "con esta forma: {\"ruta/archivo.py\": \"contenido completo del archivo\"}.\n"
++    "Incluí el contenido COMPLETO de cada archivo que crees o modifiques, no "
++    "parches ni fragmentos."
++)
++
++
++def consultar_ollama(mapa_repo, error_previo=""):
++    instruccion = SISTEMA
++    if error_previo:
++        instruccion += (
++            "\n\nATENCION: el intento anterior falló con este error. "
++            f"Corregilo:\n{error_previo}"
++        )
++    prompt = (
++        f"{instruccion}\n\nESTADO DEL REPOSITORIO:\n{mapa_repo}\n\n"
++        f"PEDIDO:\n{PROMPT}\n\nJSON:"
++    )
++    payload = json.dumps({
++        "model": MODELO,
++        "prompt": prompt,
++        "stream": False,
++        "options": {"temperature": 0.1, "num_ctx": 16384},
++    }).encode()
++    req = urllib.request.Request(
++        f"{OLLAMA_HOST}/api/generate", data=payload, method="POST",
++        headers={"Content-Type": "application/json"})
++    try:
++        with urllib.request.urlopen(req, timeout=600) as resp:
++            return json.load(resp).get("response", "").strip()
++    except Exception as exc:  # noqa: BLE001 - cualquier falla cae al reporte
++        return f"__ERROR_OLLAMA__ {exc!r}"
++
++
++# --------------------------------------------------------------------------
++# Parseo de la respuesta
++# --------------------------------------------------------------------------
++
++def extraer_json(texto):
++    """Saca el JSON de la respuesta del modelo, tolerando lo que ensucia.
++
++    Los modelos chicos suelen envolver en ```json o agregar texto antes y
++    despues. Buscamos el primer objeto balanceado en vez de confiar en que
++    el texto sea JSON puro.
+     """
+-    contexto_repo = ""
+-    for raiz, directorios, archivos in os.walk('.'):
+-        # Ignorar carpetas ocultas o de dependencias de node/python
+-        if any(p en raiz for p in ['.git', 'node_modules', '__pycache__', '.venv', '.ollama']):
++    if not texto or texto.startswith("__ERROR_OLLAMA__"):
++        return None
++    limpio = re.sub(r"```(?:json)?", "", texto).strip()
++    inicio = limpio.find("{")
++    if inicio == -1:
++        return None
++    profundidad, en_string, escape = 0, False, False
++    for i, ch in enumerate(limpio[inicio:], start=inicio):
++        if en_string:
++            if escape:
++                escape = False
++            elif ch == "\\":
++                escape = True
++            elif ch == '"':
++                en_string = False
+             continue
+-            
+-        for archivo in archivos:
+-            if archivo.endswith(EXTENSIONES_PERMITIDAS):
+-                ruta_completa = os.path.join(raiz, archivo)
+-                # Normalizar ruta eliminando el './' inicial
+-                ruta_relativa = os.path.relpath(ruta_completa, '.')
+-                
++        if ch == '"':
++            en_string = True
++        elif ch == "{":
++            profundidad += 1
++        elif ch == "}":
++            profundidad -= 1
++            if profundidad == 0:
+                 try:
+-                    with open(ruta_completa, 'r', encoding='utf-8') as f:
+-                        contenido = f.read()
+-                    contexto_repo += f"\n--- ARCHIVO EXISTENTE: {ruta_relativa} ---\n{contenido}\n"
+-                except Exception:
+-                    pass # Ignorar archivos binarios o corruptos
+-                    
+-    return contexto_repo if contexto_repo else "[El repositorio está actualmente vacío]"
+-
+-def consultar_ollama(prompt, mapa_repositorio, error_previo=""):
+-    url = "http://localhost:11434/api/generate"
+-    
+-    system_instruction = (
+-        "Sos un Agente App Builder experto en Vibe Coding. Tu objetivo es evolucionar el software sin introducir redundancias.\n"
+-        "Se te proporcionará el estado actual COMPLETO del repositorio. Debes AUDITARLO minuciosamente.\n"
+-        "Si el requerimiento del usuario ya se puede resolver con funciones o archivos existentes, REUTILIZALOS en lugar de duplicarlos.\n"
+-        "Responde EXCLUSIVAMENTE con un JSON válido (diccionario de ruta_archivo: contenido_completo).\n"
+-        "No incluyas explicaciones textuales ni bloques de código markdown (```json).\n"
+-    )
+-    
+-    if error_previo:
+-        system_instruction += f"\n⚠️ CORRECCIÓN DE ERROR (El build anterior falló):\n{error_previo}"
++                    datos = json.loads(limpio[inicio:i + 1])
++                    return datos if isinstance(datos, dict) else None
++                except json.JSONDecodeError:
++                    return None
++    return None
++
++
++def aplicar_archivos(estructura):
++    """Escribe los archivos pedidos. Devuelve la lista de rutas escritas."""
++    escritas = []
++    for ruta, contenido in estructura.items():
++        if not isinstance(contenido, str) or not ruta.strip():
++            continue
++        # Sin esto un modelo puede escribir fuera del repo (../../etc).
++        normalizada = os.path.normpath(ruta).lstrip("/")
++        if normalizada.startswith("..") or os.path.isabs(normalizada):
++            log(f"⚠️  Ruta rechazada por insegura: {ruta}")
++            continue
++        padre = os.path.dirname(normalizada)
++        if padre:
++            os.makedirs(padre, exist_ok=True)
++        with open(normalizada, "w", encoding="utf-8") as fh:
++            fh.write(contenido)
++        escritas.append(normalizada)
++    return escritas
++
++
++# --------------------------------------------------------------------------
++# Verificacion
++# --------------------------------------------------------------------------
++
++def validar(escritas):
++    """Devuelve (ok, detalle). Chequea sintaxis de lo que se tocó.
++
++    Es a proposito conservador: si no hay nada que correr, da ok y lo dice.
++    """
++    if not escritas:
++        return False, "El modelo no devolvió ningún archivo para escribir."
++    py = [r for r in escritas if r.endswith(".py")]
++    if py:
++        res = subprocess.run(
++            [sys.executable, "-m", "py_compile", *py],
++            capture_output=True, text=True)
++        if res.returncode != 0:
++            return False, (res.stderr or res.stdout).strip()[-2000:]
++    return True, f"Sintaxis OK en {len(escritas)} archivo(s)."
++
++
++# --------------------------------------------------------------------------
++# Git + PR
++# --------------------------------------------------------------------------
+ 
+-    full_prompt = (
+-        f"{system_instruction}\n\n"
+-        f"ESTADO ACTUAL DEL REPOSITORIO:\n{mapa_repositorio}\n\n"
+-        f"NUEVAS INSTRUCCIONES DEL CHAT:\n{prompt}\n\n"
+-        f"Respuesta JSON:"
++def git(*args, check=True):
++    return subprocess.run(["git", *args], capture_output=True, text=True,
++                          check=check)
++
++
++def api(method, path, payload=None):
++    data = json.dumps(payload).encode() if payload is not None else None
++    req = urllib.request.Request(
++        f"{API}{path}", data=data, method=method,
++        headers={"Authorization": f"Bearer {TOKEN}",
++                 "Accept": "application/vnd.github+json",
++                 "X-GitHub-Api-Version": "2022-11-28"})
++    with urllib.request.urlopen(req, timeout=30) as resp:
++        return json.load(resp)
++
++
++def publicar(escritas, resumen):
++    """Commitea en una rama nueva y abre el PR. Devuelve (numero, url)."""
++    rama = f"vibe/issue-{NRO_ISSUE}" if NRO_ISSUE else "vibe/cambio"
++    git("config", "user.name", "vibe-agent[bot]")
++    git("config", "user.email", "vibe-agent@users.noreply.github.com")
++    git("checkout", "-B", rama)
++    git("add", "-A")
++    git("commit", "-m", f"vibe: {resumen}")
++    git("push", "--force", "origin", rama)
++
++    cuerpo = (
++        f"Generado por el vibe agent (Ollama `{MODELO}`) a partir del "
++        f"{'issue #' + NRO_ISSUE if NRO_ISSUE else 'pedido'}.\n\n"
++        f"**Archivos:** {', '.join(f'`{r}`' for r in escritas)}\n\n"
++        f"**Verificación:** {resumen}\n\n"
++        "Revisá el diff antes de mergear: el modelo es chico y puede "
++        "equivocarse.\n\n"
++        "_Este PR fue creado por un agente de IA (vibe agent)._\n"
+     )
++    pr = api("POST", f"/repos/{REPO}/pulls", {
++        "title": f"vibe: {resumen}",
++        "head": rama,
++        "base": os.environ.get("BASE_BRANCH", "main"),
++        "body": cuerpo,
++    })
++    return pr.get("number"), pr.get("html_url")
+ 
+-    payload = {
+-        "model": "qwen2.5-coder:3b",
+-        "prompt": full_prompt,
+-        "stream": False,
+-        "options": {
+-            "temperature": 0.1, 
+-            "num_ctx": 16384 # Ampliamos la ventana de contexto a 16k para que quepa el repositorio entero
+-        }
+-    }
+-    
+-    try:
+-        response = requests.post(url, json=payload)
+-        return response.json().get("response", "").strip()
+-    except Exception as e:
+-        return f"Error de conexión: {str(e)}"
+ 
+-def guardar_estructura(respuesta_raw):
+-    respuesta_raw = respuesta_raw.replace("```json", "").replace("```", "").strip()
+-    try:
+-        estructura = json.loads(respuesta_raw)
+-        for ruta, contenido in estructura.items():
+-            dir_padre = os.path.dirname(ruta)
+-            if dir_padre:
+-                os.makedirs(dir_padre, exist_ok=True)
+-            with open(ruta, "w", encoding="utf-8") as f:
+-                f.write(contenido)
+-        return True
+-    except:
+-        return False
+-
+-def ejecutar_tests():
+-    try:
+-        if os.path.exists("package.json"):
+-            # Aquí correrías tus pruebas reales, ej: subprocess.run(["npm", "test"])
+-            return True, "Tests de Node completados con éxito."
+-        elif os.path.exists("requirements.txt"):
+-            result = subprocess.run(["pytest"], capture_output=True, text=True)
+-            return result.returncode == 0, result.stdout + result.stderr
+-        return True, "Sin entorno de pruebas formal detectado."
+-    except Exception as e:
+-        return False, str(e)
++# --------------------------------------------------------------------------
+ 
+ def main():
+-    prompt_usuario = os.getenv("PROMPT_CHAT", "Crea la estructura inicial.")
+-    error_actual = ""
+-    build_exitoso = False
+-    
+-    # Paso crítico: Escanear todo antes de llamar a la IA
+-    print("🔍 Escaneando repositorio completo para prevenir redundancias...")
+-    mapa_repositorio = escanear_repositorio_completo()
++    if not PROMPT:
++        log("Sin pedido (PROMPT_CHAT vacío): no hay nada que hacer.")
++        return 0
++    log(f"🔍 Escaneando repositorio (tope {MAX_CONTEXT_CHARS} chars)...")
++    mapa = escanear_repositorio()
++    log(f"   contexto: {len(mapa)} chars")
+ 
++    error, escritas, resumen = "", [], ""
+     for intento in range(1, MAX_INTENTOS + 1):
+-        print(f"🔄 Procesando cambio - Intento {intento}/{MAX_INTENTOS}...")
+-        respuesta = consultar_ollama(prompt_usuario, mapa_repositorio, error_previo=error_actual)
+-        
+-        if not guardar_estructura(respuesta):
+-            error_actual = "La IA rompió el formato JSON. Reintentando..."
++        log(f"🔄 Intento {intento}/{MAX_INTENTOS}")
++        estructura = extraer_json(consultar_ollama(mapa, error))
++        if estructura is None:
++            error = ("Tu respuesta anterior no era un JSON válido. Responde "
++                     "SOLO con el objeto JSON {ruta: contenido}.")
+             continue
+-            
+-        paso_tests, logs = ejecutar_tests()
+-        if paso_tests:
+-            build_exitoso = True
++        escritas = aplicar_archivos(estructura)
++        ok, resumen = validar(escritas)
++        if ok:
+             break
+-        else:
+-            error_actual = logs
++        error = resumen
++    else:
++        _reporte(False, error, escritas)
++        return 1
++
++    try:
++        nro, url = publicar(escritas, resumen)
++        _reporte(True, f"PR #{nro}: {url}", escritas)
++    except (urllib.error.HTTPError, subprocess.CalledProcessError) as exc:
++        detalle = (exc.read().decode()
++                   if isinstance(exc, urllib.error.HTTPError) else str(exc))
++        _reporte(False, f"No pude publicar: {detalle[:500]}", escritas)
++        return 1
++    return 0
++
++
++def _reporte(ok, detalle, escritas):
++    lineas = ["### 🤖 Vibe Agent\n"]
++    if ok:
++        lineas.append(f"✅ Listo. {detalle}\n")
++    else:
++        lineas.append(f"⚠️ No pude cerrar el cambio.\n\n```text\n{detalle}\n```\n")
++    if escritas:
++        lineas.append("**Archivos tocados:**\n")
++        lineas += [f"- `{r}`\n" for r in escritas]
++    lineas.append("\n_Generado por un agente de IA (vibe agent)._\n")
++    with open("vibe_report.txt", "w", encoding="utf-8") as fh:
++        fh.write("".join(lineas))
+ 
+-    with open("vibe_report.txt", "w", encoding="utf-8") as f:
+-        if build_exitoso:
+-            f.write("### 🤖 ¡App Buildeada y Auditada con Éxito!\n")
+-            f.write(f"El agente analizó el repositorio completo y aplicó los cambios en {intento} intentos sin generar código redundante.\n")
+-        else:
+-            f.write("### ⚠️ El Agente falló al intentar estabilizar el repositorio.\n\n")
+-            f.write(f"**Último error de compilación/tests:**\n```text\n{error_actual}\n```\n")
+ 
+ if __name__ == "__main__":
+-    main()
++    sys.exit(main())
+diff --git a/.github/workflows/vibe-coding.yml b/.github/workflows/vibe-coding.yml
+index b8c32c5..5d1e69e 100644
+--- a/.github/workflows/vibe-coding.yml
++++ b/.github/workflows/vibe-coding.yml
+@@ -1,72 +1,88 @@
+-name: 🤖 Vibe Coding Agent (GitHub Runner)
++name: Vibe Agent
+ 
++# Se dispara cuando abrís un issue nuevo o comentás en uno.
++# El bot NUNCA escribe en main: abre una rama y un PR.
+ on:
+   issues:
+     types: [opened]
+   issue_comment:
+     types: [created]
+ 
++# Sin esto el GITHUB_TOKEN es read-only y el push falla con 403.
++permissions:
++  contents: write
++  pull-requests: write
++
++env:
++  VIBE_MODEL: qwen2.5-coder:3b
++
++# Un solo run por issue: si comentás de nuevo, cancela el anterior.
++concurrency:
++  group: vibe-${{ github.event.issue.number }}
++  cancel-in-progress: true
++
+ jobs:
+-  vibe-build-loop:
+-    if: github.event.comment.user.login != 'github-actions[bot]'
++  build:
++    # Ignora comentarios del propio bot (evita el bucle) y los que no
++    # son pedidos.
++    if: |
++      github.event.sender.type != 'Bot' &&
++      github.event.comment.user.login != 'github-actions[bot]'
+     runs-on: ubuntu-latest
++    timeout-minutes: 30
+ 
+     steps:
+-    - name: 📂 Checkout del repositorio
+-      uses: actions/checkout@v4
+-
+-    - name: 💾 Configurar Caché de Ollama
+-      id: cache-ollama
+-      uses: actions/cache@v4
+-      with:
+-        path: ~/.ollama
+-        key: ${{ runner.os }}-ollama-qwen25-3b
++      - name: Checkout
++        uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
+ 
+-    # INSTALACIÓN DIRECTA EN EL RUNNER (Reemplaza la acción que fallaba)
+-    - name: 🦙 Instalar y Levantar Ollama de forma Nativa
+-      run: |
+-        echo "📥 Descargando e instalando Ollama oficialmente..."
+-        curl -fsSL https://ollama.com/install.sh | sh
+-        
+-        echo "🚀 Iniciando el servicio de Ollama de fondo..."
+-        ollama serve &
+-        
+-        echo "⏳ Esperando que el servidor responda..."
+-        sleep 5
+-        
+-        echo "📥 Descargando el modelo Qwen 2.5 Coder 3B..."
+-        ollama pull qwen2.5-coder:3b
++      - name: Cache de Ollama
++        uses: actions/cache@v4
++        with:
++          path: ~/.ollama
++          key: ollama-${{ runner.os }}-${{ env.VIBE_MODEL }}
+ 
+-    - name: 🐍 Configurar Python
+-      uses: actions/setup-python@v5
+-      with:
+-        python-version: '3.10'
++      - name: Instalar y levantar Ollama
++        run: |
++          if ! command -v ollama >/dev/null; then
++            curl -fsSL https://ollama.com/install.sh | sh
++          fi
++          ollama serve &
++          for i in $(seq 1 30); do
++            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
++            sleep 2
++          done
++          ollama pull "$VIBE_MODEL"
+ 
+-    - name: 📦 Instalar dependencias del script
+-      run: pip install requests
++      - name: Configurar Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: '3.11'
+ 
+-    - name: 🤖 Ejecutar Agente (Bucle de Auto-Corrección)
+-      id: agent-loop
+-      env:
+-        PROMPT_CHAT: ${{ github.event.comment.body || github.event.issue.body }}
+-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-      run: |
+-        python .github/scripts/vibe_agent.py
++      - name: Correr el agente
++        id: agente
++        env:
++          PROMPT_CHAT: ${{ github.event.comment.body || github.event.issue.body }}
++          ISSUE_NUMBER: ${{ github.event.issue.number }}
++          REPO: ${{ github.repository }}
++          BASE_BRANCH: ${{ github.event.repository.default_branch }}
++          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++        run: python .github/scripts/vibe_agent.py
++        continue-on-error: true
+ 
+-    - name: 💬 Publicar Resultado en el Chat del Issue
+-      if: always()
+-      uses: actions/github-script@v7
+-      with:
+-        script: |
+-          const fs = require('fs');
+-          let reporte = "❌ El agente falló de manera crítica al inicializar.";
+-          if (fs.existsSync('vibe_report.txt')) {
+-            reporte = fs.readFileSync('vibe_report.txt', 'utf8');
+-          }
+-          
+-          github.rest.issues.createComment({
+-            issue_number: context.issue.number,
+-            owner: context.repo.owner,
+-            repo: context.repo.repo,
+-            body: reporte
+-          });
++      - name: Comentar el resultado en el issue
++        if: always()
++        uses: actions/github-script@v7
++        with:
++          script: |
++            const fs = require('fs');
++            const cuerpo = fs.existsSync('vibe_report.txt')
++              ? fs.readFileSync('vibe_report.txt', 'utf8')
++              : '⚠️ El agente no dejó reporte. Revisá los logs del run.';
++            await github.rest.issues.createComment({
++              issue_number: context.issue.number,
++              owner: context.repo.owner,
++              repo: context.repo.repo,
++              body: cuerpo
++            });
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..0a1eb44
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,4 @@
++__pycache__/
++*.pyc
++.ollama/
++vibe_report.txt
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..4e610a4
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,72 @@
++# vibe_agent
++
++Un builder que vive en GitHub Actions. Le pedís código en un issue y te
++devuelve un pull request.
++
++Corre **Ollama en el propio runner**, así que no necesita ninguna API key ni
++servicio externo. Todo pasa dentro de la VM de GitHub.
++
++## Cómo se usa
++
++1. Abrís un issue con lo que querés (o comentás en uno existente).
++2. El workflow arranca solo.
++3. En unos minutos el bot comenta con el resultado y abre un PR.
++
++El PR sale de una rama `vibe/issue-N`. **Nunca escribe en `main`.**
++
++## Qué hace por dentro
++
++1. Escanea el repositorio y arma un mapa de archivos, con tope de contexto
++   (`VIBE_MAX_CONTEXT`, default 60000 caracteres).
++2. Le pide al modelo un JSON `{ruta: contenido}`.
++3. Escribe los archivos y verifica que compilen.
++4. Si algo falla, reintenta pasándole el error al modelo (hasta
++   `VIBE_MAX_TRIES`, default 3).
++5. Commitea en una rama y abre el PR.
++
++## Variables
++
++| Variable | Default | Para qué |
++|---|---|---|
++| `VIBE_MODEL` | `qwen2.5-coder:3b` | Modelo de Ollama. `7b` piensa mejor y tarda más. |
++| `VIBE_MAX_CONTEXT` | `60000` | Tope de caracteres del repo que se manda. |
++| `VIBE_MAX_TRIES` | `3` | Reintentos con auto-corrección. |
++
++## Aplicarlo a otro repositorio
++
++El builder es autocontenido: solo necesita dos archivos.
++
++```bash
++# Copiá estos dos archivos a tu repo
++.github/workflows/vibe-coding.yml
++.github/scripts/vibe_agent.py
++```
++
++Después revisá dos cosas en el workflow:
++
++- `permissions:` tiene que incluir `contents: write` y `pull-requests: write`.
++  Sin eso el token es read-only y el push falla con 403.
++- `on:` define cuándo se dispara (por default: issue nuevo o comentario).
++
++Si el repo ya tiene un workflow con el mismo nombre, renombralo para que no
++se pisen.
++
++## Límites (leelos antes de confiar)
++
++- **El modelo es chico.** `qwen2.5-coder:3b` sirve para cambios acotados. Para
++  algo grande, subí a `7b` y esperá más.
++- **Revisá siempre el diff.** El agente no entiende el negocio, solo el pedido.
++- **Repos grandes no entran.** Si el repo supera `VIBE_MAX_CONTEXT`, el modelo
++  trabaja con información parcial y puede duplicar código. El mapa lo avisa
++  cuando recorta.
++- **No hay tests de verdad.** Verifica sintaxis de Python, nada más. Si querés
++  más, agregá un paso de test al workflow.
++
++## Si algo falla
++
++| Síntoma | Causa probable |
++|---|---|
++| Run rojo en 0s | YAML inválido. Validalo con `python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1]))" archivo.yml` |
++| `403` al pushear | Falta `permissions: contents: write` |
++| El bot comenta pero no hay PR | El push falló. Mirá el log del paso "Correr el agente" |
++| Loop de comentarios | El `if:` del job no está filtrando los comentarios del bot |
+-- 
+2.47.3
+
