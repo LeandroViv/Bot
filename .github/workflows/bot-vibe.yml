@@ -1,0 +1,85 @@
+name: Bot Vibe (alternativo)
+
+# Bot de Telegram de pruebas: corre en el runner con Ollama local.
+# NO toca el repo, NO hace push. Solo chatea.
+#
+# OJO: GitHub corta los jobs a las 6h. Por eso el bot se apaga solo a las
+# 5h30m y el cron lo revive. Hay un hueco de hasta 5 min entre rotaciones:
+# los mensajes que lleguen ahi se procesan al volver (drop_pending_updates
+# esta en False a proposito).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: read
+
+env:
+  # qwen2.5:3b le gana a phi3 en charla rioplatense: respuestas cortas y
+  # naturales en vez de vueltas. Medido en el sandbox, mismo prompt.
+  OLLAMA_MODEL: qwen2.5:3b
+
+concurrency:
+  group: bot-vibe
+  cancel-in-progress: false
+
+jobs:
+  chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355  # 5h55m, con margen bajo el tope de 6h
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache de Ollama
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama
+          key: ollama-vibe-${{ runner.os }}-${{ env.OLLAMA_MODEL }}
+
+      - name: Instalar y levantar Ollama
+        run: |
+          # Instalacion determinista en vez del install.sh oficial: ese usa
+          # curl|sh y aborta si falta zstd. Aca fijamos version y verificamos
+          # el sha256 oficial, asi el runner no se rompe si cambia el ultimo
+          # release a mitad de camino.
+          OLLAMA_VER="v0.40.13"
+          OLLAMA_SHA="c9490e0f520be21271d969e6703f012268b1d39f8b70dd58854e5bfef7a75bb6"
+          if ! command -v ollama >/dev/null; then
+            if ! command -v zstd >/dev/null; then
+              sudo apt-get update -q && sudo apt-get install -y -q zstd
+            fi
+            curl -fsSL -o /tmp/ollama.tar.zst \
+              "https://github.com/ollama/ollama/releases/download/${OLLAMA_VER}/ollama-linux-amd64.tar.zst"
+            echo "${OLLAMA_SHA}  /tmp/ollama.tar.zst" | sha256sum -c -
+            # tar solo no descomprime .zst: hace falta pasarlo por zstd.
+            zstd -d -c /tmp/ollama.tar.zst | sudo tar -xf - -C /usr/local
+            rm -f /tmp/ollama.tar.zst
+          fi
+          ollama serve &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
+            sleep 2
+          done
+          ollama pull "$OLLAMA_MODEL"
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias
+        run: |
+          pip install --upgrade pip
+          pip install "python-telegram-bot>=21.0" httpx
+
+      - name: Arrancar el bot
+        env:
+          TELEGRAM_BOT_TOKEN_VIBE: ${{ secrets.TELEGRAM_BOT_TOKEN_VIBE }}
+          ALLOWED_CHAT_IDS: ${{ secrets.ALLOWED_CHAT_IDS }}
+          OLLAMA_HOST: "http://127.0.0.1:11434"
+          MAX_RUNTIME_SECONDS: "19800"  # 5h30m, para que cierre antes del tope
+        run: python bot_vibe.py
