@@ -1,5 +1,4 @@
 name: Bot Telegram Leandro Ollama
-blabla
 on:
   push:
     branches: [ main ]
