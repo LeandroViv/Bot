@@ -1,0 +1,53 @@
+[project]
+name = "telegram-bot"
+version = "0.1.0"
+description = "Telegram bot with python-telegram-bot v21+, SQLAlchemy, job queue, and external API integration"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "python-telegram-bot[v21,job-queue,webhooks,ext]>=21.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "aiohttp>=3.9",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.3",
+    "python-dotenv>=1.0",
+    "structlog>=24.1",
+    "apscheduler>=3.10",
+    "tenacity>=8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.14",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "types-aiohttp>=3.9",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bot*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+lint.select = ["E", "F", "I", "W", "UP", "B", "C4", "PTH", "T20", "SIM", "RUF", "RET", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "TID", "ARG", "PTH", "FA"]
+lint.ignore = ["S101", "S106", "S311", "S603", "S607", "B008"]
+format.quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
