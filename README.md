@@ -82,6 +82,7 @@ docker-compose down
 | `/ping` | Measure bot latency |
 | `/settings` | Toggle notifications |
 | `/stats` | Show your message statistics |
+| `/savechat [N]` | Export last N messages to `/artifacts` (admin only, default 100) |
 
 ### Inline Keyboards
 - Main menu with feature buttons

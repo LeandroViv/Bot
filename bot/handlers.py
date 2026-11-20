@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from pathlib import Path
 from typing import Optional
 
 from telegram import Update, Message, Chat, User as TGUser
@@ -196,6 +197,80 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     await update.message.reply_html(stats_text)
     logger.info("stats_command", user_id=user.id, message_count=msg_count)
+
+
+async def savechat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /savechat command - export chat history to file."""
+    user, chat = await _ensure_user_chat(update, context)
+    if not user or not chat:
+        return
+
+    # Check if user is admin (optional restriction)
+    admin_ids = {123456789}  # Replace with actual admin IDs
+    if user.id not in admin_ids:
+        await update.message.reply_text("⛔ Admin only command")
+        return
+
+    try:
+        async with get_session() as session:
+            from bot.database import MessageLog
+            from sqlalchemy import select
+
+            # Get last N messages for this chat
+            limit = 100
+            if context.args and context.args[0].isdigit():
+                limit = min(int(context.args[0]), 1000)
+
+            result = await session.execute(
+                select(MessageLog)
+                .where(MessageLog.chat_id == chat.id)
+                .order_by(MessageLog.created_at.desc())
+                .limit(limit)
+            )
+            messages = list(reversed(result.scalars().all()))
+
+        if not messages:
+            await update.message.reply_text("📭 No messages found for this chat")
+            return
+
+        # Build export content
+        lines = [
+            f"# Chat Export",
+            f"# Chat: {chat.title or chat.username or chat.id} ({chat.type})",
+            f"# Exported: {dt.datetime.now(dt.timezone.utc).isoformat()}",
+            f"# Messages: {len(messages)}",
+            f"# ---",
+            "",
+        ]
+
+        for msg in messages:
+            timestamp = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            user_tag = f"User:{msg.user_id}"
+            content = msg.text or f"[{msg.message_type}]"
+            lines.append(f"[{timestamp}] {user_tag}: {content}")
+
+        content = "\n".join(lines)
+
+        # Save to artifacts
+        artifacts_dir = Path("/artifacts")
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = f"chat_export_{chat.id}_{dt.datetime.now(dt.timezone.utc).strftime('%Y%m%d_%H%M%S')}.txt"
+        filepath = artifacts_dir / filename
+
+        filepath.write_text(content, encoding="utf-8")
+
+        await update.message.reply_html(
+            f"✅ <b>Chat exported</b>\n\n"
+            f"📁 File: <code>{filename}</code>\n"
+            f"📊 Messages: <b>{len(messages)}</b>\n"
+            f"📍 Path: <code>/artifacts/{filename}</code>"
+        )
+        logger.info("savechat_command", user_id=user.id, chat_id=chat.id, messages=len(messages), file=filename)
+
+    except Exception as e:
+        logger.error("savechat_command_failed", user_id=user.id, error=str(e), exc_info=e)
+        await update.message.reply_text(f"❌ Export failed: {e}")
 
 
 # === Message Handlers ===
@@ -566,6 +641,7 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("ping", ping_command))
     application.add_handler(CommandHandler("settings", settings_command))
     application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("savechat", savechat_command))
 
     # Messages
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
